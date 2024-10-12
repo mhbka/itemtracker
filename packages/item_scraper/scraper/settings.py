@@ -65,9 +65,11 @@ COOKIES_ENABLED = False
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "tutorial.pipelines.TutorialPipeline": 300,
-#}
+ITEM_PIPELINES = {
+    "scraper.pipelines.dedup.DuplicatesPipeline": 1,
+    "scraper.pipelines.mercari.MercariPipeline": 100,
+    "scraper.pipelines.output_queue.OutputQueuePipeline": 999,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

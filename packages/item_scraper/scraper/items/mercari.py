@@ -1,5 +1,5 @@
 import scrapy
-from scrapy.loader.processors import MapCompose, TakeFirst, Join
+from scrapy.loader.processors import MapCompose, Join
 from datetime import datetime
 
 def convert_timestamp(timestamp):
@@ -32,6 +32,9 @@ class ShippingItem(scrapy.Item):
     duration = scrapy.Field()
 
 class MercariItem(scrapy.Item):
+    # field to identify item type after serialization; always 'Mercari'
+    type = scrapy.Field()
+
     id = scrapy.Field()
     name = scrapy.Field()
     price = scrapy.Field()
