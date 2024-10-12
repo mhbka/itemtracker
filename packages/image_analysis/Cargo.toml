@@ -1,0 +1,17 @@
+[package]
+name = "image_analysis"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rabbitmq-stream-client = "*"
+tokio = { version = "1.39.0", features = ["rt", "rt-multi-thread", "macros"] }
+futures = "0.3.30"
+
+[[bin]]
+name="send"
+
+[[bin]]
+name="receive"
