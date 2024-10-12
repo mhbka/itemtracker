@@ -1,5 +1,5 @@
 from cryptography.hazmat.primitives.asymmetric import ec
-from item_scraper.scraper.spiders.utils import generate_dpop
+from scraper.spiders.utils.generate_dpop import generate_dpop
 
 def gen_payload(page_token: str):
     return {

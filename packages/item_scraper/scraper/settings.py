@@ -9,12 +9,21 @@
 
 from scraper.agents import user_agents
 import random
+import logging
 
 BOT_NAME = "scraper"
 
 SPIDER_MODULES = ["scraper.spiders"]
 NEWSPIDER_MODULE = "scraper.spiders"
 
+LOG_LEVEL = logging.INFO
+
+# Output stream details
+# TODO: all these to .env
+OUTPUT_STREAM_NAME = 'analysis_queue'
+OUTPUT_STREAM_HOST = 'localhost'
+OUTPUT_STREAM_USERNAME = 'scraper'
+OUTPUT_STREAM_PASSWORD = 'scraper334'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = random.choice(user_agents)
@@ -68,7 +77,7 @@ COOKIES_ENABLED = False
 ITEM_PIPELINES = {
     "scraper.pipelines.dedup.DuplicatesPipeline": 1,
     "scraper.pipelines.mercari.MercariPipeline": 100,
-    "scraper.pipelines.output_queue.OutputQueuePipeline": 999,
+    "scraper.pipelines.output_stream.OutputStreamPipeline": 999,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
