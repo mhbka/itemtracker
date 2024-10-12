@@ -1,13 +1,13 @@
 import json
 import scrapy
-from item_scraper.scraper.items.mercari import CategoryItem, MercariItem, SellerItem, ShippingItem
-from utils.generate_dpop import generate_private_key
-from utils.mercari_utils import gen_payload, gen_headers
+from scraper.items.mercari import CategoryItem, MercariItem, SellerItem, ShippingItem
+from scraper.spiders.utils.generate_dpop import generate_private_key
+from scraper.spiders.utils.mercari_utils import gen_payload, gen_headers
 
 class MercariSpider(scrapy.Spider):
     name = "mercari"
-    search_url = "https://api.mercari.jp/v2/entities:search"
-    item_url = "https://api.mercari.jp/items/get"
+    search_url = "https://api.mercari.jp/v2/entities:search" # TODO: to .env
+    item_url = "https://api.mercari.jp/items/get" # TODO: to .env
     dpop_private_key = generate_private_key()
 
     def start_requests(self):

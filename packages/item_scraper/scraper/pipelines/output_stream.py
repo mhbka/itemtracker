@@ -1,61 +1,58 @@
 import json
-import pika
 import asyncio
-
-# useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 from rstream import Producer
 from scrapy.exceptions import DropItem
+from scrapy.utils.serialize import ScrapyJSONEncoder
+from twisted.internet import defer
 
 class OutputStreamPipeline:
-    def __init__(self, stream_name):
+    def __init__(self, stream_name, stream_host, stream_username, stream_password):
+        self.json_encoder = ScrapyJSONEncoder()
         self.stream_name = stream_name
-        self.connection = None
-        self.channel = None
-
+        self.stream_host = stream_host
+        self.stream_username = stream_username
+        self.stream_password = stream_password
         self.producer = None
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(
-            stream_name=crawler.settings.get('RABBITMQ_QUEUE')
+            stream_name=crawler.settings.get('OUTPUT_STREAM_NAME'),
+            stream_host=crawler.settings.get('OUTPUT_STREAM_HOST'),
+            stream_username=crawler.settings.get('OUTPUT_STREAM_USERNAME'),
+            stream_password=crawler.settings.get('OUTPUT_STREAM_PASSWORD'),
+        )
+
+    async def init_stream(self):
+        self.producer = Producer(
+            host=self.stream_host,
+            username=self.stream_username,
+            password=self.stream_password
+        )
+        await self.producer.create_stream(
+            stream=self.stream_name,
+            exists_ok=True,
+            arguments={"max-length-bytes": 5000000000}
         )
 
     def open_spider(self, spider):
-        async def init_stream():
-            async with Producer(
-                host="localhost",
-                username="guest",
-                password="guest"
-            ) as producer:
-                self.producer = producer
-                stream_name = "scraper_stream"
-                stream_retention = 5000000000
-
-                await producer.create_stream(
-                    stream_name,
-                    exists_ok=True,
-                    arguments={"MaxLengthBytes": stream_retention}
-                )
-
-        asyncio.run(init_stream())
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.init_stream())
+        spider.logger.info("Output stream initialization scheduled")
 
     def close_spider(self, spider):
         return
 
-    def process_item(self, item, spider):
-        try:
-            async def send_item(item_json):
-                await self.producer.send(
-                    stream=self.stream_name,
-                    message=item_json
-                )
+    async def send_item(self, item_json):
+        await self.producer.send(
+            stream = self.stream_name,
+            message = item_json.encode('UTF-8')
+        )
 
-            item_json = json.dumps(dict(item))
-            asyncio.run(send_item(item_json))
-            spider.logger.info(f"Item sent to RabbitMQ queue: {self.stream_name}")
-            return item
-        
-        except Exception as e:
-            spider.logger.error(f"Error sending item to RabbitMQ: {str(e)}")
-            raise DropItem(f"Error sending item to RabbitMQ: {str(e)}")
+    def process_item(self, item, spider):
+        item_json = self.json_encoder.encode(item)
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.send_item(item_json))
+        spider.logger.info(f"{item['type']} item {item['id']} sent to output stream")
+        return item
