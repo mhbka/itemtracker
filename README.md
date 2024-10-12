@@ -12,7 +12,6 @@
         O[API Gateway]:::service
         Q[User Management Service]:::service
         R[Scheduler Service]:::service
-        T{RabbitMQ Direct}:::queue
         A[Web Scraper Service]:::service
         B[Multiple Marketplaces]:::external
         C{RabbitMQ Direct}:::queue
@@ -31,9 +30,7 @@
         S -->|Creates/Updates gallery| P
         P -->|Sends gallery preferences| O
         O -->|Stores gallery data| Q
-        Q -->|Sends gallery parameters| R
-        R -->|Publishes scraping tasks| T
-        T -->|gallery ID + parameters| A
+        Q -->|Sends gallery parameters| A
         A -->|Scrapes periodically| B
         A -->|Pushes items with gallery ID| C
         C -->|scraper_queue| D
@@ -50,11 +47,4 @@
         L -->|update_exchange| M
         M -->|Sends notifications| N
         O -->|Queries/Updates| J
-
-        %% Main flow labels
-        T -.->|"1. Scheduled scraping task"| A
-        C -.->|"2. Scraped items"| D
-        F -.->|"3. Analyzed items"| G
-        I -.->|"4. Classified items"| J
-        L -.->|"5. New item notifications"| M
 ```
