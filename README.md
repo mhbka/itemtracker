@@ -11,7 +11,6 @@
         P[Web/Mobile App]:::external
         O[API Gateway]:::service
         Q[User Management Service]:::service
-        R[Scheduler Service]:::service
         A[Web Scraper Service]:::service
         B[Multiple Marketplaces]:::external
         C{RabbitMQ Direct}:::queue

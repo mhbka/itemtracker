@@ -20,7 +20,7 @@ def generate_dpop(private_key: ec.EllipticCurvePrivateKey, accessed_url: str, ht
     x_b64 = base64.urlsafe_b64encode(x.to_bytes(32, 'big')).decode('utf-8').rstrip('=')
     y_b64 = base64.urlsafe_b64encode(y.to_bytes(32, 'big')).decode('utf-8').rstrip('=')
 
-    jwk = { # Essentially the public key, used by server to decrypt signature
+    jwk = { # The public key, used by server to decrypt signature
         "crv": "P-256",
         "kty": "EC",
         "x": x_b64,
