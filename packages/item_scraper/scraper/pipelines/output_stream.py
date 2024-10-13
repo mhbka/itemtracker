@@ -24,6 +24,23 @@ class OutputStreamPipeline:
             stream_password=crawler.settings.get('OUTPUT_STREAM_PASSWORD'),
         )
 
+    def open_spider(self, spider):
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.init_stream())
+        spider.logger.info("Output stream initialized")
+
+    def close_spider(self, spider):
+        return
+
+    def process_item(self, item, spider):
+        item_json = self.json_encoder.encode({'gallery_id': spider.gallery_id, 'data': item})
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.send_item(item_json))
+        spider.logger.info(f"{item['type']} item {item['id']} for gallery {spider.gallery_id} sent to output stream")
+        return item
+    
+    ## Async stream fns
+
     async def init_stream(self):
         self.producer = Producer(
             host=self.stream_host,
@@ -35,24 +52,9 @@ class OutputStreamPipeline:
             exists_ok=True,
             arguments={"max-length-bytes": 5000000000}
         )
-
-    def open_spider(self, spider):
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.init_stream())
-        spider.logger.info("Output stream initialization scheduled")
-
-    def close_spider(self, spider):
-        return
-
+    
     async def send_item(self, item_json):
         await self.producer.send(
             stream = self.stream_name,
             message = item_json.encode('UTF-8')
         )
-
-    def process_item(self, item, spider):
-        item_json = self.json_encoder.encode(item)
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.send_item(item_json))
-        spider.logger.info(f"{item['type']} item {item['id']} sent to output stream")
-        return item
