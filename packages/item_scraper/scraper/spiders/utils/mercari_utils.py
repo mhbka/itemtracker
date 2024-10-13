@@ -1,8 +1,18 @@
+import json
 from cryptography.hazmat.primitives.asymmetric import ec
 from scraper.spiders.utils.generate_dpop import generate_dpop
 
-def gen_payload(page_token: str):
+# Generate headers for accessing Mercari APIs
+def gen_headers(private_key: ec.EllipticCurvePrivateKey, accessed_url: str, http_method: str):
     return {
+        "content-type": "application/json",
+        "dpop": generate_dpop(private_key, accessed_url, http_method),
+        "x-platform": "web"
+    }
+
+# Generate payload JSON string for hitting Mercari search API
+def gen_payload_string(page_token, search_criteria, logger=None):
+    payload = {
         "userId": "",
         "pageSize": 120,
         "pageToken": page_token,
@@ -10,13 +20,13 @@ def gen_payload(page_token: str):
         "indexRouting": "INDEX_ROUTING_UNSPECIFIED",
         "thumbnailTypes": [],
         "searchCondition": {
-            "keyword": "kanon shirt",
-            "excludeKeyword": "",
-            "sort": "SORT_SCORE",
-            "order": "ORDER_DESC",
-            "status": ["STATUS_ON_SALE"],
+            "keyword": search_criteria["keyword"],
+            "excludeKeyword": search_criteria["excludeKeyword"],
+            "sort": search_criteria["sort"],
+            "order": search_criteria["order"],
+            "status": search_criteria["status"],
             "sizeId": [],
-            "categoryId": [30],
+            "categoryId": search_criteria["categoryId"],
             "brandId": [],
             "sellerId": [],
             "priceMin": 0,
@@ -50,10 +60,7 @@ def gen_payload(page_token: str):
         "withProductArticles": False,
         "withSearchConditionId": False
     }
+    payload_str = json.dumps(payload)
+    if logger: logger.info(f"SEARCH PAYLOAD: {payload_str}")
+    return payload_str
 
-def gen_headers(private_key: ec.EllipticCurvePrivateKey, accessed_url: str, http_method: str):
-    return {
-        "content-type": "application/json",
-        "dpop": generate_dpop(private_key, accessed_url, http_method),
-        "x-platform": "web"
-    }

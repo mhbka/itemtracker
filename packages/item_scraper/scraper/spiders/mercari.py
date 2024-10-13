@@ -1,36 +1,52 @@
 import json
 import scrapy
+import jsonschema
+from scrapy.exceptions import CloseSpider
 from scraper.items.mercari import CategoryItem, MercariItem, SellerItem, ShippingItem
 from scraper.spiders.utils.generate_dpop import generate_private_key
-from scraper.spiders.utils.mercari_utils import gen_payload, gen_headers
+from scraper.spiders.utils.mercari_utils import gen_payload_string, gen_headers
+from scraper.spiders.utils.types import mercari_search_criteria_schema
 
 class MercariSpider(scrapy.Spider):
     name = "mercari"
+    # gallery_id = None # Should be set by Scrapyd as an input when a task is scheduled
+    # search_criteria = None # Should be set by Scrapyd as an input when a task is scheduled
     search_url = "https://api.mercari.jp/v2/entities:search" # TODO: to .env
     item_url = "https://api.mercari.jp/items/get" # TODO: to .env
     dpop_private_key = generate_private_key()
 
     def start_requests(self):
+        if self.gallery_id is None or self.search_criteria is None:
+            raise CloseSpider("Mercari task search criteria or gallery ID was not set; ending task...")
+        else:
+            self.search_criteria = json.loads(self.search_criteria)
+            try:
+                jsonschema.validate(
+                    instance = self.search_criteria,
+                    schema = mercari_search_criteria_schema
+                )
+            except jsonschema.ValidationError:
+                raise CloseSpider("Mercari task search criteria has wrong schema; ending task...")
         yield scrapy.Request(
             self.search_url, 
-            method='POST', 
-            body=json.dumps(gen_payload('')), 
-            headers=gen_headers(self.dpop_private_key, self.search_url, 'POST')
+            method = 'POST', 
+            body = gen_payload_string('', self.search_criteria, self.logger), 
+            headers = gen_headers(self.dpop_private_key, self.search_url, 'POST')
             )
 
     def parse(self, response):
         data = json.loads(response.text)    
         for item in data['items']:
-                print(f'Parsing {item['id']}...')
+                self.logger.info(f'Parsing {item['id']}...')
                 yield self.call_parse_item(item)
         
         if data['meta']['nextPageToken']:
-            print(f'Parsing next page ({data['meta']['nextPageToken']})...')
+            self.logger.info(f'Parsing next page ({data['meta']['nextPageToken']})...')
             yield scrapy.Request(
                 self.search_url,
-                method='POST', 
-                body=json.dumps(gen_payload(data['meta']['nextPageToken'])), 
-                headers=gen_headers(self.dpop_private_key, self.search_url, 'POST')
+                method = 'POST', 
+                body = gen_payload_string(data['meta']['nextPageToken'], self.search_criteria, self.logger), 
+                headers = gen_headers(self.dpop_private_key, self.search_url, 'POST')
                 )
     
     def call_parse_item(self, item):
