@@ -1,0 +1,35 @@
+services:
+  rabbitmq:
+    build: ./packages/rabbitmq
+    hostname: rmq
+    container_name: rmq
+    expose:
+      - 5552
+      - 5672
+    ports:
+      - 15672:15672 
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  item_scraper:
+    build: ./packages/item_scraper
+    hostname: item_scraper
+    container_name: item_scraper
+    expose:
+      - 6800
+    ports:
+      - 6800:6800
+    environment:
+      - RABBITMQ_HOST=rmq
+      - RABBITMQ_STREAM_PORT=5552
+      - RABBITMQ_AMQP_PORT=5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  default:
+    name: scraper-network

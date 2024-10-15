@@ -9,11 +9,11 @@ from scraper.spiders.utils.types import mercari_search_criteria_schema
 
 class MercariSpider(scrapy.Spider):
     name = "mercari"
-    # gallery_id = None # Should be set by Scrapyd as an input when a task is scheduled
-    # search_criteria = None # Should be set by Scrapyd as an input when a task is scheduled
     search_url = "https://api.mercari.jp/v2/entities:search" # TODO: to .env
     item_url = "https://api.mercari.jp/items/get" # TODO: to .env
     dpop_private_key = generate_private_key()
+    # gallery_id = None # Should be set by Scrapyd as an input when a task is scheduled
+    # search_criteria = None # Should be set by Scrapyd as an input when a task is scheduled
 
     def start_requests(self):
         if self.gallery_id is None or self.search_criteria is None:
@@ -37,11 +37,11 @@ class MercariSpider(scrapy.Spider):
     def parse(self, response):
         data = json.loads(response.text)    
         for item in data['items']:
-                self.logger.info(f'Parsing {item['id']}...')
+                self.logger.info(f"Parsing {item['id']}...")
                 yield self.call_parse_item(item)
         
         if data['meta']['nextPageToken']:
-            self.logger.info(f'Parsing next page ({data['meta']['nextPageToken']})...')
+            self.logger.info(f"Parsing next page ({data['meta']['nextPageToken']})...")
             yield scrapy.Request(
                 self.search_url,
                 method = 'POST', 
