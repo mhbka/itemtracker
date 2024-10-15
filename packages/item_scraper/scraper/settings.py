@@ -21,9 +21,9 @@ LOG_LEVEL = logging.INFO
 # Output stream details
 # TODO: all these to .env
 OUTPUT_STREAM_NAME = 'analysis_queue'
-OUTPUT_STREAM_HOST = 'localhost'
-OUTPUT_STREAM_USERNAME = 'scraper'
-OUTPUT_STREAM_PASSWORD = 'scraper334'
+OUTPUT_STREAM_HOST = 'rmq'
+OUTPUT_STREAM_USERNAME = 'guest'
+OUTPUT_STREAM_PASSWORD = 'guest'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = random.choice(user_agents)
@@ -46,7 +46,7 @@ CONCURRENT_REQUESTS = 4
 COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
-#TELNETCONSOLE_ENABLED = False
+#TELNETCONSOLE_ENABLED = False  
 
 # Override the default request headers:
 #DEFAULT_REQUEST_HEADERS = {

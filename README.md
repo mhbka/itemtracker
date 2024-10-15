@@ -10,6 +10,7 @@
         S[User]:::user
         P[Web/Mobile App]:::external
         Q[Backend Service]:::service
+        R[Scraper Scheduler Service]:::service
         A[Web Scraper Service]:::service
         B[Multiple Marketplaces]:::external
         C{RabbitMQ Direct}:::queue
@@ -28,8 +29,9 @@
 
         S -->|Creates/Updates gallery| P
         P -->|Sends gallery preferences| Q
-        Q -->|Sends gallery parameters| A
-        A -->|Scrapes periodically| B
+        Q -->|Sends gallery parameters| R
+        R -->|Sends scraping tasks when scheduled| A
+        A -->|Scrapes as tasked| B
         A -->|Pushes items with gallery ID| C
         C -->|analysis_queue| D
         D <-.->|Fetches gallery criteria| Q
