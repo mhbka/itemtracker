@@ -60,17 +60,18 @@ class MercariSpider(scrapy.Spider):
 
     def parse_item(self, item_response):
         json_data = json.loads(item_response.text)['data']
+        id = json_data['id']
         item = MercariItem()
 
         item['type'] = 'Mercari'
         
-        item['id'] = self.safe_get(json_data, 'id')
-        item['name'] = self.safe_get(json_data, 'name')
-        item['price'] = self.safe_get(json_data, 'price')
-        item['description'] = self.safe_get(json_data, 'description')
-        item['status'] = self.safe_get(json_data, 'status')
+        item['id'] = self.safe_get(json_data, id, 'id')
+        item['name'] = self.safe_get(json_data, id, 'name')
+        item['price'] = self.safe_get(json_data, id, 'price')
+        item['description'] = self.safe_get(json_data, id, 'description')
+        item['status'] = self.safe_get(json_data, id, 'status')
 
-        seller_data = self.safe_get(json_data, 'seller')
+        seller_data = self.safe_get(json_data, id, 'seller')
         if seller_data:
             item['seller'] = SellerItem(
                 id=self.safe_get(seller_data, 'id'),
@@ -85,7 +86,7 @@ class MercariSpider(scrapy.Spider):
                 star_rating_score=self.safe_get(seller_data, 'star_rating_score')
             )
         
-        category_data = self.safe_get(json_data, 'item_category')
+        category_data = self.safe_get(json_data, id, 'item_category')
         if category_data:
             item['item_category'] = CategoryItem(
                 id=self.safe_get(category_data, 'id'),
@@ -97,31 +98,31 @@ class MercariSpider(scrapy.Spider):
             )
         
         item['shipping'] = ShippingItem(
-            payer=self.safe_get(json_data, 'shipping_payer', 'name'),
-            method=self.safe_get(json_data, 'shipping_method', 'name'),
-            from_area=self.safe_get(json_data, 'shipping_from_area', 'name'),
-            duration=self.safe_get(json_data, 'shipping_duration', 'name')
+            payer=self.safe_get(json_data, id, 'shipping_payer', 'name'),
+            method=self.safe_get(json_data, id, 'shipping_method', 'name'),
+            from_area=self.safe_get(json_data, id, 'shipping_from_area', 'name'),
+            duration=self.safe_get(json_data, id, 'shipping_duration', 'name')
         )
         
-        item['photos'] = self.safe_get(json_data, 'photos')
-        item['thumbnails'] = self.safe_get(json_data, 'thumbnails')
-        item['item_condition'] = self.safe_get(json_data, 'item_condition')
-        item['item_size'] = self.safe_get(json_data, 'item_size')
-        item['colors'] = self.safe_get(json_data, 'colors')
-        item['num_likes'] = self.safe_get(json_data, 'num_likes')
-        item['num_comments'] = self.safe_get(json_data, 'num_comments')
-        item['created'] = self.safe_get(json_data, 'created')
-        item['updated'] = self.safe_get(json_data, 'updated')
-        item['is_anonymous_shipping'] = self.safe_get(json_data, 'is_anonymous_shipping')
-        item['is_offerable'] = self.safe_get(json_data, 'is_offerable')
+        item['photos'] = self.safe_get(json_data, id, 'photos')
+        item['thumbnails'] = self.safe_get(json_data, id, 'thumbnails')
+        item['item_condition'] = self.safe_get(json_data, id, 'item_condition')
+        item['item_size'] = self.safe_get(json_data, id, 'item_size')
+        item['colors'] = self.safe_get(json_data, id, 'colors')
+        item['num_likes'] = self.safe_get(json_data, id, 'num_likes')
+        item['num_comments'] = self.safe_get(json_data, id, 'num_comments')
+        item['created'] = self.safe_get(json_data, id, 'created')
+        item['updated'] = self.safe_get(json_data, id, 'updated')
+        item['is_anonymous_shipping'] = self.safe_get(json_data, id, 'is_anonymous_shipping')
+        item['is_offerable'] = self.safe_get(json_data, id, 'is_offerable')
         
         yield item
 
-    def safe_get(self, data, *keys):
+    def safe_get(self, data, id, *keys):
         for key in keys:
             try:
                 data = data[key]
             except KeyError:
-                self.logger.warning(f"Key '{key}' is missing from Mercari item")
+                self.logger.warning(f"Key '{key}' is missing from Mercari item {id}")
                 return None
         return data
