@@ -14,6 +14,18 @@ services:
       timeout: 10s
       retries: 5
 
+  scraper_scheduler:
+    build: ./packages/scraper_scheduler
+    hostname: scraper_scheduler
+    container_name: scraper_scheduler
+    expose:
+      - 7000
+    ports:
+      - 7000:7000
+    environment:
+      - HOST_ADDR=0.0.0.0:7000
+      - OUTPUT_ADDR=item_scraper:6800
+
   item_scraper:
     build: ./packages/item_scraper
     hostname: item_scraper
