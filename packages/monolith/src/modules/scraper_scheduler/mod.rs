@@ -1,0 +1,64 @@
+pub mod scheduler;
+pub mod scheduled_task;
+
+use std::sync::Arc;
+use scheduler::RawScraperScheduler;
+use tokio::sync::Mutex;
+use crate::messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, ScraperSender};
+
+/// Module in charge of scheduling scraping tasks.
+/// 
+/// This module is fairly straightforward. Gallery creation/update/deletion is received through `msg_receiver`.
+/// 
+/// Whenever a gallery is scheduled to be scraped, it is sent through the `scraper_msg_sender`.
+pub struct ScraperSchedulerModule {
+    scheduler: RawScraperScheduler,
+    msg_receiver: ScraperSchedulerReceiver,
+    scraper_msg_sender: Arc<Mutex<ScraperSender>>
+}
+
+impl ScraperSchedulerModule {
+    /// Initializes the module.
+    pub async fn init( 
+        msg_receiver: ScraperSchedulerReceiver,
+        scraper_msg_sender: ScraperSender
+    ) -> Result<Self, String> {
+        let scraper_msg_sender = Arc::new(Mutex::new(scraper_msg_sender));
+        let scheduler = RawScraperScheduler::new(scraper_msg_sender.clone());
+        Ok( 
+            ScraperSchedulerModule {
+                scheduler,
+                msg_receiver,
+                scraper_msg_sender
+            }
+        )
+    }
+    
+    /// Start accepting and acting on messages.
+    pub async fn run(&mut self) {
+        while let Some(msg) = self.msg_receiver.receive().await {
+            self.process_msg(msg);
+        }
+    }
+
+    /// Handle each message variant.
+    async fn process_msg(&mut self, msg: SchedulerMessage) {
+        match msg {
+            SchedulerMessage::NewGallery(msg) => {
+                let gallery = msg.get_msg();
+                let result = self.scheduler.add_gallery(gallery).await;
+                msg.respond(result);
+            },
+            SchedulerMessage::DeleteGallery(msg) => {
+                let gallery_id = msg.get_msg().gallery_id;
+                let result = self.scheduler.delete_gallery(gallery_id).await;
+                msg.respond(result);
+            },
+            SchedulerMessage::EditGallery(msg) => {
+                let gallery = msg.get_msg();
+                let result = self.scheduler.update_gallery(gallery).await;
+                msg.respond(result);
+            },
+        }
+    }
+}
