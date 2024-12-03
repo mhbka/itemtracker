@@ -1,4 +1,3 @@
-
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, scraping_pipeline::GalleryScrapingState, search_criteria::GallerySearchCriteria}};
