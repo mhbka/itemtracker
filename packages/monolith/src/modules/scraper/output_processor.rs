@@ -31,11 +31,11 @@ impl OutputProcessor {
         }
     }
 
-    /// Returns all marketplaces' items under a gallery that are currently temporarily stored (ie, these marketplaces have been scraped).
-    pub(super) fn get_scraped_marketplaces(&self, gallery_id: GalleryId) -> HashSet<&Marketplace> {
+    /// Returns all marketplaces' items under a gallery that are currently temporarily stored (ie, marketplaces that have already been scraped).
+    pub(super) fn get_scraped_marketplaces(&self, gallery_id: &GalleryId) -> HashSet<&Marketplace> {
         self.marketplace_items
             .iter()
-            .filter(|&((stored_gallery_id, _), _)| *stored_gallery_id == gallery_id)
+            .filter(|&((stored_gallery_id, _), _)| stored_gallery_id == gallery_id)
             .map(|((_, marketplace), _)| marketplace)
             .collect()
     }
@@ -51,7 +51,7 @@ impl OutputProcessor {
         let cached_items = self.item_cache
             .lock()
             .await
-            .get_from_cache(&marketplace, &gallery_id);
+            .get_from_cache(marketplace.clone(), gallery_id.clone());
         scraped_items
             .extend_from_slice(&cached_items);
         self.marketplace_items.insert(
@@ -83,14 +83,8 @@ impl OutputProcessor {
             true
         });
 
-        let scraped_items = ScrapedItems { marketplace_items };
-        let scraped_gallery = GalleryScrapedState { 
-            gallery_id, 
-            items: scraped_items, 
-            evaluation_criteria: eval_criteria
-        };
-        let inner_msg = StartAnalysisJob { gallery: scraped_gallery };
-        let (msg, response_receiver) = StartAnalysisJobMessage::new(inner_msg);
+        let job_msg = StartAnalysisJob::build(gallery_id, eval_criteria, marketplace_items);
+        let (msg, response_receiver) = StartAnalysisJobMessage::new(job_msg);
         self.img_analysis_msg_sender
             .send(ImgAnalysisMessage::StartAnalysis(msg))
             .await

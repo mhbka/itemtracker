@@ -2,8 +2,9 @@
 
 use std::fmt::{self, Display};
 use std::ops::{Deref, DerefMut};
+use chrono::{DateTime, TimeZone, Utc};
 use croner::{errors::CronError, Cron};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
 
 /// All supported marketplaces.
@@ -22,7 +23,9 @@ impl Display for Marketplace {
 
 /// A String wrapper signifying that it is a valid Cron pattern.
 /// 
-/// This is used over a `Cron`, as `Cron` is not `(De)Serialize`.
+/// This is used over a `Cron`, as:
+/// - `Cron` is not `(De)Serialize`
+/// - `Cron` doesn't verify that its string is a valid Cron pattern
 #[derive(Clone, Debug, Serialize)]
 pub struct ValidCronString(String);
 
@@ -48,7 +51,7 @@ impl ValidCronString {
     }
 }
 
-/// Custom implementation to check Cron validity before deserializing.
+// Custom implementation to check Cron validity before deserializing.
 impl<'de> Deserialize<'de> for ValidCronString {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -86,7 +89,7 @@ impl Display for GalleryId {
 
 /// A String wrapper for a marketplace item ID.
 /// 
-/// There is (currently) no special functionality or validation; this exist simply because the gallery ID is a heavily used domain type.
+/// There is (currently) no special functionality or validation; this exists simply because the gallery ID is a heavily used domain type.
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct ItemId(String);
 
@@ -106,5 +109,44 @@ impl DerefMut for ItemId {
 impl Display for ItemId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+/// A DateTime<Utc> wrapper that (de)serializes to/from a UNIX timestamp integer.
+/// 
+/// There is (currently) no special functionality or validation; this exists simply because UNIX timestamps are easier to work with.
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct UnixUtcDateTime(DateTime<Utc>);
+
+impl Deref for UnixUtcDateTime {
+    type Target = DateTime<Utc>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for UnixUtcDateTime {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Serialize for UnixUtcDateTime {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where S: Serializer,
+    {
+        serializer.serialize_i64(self.0.timestamp())
+    }
+}
+
+impl<'de> Deserialize<'de> for UnixUtcDateTime {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where D: Deserializer<'de>,
+    {
+        let timestamp = i64::deserialize(deserializer)?;
+        let datetime = chrono::Utc.timestamp_opt(timestamp, 0)
+            .single()
+            .ok_or_else(|| serde::de::Error::custom("Invalid timestamp"))?;
+        Ok(UnixUtcDateTime(datetime))
     }
 }

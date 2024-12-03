@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use individual_scraper::IndividualScraper;
+use individual_items_scraper::IndividualItemsScraper;
 use item_cache::ItemCache;
 use output_processor::OutputProcessor;
 use search_scraper::SearchScraper;
@@ -10,7 +10,7 @@ use crate::{config::ScraperConfig, galleries::{domain_types::GalleryId, scraping
     message_types::scraper::ScraperMessage, ImgAnalysisSender, MarketplaceItemsStorageSender, ScraperReceiver
 }};
 
-mod individual_scraper;
+mod individual_items_scraper;
 mod search_scraper;
 mod item_cache;
 mod output_processor;
@@ -34,7 +34,7 @@ pub struct ScraperModule {
     msg_receiver: ScraperReceiver,
     img_analysis_msg_sender: ImgAnalysisSender,
     search_scraper: SearchScraper,
-    individual_scraper: IndividualScraper,
+    individual_scraper: IndividualItemsScraper,
     output_processor: OutputProcessor,
     item_cache: Arc<Mutex<ItemCache>>,
     galleries_in_progress: Vec<GalleryScrapingState>,
@@ -42,7 +42,7 @@ pub struct ScraperModule {
 
 impl ScraperModule {
     /// Initializes the module.
-    pub fn new(
+    pub fn init(
         config: ScraperConfig,
         msg_receiver: ScraperReceiver,
         item_storage_msg_sender: MarketplaceItemsStorageSender,
@@ -50,9 +50,9 @@ impl ScraperModule {
     ) -> Self
     {   
         let item_cache = Arc::new(Mutex::new(ItemCache::new(item_storage_msg_sender)));
-        let search_scraper = SearchScraper::new(config);
-        let individual_scraper = IndividualScraper::new(config);
-        let output_processor = OutputProcessor::new(item_cache.clone(), img_analysis_msg_sender);
+        let search_scraper = SearchScraper::new(config.clone());
+        let individual_scraper = IndividualItemsScraper::new(config);
+        let output_processor = OutputProcessor::new(item_cache.clone(), img_analysis_msg_sender.clone());
         let galleries_in_progress = Vec::new();
 
         Self { 
@@ -89,7 +89,7 @@ impl ScraperModule {
                 match self.search_scraper.schedule_scrape_search(new_gallery.clone()).await {
                     Ok(_) => {
                         self.galleries_in_progress.push(new_gallery);
-                        msg.respond(Ok(()))
+                        msg.respond(Ok(()));
                     },
                     Err(_) => todo!(),
                 };
@@ -114,17 +114,27 @@ impl ScraperModule {
                     inner_msg.marketplace,
                     inner_msg.scraped_items
                     ).await;
-                let cur_gallery = &self.galleries_in_progress
+                let cur_gallery = match self.galleries_in_progress
                     .iter()
-                    .find(|g| g.gallery_id == inner_msg.gallery_id)
-                    .unwrap(); // TODO: check that it exists at the top; if not, return a ScraperError that gallery doesn't exist
-                    
-                if self.output_processor.get_scraped_marketplaces(inner_msg.gallery_id) == cur_gallery.marketplaces.iter().collect() 
-                {
-                    // BIG TODO: remove `cur_gallery` from `galleries_in_progress`, then send items in `output_processor`
-                    // handle error etc etc.
+                    .find(|g| g.gallery_id == inner_msg.gallery_id) {
+                        Some(gallery) => gallery,
+                        None => todo!(), // TODO: Return the ScraperError for non-existent gallery here
+                    };
+                
+                // If we've already scraped all required marketplaces for this gallery, remove it from `galleries_in_progress` and send this gallery's items to the next stage.
+                let cur_scraped_marketplaces = self.output_processor.get_scraped_marketplaces(&inner_msg.gallery_id);
+                if cur_scraped_marketplaces == cur_gallery.marketplaces.iter().collect() {
+                    let cur_gallery_pos = self.galleries_in_progress
+                        .iter()
+                        .position(|g| g.gallery_id != inner_msg.gallery_id)
+                        .unwrap(); // This is fine as we ensured this existed above
+                    let cur_gallery = self.galleries_in_progress
+                        .remove(cur_gallery_pos);
+                    self.output_processor
+                        .send_gallery_items(cur_gallery.gallery_id, cur_gallery.evaluation_criteria)
+                        .await;
                 }
-
+                msg.respond(Ok(()));
             },
         }
     }

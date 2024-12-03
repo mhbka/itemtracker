@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use reqwest::{Client, RequestBuilder};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, ItemId}, domain_types::Marketplace}};
 
@@ -13,15 +12,15 @@ struct IndividualScraperRequestForm {
 }
 
 /// This scraper is in charge of using item IDs to scrape detailed data for each item.
-pub(super) struct IndividualScraper {
+pub(super) struct IndividualItemsScraper {
     config: ScraperConfig,
     request_client: Client
 }
 
-impl IndividualScraper {
+impl IndividualItemsScraper {
     /// Instantiate a `IndividualScraper`.
     pub(super) fn new(config: ScraperConfig) -> Self {
-        IndividualScraper {
+        IndividualItemsScraper {
             config,
             request_client: Client::new()
         }
@@ -43,15 +42,16 @@ impl IndividualScraper {
         let spider_name = match marketplace {
             Marketplace::Mercari => self.config.mercari_indiv_spider_name.clone()
         };
-        let request_form = IndividualScraperRequestForm {
+        let req_form = IndividualScraperRequestForm {
             project: self.config.project_name.clone(),
             spider: spider_name,
             gallery_id,
             item_ids: scraped_item_ids
         };
+        let req_url = format!("{}{}", self.config.scraper_addr, self.config.scraper_scheduling_endpoint);
         self.request_client
-            .post(&self.config.scraper_url)
-            .form(&request_form)
+            .post(&req_url)
+            .form(&req_form)
             .send()
             .await?; 
         // TODO: Maybe designate custom internal errors for the module, then map to it

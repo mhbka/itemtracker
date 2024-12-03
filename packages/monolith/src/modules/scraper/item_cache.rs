@@ -72,11 +72,11 @@ impl ItemCache {
     /// and remove them from the cache. 
     pub(super) fn get_from_cache(
         &mut self, 
-        marketplace: &Marketplace, 
-        gallery_id: &GalleryId
+        marketplace: Marketplace, 
+        gallery_id: GalleryId
     ) -> Vec<MarketplaceItemData> {
         self.cached_items
-            .remove(&(*gallery_id, *marketplace))
+            .remove(&(gallery_id, marketplace))
             .unwrap_or(Vec::new())
     }
 
@@ -88,9 +88,10 @@ impl ItemCache {
         marketplace: Marketplace, 
         item_ids: Vec<ItemId>,
     ) -> Vec<ItemId> {
-        let cached_gallery_items = self.cached_items
+        let new_gallery_items = Vec::new();
+        let mut cached_gallery_items = self.cached_items
             .get(&(gallery_id, marketplace))
-            .unwrap_or(&Vec::new())
+            .unwrap_or(&new_gallery_items)
             .into_iter();
         
         item_ids

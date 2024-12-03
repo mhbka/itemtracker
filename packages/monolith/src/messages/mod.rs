@@ -18,7 +18,7 @@ pub type WebBackendReceiver = MessageReceiver<WebBackendMessage>;
 
 /// Handle for sending the scraper scheduler messages.
 pub type ScraperSchedulerSender = MessageSender<SchedulerMessage>;
-/// Handle fo the scraper scheduler to receive messages.
+/// Handle for the scraper scheduler to receive messages.
 pub type ScraperSchedulerReceiver = MessageReceiver<SchedulerMessage>;
 
 /// Handle for sending messages to the scraper.

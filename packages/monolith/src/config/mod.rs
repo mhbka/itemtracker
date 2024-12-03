@@ -1,5 +1,6 @@
 use std::env::{self, VarError};
 use serde::{Deserialize, Serialize};
+use dotenv::dotenv;
 
 pub use image_analysis::ImageAnalysisConfig;
 pub use image_classifier::ImageClassifierConfig;
@@ -25,8 +26,9 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    /// Load all configs from env vars. Returns a `VarError` if any are missing.
+    /// Load all configs from a .env file. Returns a `VarError` if any are missing.
     pub fn load() -> Result<Self, VarError> {
+        dotenv().ok();
         Ok(
             AppConfig {
                 axum_config: AxumConfig::load()?,

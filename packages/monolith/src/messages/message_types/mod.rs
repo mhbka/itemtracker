@@ -11,13 +11,19 @@ use tokio::sync::oneshot;
 
 /// Generic struct for a message to a module that requires a response.
 /// 
-/// This is used for things like "cross-module" function calls which are fallible.
+/// This is used for things like "cross-module" function calls.
 /// 
 /// For eg, deleting a gallery in the scheduler can fail if the gallery ID doesn't exist, 
 /// so such a message should have a response to let the callee know the gallery was actually deleted.
 /// 
-/// **NOTE**: This currently only works for intra-program modules due to using a oneshot channel. If a module were to live
-/// on a separate program, this should be abstracted into a trait, so the respond method can be implemented appropriately.
+/// To use this, pass the raw message into `new()` to obtain this along with the message Receiver. 
+/// Then, send the message to the intended module via the appropriate channel sender,
+/// and wait for the return value from the Receiver.
+/// 
+/// For example, 
+/// ```
+/// 
+/// ```
 #[derive(Debug)]
 pub struct ModuleMessageWithReturn<Message, Return>
 where 

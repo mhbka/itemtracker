@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-use chrono::{DateTime, Utc};
+
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, ItemId, Marketplace}, scraping_pipeline::GalleryScrapingState, search_criteria::GallerySearchCriteria}};
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, scraping_pipeline::GalleryScrapingState, search_criteria::GallerySearchCriteria}};
 
 /// The request form sent to the Scrapyd spider for scraping individual items.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -11,7 +10,7 @@ struct SearchScraperRequestForm {
     pub spider: String,
     pub gallery_id: GalleryId,
     pub search_criteria: GallerySearchCriteria,
-    pub up_to: DateTime<Utc>
+    pub up_to: UnixUtcDateTime
 }
 
 /// This scraper is in charge of using item IDs to scrape detailed data for each item.
@@ -42,16 +41,17 @@ impl SearchScraper {
             let spider_name = match marketplace {
                 Marketplace::Mercari => self.config.mercari_search_spider_name.clone(),
             };
-            let request_form = SearchScraperRequestForm {
+            let req_form = SearchScraperRequestForm {
                 project: self.config.project_name.clone(),
                 spider: spider_name,
                 gallery_id: gallery.gallery_id.clone(),
                 search_criteria: gallery.search_criteria.clone(),
-                up_to: gallery.previous_scraped_item_datetime
+                up_to: gallery.previous_scraped_item_datetime.clone()
             };
+            let req_url = format!("{}{}", self.config.scraper_addr, self.config.scraper_scheduling_endpoint);
             let req_result = self.request_client
-                .post(&self.config.scraper_url)
-                .form(&request_form)
+                .post(&req_url)
+                .form(&req_form)
                 .send()
                 .await;
             if let Err(err) = req_result {

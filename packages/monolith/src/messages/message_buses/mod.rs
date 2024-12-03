@@ -8,20 +8,27 @@
 use tokio::sync::mpsc::{error::SendError, Receiver, Sender};
 
 /// A handle for sending messages of type T to a module.
-#[derive(Clone)]
 pub struct MessageSender<T> {
     sender: Sender<T>
 }
 
 impl<T> MessageSender<T> {
+    /// Initialize the message sender.
     pub fn new(sender: Sender<T>) -> Self {
         Self { sender }
     }
 
+    /// Send a message through the sender.
     pub async fn send(&mut self, message: T) -> Result<(), SendError<T>> {
         self.sender
             .send(message)
             .await
+    }
+}
+
+impl<T> Clone for MessageSender<T> {
+    fn clone(&self) -> Self {
+        Self { sender: self.sender.clone() }
     }
 }
 
@@ -31,12 +38,12 @@ pub struct MessageReceiver<T> {
 }
 
 impl <T> MessageReceiver<T> {
-    /// Instantiate a `MessageReceiver`.
+    /// Instantiate the message receiver.
     pub fn new(receiver: Receiver<T>) -> Self {
         Self { receiver }
     }
 
-    /// Rece
+    /// Receive a message through the receiver.
     pub async fn receive(&mut self) -> Option<T> {
         self.receiver.recv().await
     }

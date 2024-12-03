@@ -32,7 +32,7 @@ impl ScheduledGalleryTask {
         loop {
             let gallery = self.gallery
                 .clone()
-                .map_to_next_stage(); // TODO: Should `previous_scraped_item_datetime` be set in the scraping stage for better accuracy?
+                .to_next_stage(); // TODO: Should `previous_scraped_item_datetime` be set in the scraping stage for better accuracy?
             let scraping_job = StartScrapingJob { gallery };
             let (msg, response_receiver) = StartScrapingJobMessage::new(scraping_job);
 
@@ -40,16 +40,16 @@ impl ScheduledGalleryTask {
                 .lock()
                 .await
                 .send(ScraperMessage::StartScraping(msg))
-                .await;
-            // TODO: Err case must be handled (at least logged; if I start using state-tracking module, have to let it know too)
+                .await
+                .unwrap(); // TODO: handle this Err case
+    
             match response_receiver.await {
                 Ok(_) => {},
-                Err(err) => todo!(),
+                Err(err) => todo!(), // TODO: Err case must be handled (at least logged; if I start using state-tracking module, have to let it know too)
             };
 
             let cur_time = Utc::now();
-            match self.gallery
-                .scraping_periodicity
+            match self.gallery.scraping_periodicity
                 .get_cron()
                 .find_next_occurrence(&cur_time, false) {
                 Ok(next_time) => {

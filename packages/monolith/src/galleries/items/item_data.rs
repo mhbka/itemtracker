@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::galleries::domain_types::ItemId;
+use crate::galleries::domain_types::{ItemId, UnixUtcDateTime};
 
 /// This is the data for each item, common across all marketplaces.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,8 +15,8 @@ pub struct MarketplaceItemData {
     pub category: String,
     pub image_urls: Vec<String>, 
     pub item_condition: ItemCondition,
-    pub created: DateTime<Utc>,
-    pub updated: DateTime<Utc>,
+    pub created: UnixUtcDateTime,
+    pub updated: UnixUtcDateTime,
 }
 
 /// Data for the item's seller.

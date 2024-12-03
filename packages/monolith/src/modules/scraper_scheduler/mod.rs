@@ -4,7 +4,7 @@ pub mod scheduled_task;
 use std::sync::Arc;
 use scheduler::RawScraperScheduler;
 use tokio::sync::Mutex;
-use crate::messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, ScraperSender};
+use crate::{config::ScraperSchedulerConfig, messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, ScraperSender}};
 
 /// Module in charge of scheduling scraping tasks.
 /// 
@@ -19,19 +19,20 @@ pub struct ScraperSchedulerModule {
 
 impl ScraperSchedulerModule {
     /// Initializes the module.
-    pub async fn init( 
+    pub fn init( 
+        config: ScraperSchedulerConfig,
         msg_receiver: ScraperSchedulerReceiver,
         scraper_msg_sender: ScraperSender
-    ) -> Result<Self, String> {
+    ) -> Self
+    {
         let scraper_msg_sender = Arc::new(Mutex::new(scraper_msg_sender));
         let scheduler = RawScraperScheduler::new(scraper_msg_sender.clone());
-        Ok( 
-            ScraperSchedulerModule {
-                scheduler,
-                msg_receiver,
-                scraper_msg_sender
-            }
-        )
+        ScraperSchedulerModule {
+            scheduler,
+            msg_receiver,
+            scraper_msg_sender
+        }
+        
     }
     
     /// Start accepting and acting on messages.
