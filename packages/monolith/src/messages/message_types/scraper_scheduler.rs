@@ -23,7 +23,7 @@ pub enum SchedulerMessage {
 }
 
 /// Message for adding a new gallery to the scheduler.
-type NewGalleryMessage = ModuleMessageWithReturn<NewGallery, Result<(), SchedulerError>>;
+pub type NewGalleryMessage = ModuleMessageWithReturn<NewGallery, Result<(), SchedulerError>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NewGallery {
@@ -31,7 +31,7 @@ pub struct NewGallery {
 }
 
 /// Message for deleting a gallery in the scheduler.
-type DeleteGalleryMessage = ModuleMessageWithReturn<DeleteGallery, Result<(), SchedulerError>>;
+pub type DeleteGalleryMessage = ModuleMessageWithReturn<DeleteGallery, Result<(), SchedulerError>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DeleteGallery {
@@ -39,7 +39,7 @@ pub struct DeleteGallery {
 }
 
 /// Message for editing a gallery in the scheduler.
-type EditGalleryMessage = ModuleMessageWithReturn<EditGallery, Result<(), SchedulerError>>;
+pub type EditGalleryMessage = ModuleMessageWithReturn<EditGallery, Result<(), SchedulerError>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EditGallery {

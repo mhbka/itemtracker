@@ -36,32 +36,39 @@ impl RawScraperScheduler {
     }
 
     /// Add a new gallery to the scheduler.
-    pub async fn add_gallery(&self, new_gallery: NewGallery) -> Result<(), SchedulerError> {
+    #[tracing::instrument(skip(self))]
+    pub async fn add_gallery(&self, new_gallery: NewGallery) -> Result<(), SchedulerError>
+    {
         let new_gallery = new_gallery.gallery;
 
         let gallery_id = new_gallery.gallery_id.clone();
         let mut galleries = self.galleries.write().await;
         if galleries.contains_key(&new_gallery.gallery_id) {
+            tracing::error!("Gallery with ID {} already exists", gallery_id);
             return Err(SchedulerError::GalleryAlreadyExists{ gallery_id });
         }
 
         let handle = self.generate_gallery_task(new_gallery).await;
-        galleries.insert(gallery_id,handle);
+        galleries.insert(gallery_id, handle);
         Ok(())
     }
 
     /// Delete a gallery from the scheduler.
-    pub async fn delete_gallery(&self, gallery_id: GalleryId) -> Result<(), SchedulerError> {
+    #[tracing::instrument(skip(self))]
+    pub async fn delete_gallery(&self, gallery_id: GalleryId) -> Result<(), SchedulerError> 
+    {
         let mut galleries = self.galleries.write().await;
         if let Some(task) = galleries.remove(&gallery_id) {
             task.1.abort();
             Ok(())
         } else {
+            tracing::error!("Gallery with ID {} not found", gallery_id);
             Err(SchedulerError::GalleryNotFound{ gallery_id })
         }
     }
 
     /// Update a gallery in the scheduler.
+    #[tracing::instrument(skip(self))]
     pub async fn update_gallery(&self, edited_gallery: EditGallery) -> Result<(), SchedulerError>
     {   
         let gallery = edited_gallery.gallery;
@@ -71,6 +78,7 @@ impl RawScraperScheduler {
             scheduled_gallery.update_gallery(gallery);
             Ok(())
         } else {
+            tracing::error!("Gallery with ID {} not found", gallery.gallery_id);
             Err(SchedulerError::GalleryNotFound{ gallery_id: gallery.gallery_id})
         }
     }
@@ -88,7 +96,8 @@ impl RawScraperScheduler {
                 cloned_task
                     .lock()
                     .await
-                    .run();
+                    .run()
+                    .await;
             }
         );
 

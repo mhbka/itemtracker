@@ -1,9 +1,10 @@
-pub mod scheduler;
-pub mod scheduled_task;
+mod components;
+mod msg_handler;
 
 use std::sync::Arc;
-use scheduler::RawScraperScheduler;
+use components::scheduler::RawScraperScheduler;
 use tokio::sync::Mutex;
+use tracing::{info, instrument};
 use crate::{config::ScraperSchedulerConfig, messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, ScraperSender}};
 
 /// Module in charge of scheduling scraping tasks.
@@ -37,28 +38,24 @@ impl ScraperSchedulerModule {
     
     /// Start accepting and acting on messages.
     pub async fn run(&mut self) {
+        info!("ScraperSchedulerModule is running...");
         while let Some(msg) = self.msg_receiver.receive().await {
-            self.process_msg(msg);
+            self.process_msg(msg).await;
         }
     }
 
     /// Handle each message variant.
+    #[instrument(skip(self, msg))]
     async fn process_msg(&mut self, msg: SchedulerMessage) {
         match msg {
             SchedulerMessage::NewGallery(msg) => {
-                let gallery = msg.get_msg();
-                let result = self.scheduler.add_gallery(gallery).await;
-                msg.respond(result);
+                msg_handler::handle_new_gallery_msg(msg, self).await;
             },
             SchedulerMessage::DeleteGallery(msg) => {
-                let gallery_id = msg.get_msg().gallery_id;
-                let result = self.scheduler.delete_gallery(gallery_id).await;
-                msg.respond(result);
+                msg_handler::handle_delete_gallery_msg(msg, self).await;
             },
             SchedulerMessage::EditGallery(msg) => {
-                let gallery = msg.get_msg();
-                let result = self.scheduler.update_gallery(gallery).await;
-                msg.respond(result);
+                msg_handler::handle_edit_gallery_msg(msg, self).await;
             },
         }
     }

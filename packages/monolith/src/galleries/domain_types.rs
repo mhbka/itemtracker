@@ -118,6 +118,13 @@ impl Display for ItemId {
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct UnixUtcDateTime(DateTime<Utc>);
 
+impl UnixUtcDateTime {
+    /// Instantiate with the current datetime.
+    pub fn now() -> Self {
+        Self(Utc::now())
+    }
+}
+
 impl Deref for UnixUtcDateTime {
     type Target = DateTime<Utc>;
     fn deref(&self) -> &Self::Target {

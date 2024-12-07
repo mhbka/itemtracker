@@ -22,8 +22,7 @@ pub struct AppModules {
 
 impl AppModules {
     /// Initialize the app's modules.
-    pub fn init(config: &AppConfig) -> Self {
-        let connections = AppModuleConnections::new();
+    pub fn init(config: &AppConfig, connections: AppModuleConnections) -> Self {
         let scheduler_module = ScraperSchedulerModule::init(
             config.scraper_scheduler_config.clone(),
             connections.scraper_scheduler.1, 
@@ -43,8 +42,8 @@ impl AppModules {
 
     /// Start running all of the app's modules.
     pub fn run(mut self) -> AppModulesRunningHandles {
-        let scheduler_task = tokio::spawn(async move { self.scheduler_module.run(); });
-        let scraper_task = tokio::spawn(async move { self.scraper_module.run(); });
+        let scheduler_task = tokio::spawn(async move { self.scheduler_module.run().await; });
+        let scraper_task = tokio::spawn(async move { self.scraper_module.run().await; });
         AppModulesRunningHandles {
             scheduler_task,
             scraper_task

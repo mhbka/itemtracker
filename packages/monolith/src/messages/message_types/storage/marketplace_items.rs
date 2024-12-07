@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::{galleries::{domain_types::{Marketplace, ItemId}, items::item_data::MarketplaceItemData}, messages::message_types::ModuleMessageWithReturn};
+use crate::{galleries::{domain_types::{ItemId, Marketplace, UnixUtcDateTime}, items::item_data::MarketplaceItemData}, messages::message_types::ModuleMessageWithReturn};
 
 /// Types of messages the marketplace items storage module can take.
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub type FetchItemsMessage = ModuleMessageWithReturn<FetchItems, FetchItemsRespo
 pub struct FetchItems {
     pub marketplace: Marketplace,
     pub item_ids: Vec<ItemId>,
-    pub up_to: DateTime<Utc>
+    pub up_to: UnixUtcDateTime
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

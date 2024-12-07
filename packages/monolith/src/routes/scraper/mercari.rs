@@ -1,5 +1,6 @@
 use axum::{response::IntoResponse, routing::post, Json, Router, http::{StatusCode, Error}};
-use crate::{config::AxumConfig, messages::{message_types::scraper::{ProcessScrapedItems, ProcessScrapedItemsMessage, ScrapeIndivItems, ScrapeIndivItemsMessage, ScraperError, ScraperMessage, StartScrapingJob, StartScrapingJobMessage}, ScraperSender}, modules::AppModuleConnections};
+use tracing::{info, error, instrument};
+use crate::{config::AxumConfig, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedItemsMessage, IngestScrapedSearch, IngestScrapedSearchMessage, ScraperError, ScraperMessage, StartScrapingGallery, StartScrapingGalleryMessage}, ScraperSender}, modules::AppModuleConnections};
 
 /// Build the routes for ingesting scraped Mercari data.
 /// 
@@ -26,31 +27,38 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
     router
 }
 
+#[instrument(skip(sender))]
 async fn start_scrape(
-    Json(data): Json<StartScrapingJob>,
+    Json(data): Json<StartScrapingGallery>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let (msg, response_receiver) = StartScrapingJobMessage::new(data);
-    sender.send(ScraperMessage::StartScraping(msg)).await.unwrap();
-    match response_receiver.await.unwrap() {
-        Ok(_) => Ok(StatusCode::OK),
-        Err(err) => Err((StatusCode::INTERNAL_SERVER_ERROR, "error".into())),
+    let (msg, response_receiver) = StartScrapingGalleryMessage::new(data);
+    sender.send(ScraperMessage::StartScrapingGallery(msg)).await.unwrap();
+    match response_receiver.await
+    {
+        Ok(res) => match res {
+            Ok(_) => Ok(StatusCode::OK),
+            Err(err) => (Err((StatusCode::INTERNAL_SERVER_ERROR, format!("{err:?}"))))
+        },
+        Err(err) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("{err:?}"))),
     }
 }
 
 /// Handler for ingesting scraped Mercari item IDs and passing them to the scraper module to be scraped.
 /// 
 /// TODO: Return a nicer error type?
+#[instrument(skip(sender))]
 async fn ingest_item_ids(
-    Json(data): Json<ScrapeIndivItems>,
+    Json(data): Json<IngestScrapedSearch>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let (msg, response_receiver) = ScrapeIndivItemsMessage::new(data);
+    let (msg, response_receiver) = IngestScrapedSearchMessage::new(data);
 
-    let send_res = sender.send(ScraperMessage::ScrapeIndividualItems(msg)).await;  
+    let send_res = sender.send(ScraperMessage::IngestScrapedSearch(msg)).await;  
     if let Err(err) = send_res {
-        // TODO: this is pretty critical error; log and panic here (but in the distant future, a graceful restart would be nice)
-        panic!("Error while sending message to ScraperSender: {err:?}");
+        let err_str = format!("Critical error: Unable to send a message through ScraperSender ({err:?})");
+        error!("{err_str}");
+        panic!("{err_str}");
     }
 
     match response_receiver.await {
@@ -59,12 +67,12 @@ async fn ingest_item_ids(
                 Ok(_) => Ok(StatusCode::OK),
                 Err(err) => {
                     match err {
-                        ScraperError::UnsuccessfulSearchScrapeRequest { gallery_id, error } => {
-                            // TODO: log and return the error
+                        ScraperError::IngestScrapedItemsError { gallery_id, marketplace, error } => {
+                            error!("Error while sending message (gallery: {gallery_id}, {marketplace}): {error})");
                             Err((StatusCode::INTERNAL_SERVER_ERROR, "Scrape could not be requested successfully".into()))
                         },
-                        ScraperError::UnsuccessfulIndivScrapeRequest { gallery_id, marketplace, error_str } => {
-                            // TODO: this should not happen
+                        other => {
+                            error!("Unexpected error received: {other}");
                             Err((StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error occurred".into()))
                         },
                     }
@@ -72,7 +80,7 @@ async fn ingest_item_ids(
             }
         }
         Err(err) => {
-            // TODO: In this case the sender is dropped... log it and return a 500?
+            error!("RecvError while trying to receive a response for a message sent through ScraperSender ({err})");
             Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal error occurred".into()))
         }
     }
@@ -81,16 +89,18 @@ async fn ingest_item_ids(
 /// Ingests scraped Mercari item data from the route and passes it to the scraper module.
 /// 
 /// TODO: Return a nicer error type?
+#[instrument(skip(sender))]
 async fn ingest_items(
-    Json(data): Json<ProcessScrapedItems>,
+    Json(data): Json<IngestScrapedItems>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let (msg, response_receiver) = ProcessScrapedItemsMessage::new(data);
+    let (msg, response_receiver) = IngestScrapedItemsMessage::new(data);
 
-    let send_res = sender.send(ScraperMessage::ProcessScrapedItems(msg)).await;  
+    let send_res = sender.send(ScraperMessage::IngestScrapedItems(msg)).await;  
     if let Err(err) = send_res {
-        // TODO: this is pretty critical error; log and panic here (but in the distant future, a graceful restart would be nice)
-        panic!("Error while sending message to ScraperSender: {err:?}");
+        let err_str = format!("Critical error: Unable to send a message through ScraperSender ({err:?})");
+        error!("{err_str}");
+        panic!("{err_str}");
     }
 
     match response_receiver.await {
@@ -99,20 +109,20 @@ async fn ingest_items(
                 Ok(_) => Ok(StatusCode::OK),
                 Err(err) => {
                     match err {
-                        ScraperError::UnsuccessfulSearchScrapeRequest { gallery_id, error } => {
-                            // TODO: this should not happen
-                            Err((StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error occurred".into()))
-                        },
-                        ScraperError::UnsuccessfulIndivScrapeRequest { gallery_id, marketplace, error_str } => {
-                            // TODO: log and return the error
+                        ScraperError::IngestScrapedItemsError { gallery_id, marketplace, error } => {
+                            error!("Error while sending message (gallery: {gallery_id}, {marketplace}): {error})");
                             Err((StatusCode::INTERNAL_SERVER_ERROR, "Scrape could not be requested successfully".into()))
+                        },
+                        other => {
+                            error!("Unexpected error received: {other}");
+                            Err((StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error occurred".into()))
                         },
                     }
                 },
             }
         }
         Err(err) => {
-            // TODO: In this case the sender is dropped... log it and return a 500?
+            error!("RecvError while trying to receive a response for a message sent through ScraperSender ({err:?})");
             Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal error occurred".into()))
         }
     }
