@@ -50,7 +50,7 @@ pub struct IngestScrapedSearch {
     pub gallery_id: GalleryId,
     pub marketplace: Marketplace,
     pub scraped_item_ids: Vec<ItemId>,
-    pub up_to: UnixUtcDateTime
+    pub updated_up_to: UnixUtcDateTime
 }
 
 /// Message for sending freshly scraped items back to the scraper module, to be processed and sent to the next stage.

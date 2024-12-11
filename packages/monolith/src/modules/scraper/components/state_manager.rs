@@ -59,6 +59,7 @@ impl StateManager {
                 error: "Gallery already exists".into() 
             });
         }
+        tracing::trace!("Scheduling scrape search for gallery: {gallery:#?}");
         self.search_scraper
             .schedule_scrape_search(&gallery, self.states.clone())
             .await;
@@ -81,7 +82,7 @@ impl StateManager {
                                 .fetch_cached_items(
                                     &data.gallery_id, 
                                     &data.marketplace, 
-                                    &data.up_to,
+                                    &data.updated_up_to,
                                     data.scraped_item_ids, 
                                 )
                                 .await;

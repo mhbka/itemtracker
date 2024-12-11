@@ -1,23 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
-
+use request_form::ItemScraperRequestForm;
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use tokio::{sync::Mutex, task::JoinHandle};
 use crate::{config::ScraperConfig, galleries::domain_types::{GalleryId, ItemId, Marketplace}, messages::message_types::scraper::IngestScrapedSearch};
-
 use super::state_manager::GalleryStates;
 
-/// The request form sent to the Scrapyd spider for scraping individual items.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct ItemScraperRequestForm {
-    pub project: String,
-    pub spider: String,
-    pub gallery_id: GalleryId,
-    pub item_ids: Vec<ItemId>
-}
+mod request_form;
 
 /// This scraper is in charge of scraping detailed data for each item ID.
-pub struct ItemScraper {
+pub(super) struct ItemScraper {
     config: ScraperConfig,
     request_client: Client,
     requests_in_progress: HashMap<(GalleryId, Marketplace), JoinHandle<()>>
@@ -50,7 +42,7 @@ impl ItemScraper {
             request, 
             gallery_states
         );
-    }
+    }   
 
     /// Build a HTTP request to the item scraper for a marketplace under a gallery.
     fn build_request(&self, data: IngestScrapedSearch) -> RequestBuilder {

@@ -1,21 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
+use request_form::SearchScraperRequestForm;
 use reqwest::{Client, RequestBuilder};
-use serde::{Deserialize, Serialize};
 use tokio::{sync::Mutex, task::JoinHandle};
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, scraping_pipeline::GalleryScrapingState, search_criteria::GallerySearchCriteria}};
-
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace}, scraping_pipeline::GalleryScrapingState}};
 use super::state_manager::GalleryStates;
 
-/// The request form sent to the Scrapyd spider for scraping individual items.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct SearchScraperRequestForm {
-    pub project: String,
-    pub spider: String,
-    pub gallery_id: GalleryId,
-    pub search_criteria: GallerySearchCriteria,
-    pub up_to: UnixUtcDateTime
-}
+mod request_form;
 
 /// This scraper is in charge of using item IDs to scrape detailed data for each item.
 pub(super) struct SearchScraper {
@@ -66,10 +57,10 @@ impl SearchScraper {
                     search_criteria: gallery.search_criteria.clone(),
                     up_to: gallery.previous_scraped_item_datetime.clone()
                 };
-                let req_url = format!("https://{}{}", self.config.scraper_addr, self.config.scraper_scheduling_endpoint);
+                let req_url = format!("http://{}{}", self.config.scraper_addr, self.config.scraper_scheduling_endpoint);
                 let request = self.request_client
                     .post(&req_url)
-                    .json(&req_form);
+                    .form(&req_form);
                 (marketplace.clone(), request)
             })
             .collect()
@@ -89,16 +80,21 @@ impl SearchScraper {
     ) {
         let request_key = (gallery_id.clone(), marketplace.clone());
         let request_handle = tokio::spawn(async move {
+            tracing::trace!("Attempting request for gallery {gallery_id} ({marketplace}): {request:#?}");
             // TODO: implement retry for the request here
-            let attempt = request.send().await;
+            match request.send().await {
+                Ok(res) => tracing::trace!("Successfully requested search scrape for gallery {gallery_id} ({marketplace}); response: {}", res.text().await.unwrap()),
+                Err(err) => tracing::error!("Failed to request search scrape for gallery {gallery_id} ({marketplace}): {err:#?}")
+            };
             if gallery_states
                 .lock()
                 .await
                 .update_status(&gallery_id, &marketplace)
                 .is_err() {
-                    tracing::error!("Attempted to update status for gallery {gallery_id}, marketplace {marketplace} after successful scraping request, but it doesn't exist");
+                    tracing::error!("Attempted to update status for gallery {gallery_id} ({marketplace}) after successful scraping request, but it doesn't exist");
                 }
         });
+        tracing::trace!("Adding search scrape task handle for gallery {} ({})", request_key.0, request_key.1);
         self.requests_in_progress.insert(request_key, request_handle);
     }
     

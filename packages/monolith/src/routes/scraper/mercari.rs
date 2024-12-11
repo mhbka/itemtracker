@@ -15,12 +15,12 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
     ));
 
     let scraper_sender = module_connections.scraper.0.clone();
-    router = router.route("/search", post(
+    router = router.route("/ingest_search", post(
         move |body| ingest_item_ids(body, scraper_sender)
     ));
 
     let scraper_sender = module_connections.scraper.0.clone();
-    router = router.route("/items", post(
+    router = router.route("/ingest_items", post(
         move |body| ingest_items(body, scraper_sender)
     ));
 
