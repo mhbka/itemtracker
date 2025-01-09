@@ -8,7 +8,6 @@ use axum::Router;
 use config::{AppConfig, AxumConfig};
 use modules::{AppModuleConnections, AppModules};
 use tokio::net::TcpListener;
-use tracing::{event, info, Level};
 use dotenv::dotenv;
 
 #[tokio::main]
@@ -19,9 +18,9 @@ async fn main() {
     let app_config = AppConfig::load().unwrap();
     let module_connections = AppModuleConnections::new();
     let router= routes::build_router(&app_config.axum_config, &module_connections);
-    let _app_modules = AppModules::init(&app_config, module_connections).run();
+    let app_modules = AppModules::init(&app_config, module_connections).run();
 
-    info!("App started");
+    tracing::info!("App started");
 
     start_app(router, &app_config.axum_config).await;
 }

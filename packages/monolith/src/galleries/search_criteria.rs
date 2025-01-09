@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GallerySearchCriteria {
     keyword: String,
-    exclude_keyword: String,
+    excludeKeyword: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     min_price: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]

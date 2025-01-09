@@ -16,11 +16,17 @@ use tokio::sync::oneshot;
 /// For eg, deleting a gallery in the scheduler can fail if the gallery ID doesn't exist, 
 /// so such a message should have a response to let the callee know the gallery was actually deleted.
 /// 
-/// `new()` returns this along with a receiver for receiving the response. This struct is sent to an actor
-/// which can use `get_msg()` to get the actual message data. 
+/// ## Use
 /// 
-/// Then, the actor can pass a response to
-/// `respond()`, which the original function can receive by `await`ing the receiver.
+/// - `new()` returns this struct along with a **receiver** for receiving the response. 
+/// - This struct is sent to an actor via something like an mpsc channel, which can use `get_msg()` to get the actual message data. 
+/// - After acting on the message, the actor can pass a response to `respond()`, which the original function can receive by `await`ing the **receiver**.
+/// 
+/// ## Example
+/// 
+/// ```rust
+/// WIP
+/// ```
 #[derive(Debug)]
 pub struct ModuleMessageWithReturn<Message, Return>
 where 
