@@ -13,8 +13,8 @@ pub struct MarketplaceItemData {
     pub status: ItemStatus,
     pub seller: Seller,
     pub category: String,
-    pub image_urls: Vec<String>, 
-    pub item_condition: ItemCondition,
+    pub thumbnails: Vec<String>, 
+    pub item_condition: String,
     pub created: UnixUtcDateTime,
     pub updated: UnixUtcDateTime,
 }
@@ -24,26 +24,13 @@ pub struct MarketplaceItemData {
 pub struct Seller {
     pub id: String,
     pub name: String,
-    pub ratings: f32,
 }
 
 /// Possible item statuses.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum ItemStatus {
-    Available,
-    Sold,
-    Reserved,
-    Deleted,
-}
-
-/// Possible item conditions.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ItemCondition {
-    New,
-    LikeNew,
-    Good,
-    Fair,
-    Poor,
+    #[serde(alias = "on_sale")]
+    OnSale,
+    #[serde(alias = "sold_out")]
+    SoldOut
 }

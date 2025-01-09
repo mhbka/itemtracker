@@ -32,8 +32,7 @@ class MercariItemsSpider(scrapy.Spider):
                 yield scrapy.Request(
                     url=item_url, 
                     method='GET', 
-                    headers=gen_headers(self.dpop_private_key, self.item_url, 'GET'), 
-                    callback=self.parse_item
+                    headers=gen_headers(self.dpop_private_key, self.item_url, 'GET')
                     )
 
     """
@@ -49,45 +48,37 @@ class MercariItemsSpider(scrapy.Spider):
         item['price'] = self.safe_get(json_data, id, 'price')
         item['description'] = self.safe_get(json_data, id, 'description')
         item['status'] = self.safe_get(json_data, id, 'status')
+        item['photos'] = self.safe_get(json_data, id, 'photos')
+        item['thumbnails'] = self.safe_get(json_data, id, 'thumbnails')
 
+        condition_data = self.safe_get(json_data, id, 'item_condition')
+        if condition_data:
+            item['item_condition'] = self.safe_get(condition_data, id, 'name')
+        size_data = self.safe_get(json_data, id, 'item_size')
+        if condition_data:
+            item['item_size'] = self.safe_get(size_data, id, 'name')
+        brand_data = self.safe_get(json_data, id, 'item_brand')
+        if brand_data:
+            item['brand'] = self.safe_get(brand_data, id, 'name') 
         seller_data = self.safe_get(json_data, id, 'seller')
         if seller_data:
             item['seller'] = SellerItem(
-                id=self.safe_get(seller_data, 'id'),
-                name=self.safe_get(seller_data, 'name'),
-                photo_url=self.safe_get(seller_data, 'photo_url'),
-                photo_thumbnail_url=self.safe_get(seller_data, 'photo_thumbnail_url'),
-                num_sell_items=self.safe_get(seller_data, 'num_sell_items'),
-                ratings=self.safe_get(seller_data, 'ratings'),
-                score=self.safe_get(seller_data, 'score'),
-                is_official=self.safe_get(seller_data, 'is_official'),
-                quick_shipper=self.safe_get(seller_data, 'quick_shipper'),
-                star_rating_score=self.safe_get(seller_data, 'star_rating_score')
+                id=str(self.safe_get(seller_data, id, 'id')), # Need to convert from int to str for serialization purposes
+                name=self.safe_get(seller_data, id, 'name'),
+                photo_url=self.safe_get(seller_data, id, 'photo_url')
             )
         
         category_data = self.safe_get(json_data, id, 'item_category')
-        if category_data:
-            item['item_category'] = CategoryItem(
-                id=self.safe_get(category_data, 'id'),
-                name=self.safe_get(category_data, 'name'),
-                parent_category_id=self.safe_get(category_data, 'parent_category_id'),
-                parent_category_name=self.safe_get(category_data, 'parent_category_name'),
-                root_category_id=self.safe_get(category_data, 'root_category_id'),
-                root_category_name=self.safe_get(category_data, 'root_category_name')
-            )
-        
+        if category_data: 
+            item['category'] = self.safe_get(category_data, id, 'name')
+
         item['shipping'] = ShippingItem(
-            payer=self.safe_get(json_data, id, 'shipping_payer', 'name'),
-            method=self.safe_get(json_data, id, 'shipping_method', 'name'),
-            from_area=self.safe_get(json_data, id, 'shipping_from_area', 'name'),
-            duration=self.safe_get(json_data, id, 'shipping_duration', 'name')
+            payer=self.safe_get(json_data, id, 'shipping_payer'),
+            method=self.safe_get(json_data, id, 'shipping_method'),
+            from_area=self.safe_get(json_data, id, 'shipping_from_area'),
+            duration=self.safe_get(json_data, id, 'shipping_duration')
         )
         
-        item['photos'] = self.safe_get(json_data, id, 'photos')
-        item['thumbnails'] = self.safe_get(json_data, id, 'thumbnails')
-        item['item_condition'] = self.safe_get(json_data, id, 'item_condition')
-        item['item_size'] = self.safe_get(json_data, id, 'item_size')
-        item['colors'] = self.safe_get(json_data, id, 'colors')
         item['num_likes'] = self.safe_get(json_data, id, 'num_likes')
         item['num_comments'] = self.safe_get(json_data, id, 'num_comments')
         item['created'] = self.safe_get(json_data, id, 'created')
@@ -97,11 +88,12 @@ class MercariItemsSpider(scrapy.Spider):
         
         yield item
 
-    def safe_get(self, data, id, *keys):
-        for key in keys:
-            try:
-                data = data[key]
-            except KeyError:
-                self.logger.warning(f"Property '{key}' is missing from Mercari item {id}")
-                return None
-        return data
+    """
+    Gets the key `key` from a dict `data`, and warns using item ID `id` if it doesn't exist.
+    """
+    def safe_get(self, data, id, key):
+        try:
+            return  data[key]
+        except KeyError:
+            self.logger.warning(f"Property '{key}' is missing from Mercari item {id}")
+            return None

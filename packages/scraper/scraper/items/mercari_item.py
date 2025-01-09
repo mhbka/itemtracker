@@ -9,13 +9,6 @@ class SellerItem(scrapy.Item):
     id = scrapy.Field()
     name = scrapy.Field()
     photo_url = scrapy.Field()
-    photo_thumbnail_url = scrapy.Field()
-    num_sell_items = scrapy.Field()
-    ratings = scrapy.Field()
-    score = scrapy.Field()
-    is_official = scrapy.Field()
-    quick_shipper = scrapy.Field()
-    star_rating_score = scrapy.Field()
 
 class CategoryItem(scrapy.Item):
     id = scrapy.Field()
@@ -37,20 +30,15 @@ class MercariItem(scrapy.Item):
     price = scrapy.Field()
     description = scrapy.Field()
     status = scrapy.Field()
-    
-    seller = scrapy.Field(serializer=SellerItem)
-    item_category = scrapy.Field(serializer=CategoryItem)
-    shipping = scrapy.Field(serializer=ShippingItem)
-    
+    category = scrapy.Field()
     photos = scrapy.Field()
     thumbnails = scrapy.Field()
-    
     item_condition = scrapy.Field()
     item_size = scrapy.Field()
-    colors = scrapy.Field(
-        input_processor=MapCompose(lambda x: x['name']),
-        output_processor=Join(', ')
-    )
+    brand = scrapy.Field()
+
+    seller = scrapy.Field(serializer=SellerItem)
+    shipping = scrapy.Field(serializer=ShippingItem)
     
     num_likes = scrapy.Field()
     num_comments = scrapy.Field()

@@ -22,9 +22,9 @@ class MercariItemsPipeline:
     def init_settings(self):
         try:
             settings = get_project_settings()
-            self.output_url = f"{settings.get('OUTPUT_HOST')}{settings.get('MERCARI_SEARCH_ENDPOINT')}"
+            self.output_url = f"{settings.get('OUTPUT_HOST')}{settings.get('MERCARI_ITEMS_ENDPOINT')}"
         except Exception as e:
-            raise CloseSpider("Unable to fetch `OUTPUT_HOST` and/or `MERCARI_SEARCH_ENDPOINT` from Scrapyd settings")
+            raise CloseSpider("Unable to fetch `OUTPUT_HOST` and/or `MERCARI_ITEMS_ENDPOINT` from Scrapyd settings")
 
     """
     Check if item matches target type and collect it if so.
@@ -32,8 +32,8 @@ class MercariItemsPipeline:
     def process_item(self, item, spider):
         if type(item) is MercariItem:
             adapted_item = ItemAdapter(item).asdict()
-            self.collected_items.append(json.dumps(adapted_item))
-            spider.logger.info(f"Pipeline collected item {item['id']}")
+            self.collected_items.append(adapted_item)
+            spider.logger.info(f"Pipeline collected item {item['id']}: {adapted_item}")
         return item
     
     """
@@ -46,11 +46,12 @@ class MercariItemsPipeline:
         try:
             payload = {
                 'gallery_id': spider.gallery_id,
-                'items': self.collected_items,
+                'scraped_items': self.collected_items,
+                'marketplace': "Mercari"
             }
             response = requests.post(
                 self.output_url, 
-                json=json.dumps(payload),
+                json=payload,
                 timeout=10
             )
             response.raise_for_status()  # Raises exception for bad status codes
