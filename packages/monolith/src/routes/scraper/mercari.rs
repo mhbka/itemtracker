@@ -79,7 +79,7 @@ async fn ingest_item_ids(
             }
         }
         Err(err) => {
-            tracing::error!("RecvError while trying to receive a response for a message sent through ScraperSender ({err})");
+            tracing::error!("Error while trying to receive a response for a message sent to the scraper: {err}");
             Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal error occurred".into()))
         }
     }
@@ -121,7 +121,7 @@ async fn ingest_items(
             }
         }
         Err(err) => {
-            tracing::error!("RecvError while trying to receive a response for a message sent through ScraperSender ({err:?})");
+            tracing::error!("Error while trying to receive a response for a message sent to the scraper: {err:?})");
             Err((StatusCode::INTERNAL_SERVER_ERROR, "Internal error occurred".into()))
         }
     }

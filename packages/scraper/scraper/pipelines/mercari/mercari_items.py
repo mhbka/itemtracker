@@ -1,6 +1,8 @@
 import json
+from itemadapter import ItemAdapter
 import requests
-from scrapy.exceptions import NotConfigured
+from scrapy.utils.project import get_project_settings
+from scrapy.exceptions import CloseSpider
 from scraper.items.mercari_item import MercariItem
 
 """
@@ -8,42 +10,38 @@ This pipeline is for collecting and outputting MercariItems to the appropriate A
 """
 class MercariItemsPipeline:
     """
-    Initialize the pipeline with configuration parameters:
-        `output_host`: The output host
-        `output_endpoint`: The output endpoint
+    Initialize the pipeline.
     """
-    def __init__(self, output_host=None, output_endpoint=None):
-        if not all([output_host, output_endpoint]):
-            raise NotConfigured("Must specify `output_host` and `output_endpoint`")
-        self.output_host = output_host
-        self.output_endpoint = output_endpoint
+    def __init__(self):
         self.collected_items = []
+        self.init_settings()
 
     """
-    Initialize the pipeline from Scrapy crawler settings.
+    Get required values from the crawler settings.
     """
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(
-            output_host = crawler.settings.get('OUTPUT_HOST'),
-            output_endpoint = crawler.settings.get('OUTPUT_MERCARI_ITEMS_ENDPOINT'),
-        )
+    def init_settings(self):
+        try:
+            settings = get_project_settings()
+            self.output_url = f"{settings.get('OUTPUT_HOST')}{settings.get('MERCARI_SEARCH_ENDPOINT')}"
+        except Exception as e:
+            raise CloseSpider("Unable to fetch `OUTPUT_HOST` and/or `MERCARI_SEARCH_ENDPOINT` from Scrapyd settings")
 
     """
     Check if item matches target type and collect it if so.
     """
     def process_item(self, item, spider):
         if type(item) is MercariItem:
-            self.collected_items.append(item)
-            spider.logger.info(f"Collected item of ID {item['id']}")
+            adapted_item = ItemAdapter(item).asdict()
+            self.collected_items.append(json.dumps(adapted_item))
+            spider.logger.info(f"Pipeline collected item {item['id']}")
         return item
     
     """
     Send all collected items to the API when spider closes.
     """
     def close_spider(self, spider):
-        if not self.collected_items:
-            spider.logger.info("No items collected to submit")
+        if len(self.collected_items) == 0:
+            spider.logger.info("Nothing to submit for Mercari Items")
             return
         try:
             payload = {
@@ -51,8 +49,8 @@ class MercariItemsPipeline:
                 'items': self.collected_items,
             }
             response = requests.post(
-                f"{self.output_host}/{self.output_endpoint}", 
-                data=json.dumps(payload),
+                self.output_url, 
+                json=json.dumps(payload),
                 timeout=10
             )
             response.raise_for_status()  # Raises exception for bad status codes

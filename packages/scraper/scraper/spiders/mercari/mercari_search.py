@@ -6,7 +6,6 @@ from scraper.items.mercari_search import MercariSearchItem
 from scraper.spiders.utils.generate_dpop import generate_private_key
 from scraper.spiders.utils.mercari_utils import gen_payload_string, gen_headers
 from scraper.spiders.utils.types import mercari_search_criteria_schema
-
 """
 This spider is for scraping Mercari search.
 It takes (set as class params):
@@ -19,15 +18,17 @@ It returns a list of Mercari item IDs.
 class MercariSearchSpider(scrapy.Spider):
     name = "mercari_search_spider"
     search_url = "https://api.mercari.jp/v2/entities:search" # TODO: to .env
-    dpop_private_key = generate_private_key()
+    dpop_private_key = generate_private_key() # For authing with the API
+    updated_up_to = -1 # Used for updating the gallery's `up_to`
 
     """
     Built-in function for starting the scrape.
     """
     def start_requests(self):
         if self.gallery_id is None or self.search_criteria is None or self.up_to is None:
-            raise CloseSpider(f"{self.name}: missing 'gallery_id', 'search_criteria' or 'up_to'; closing spider...")
+            raise CloseSpider(" missing 'gallery_id', 'search_criteria' or 'up_to'; closing spider...")
         else:
+            self.up_to = int(self.up_to)
             self.search_criteria = json.loads(self.search_criteria)
             try:
                 jsonschema.validate(
@@ -35,7 +36,9 @@ class MercariSearchSpider(scrapy.Spider):
                     schema = mercari_search_criteria_schema
                 )
             except jsonschema.ValidationError:
-                raise CloseSpider(f"{self.name}: search criteria has wrong schema; closing spider...")
+                raise CloseSpider(" search criteria has wrong schema; closing spider...")
+            except Exception as e:
+                raise CloseSpider(" Got an unknown error while initializing the spider: {e}")
         yield scrapy.Request(
             self.search_url, 
             method = 'POST', 
@@ -55,10 +58,16 @@ class MercariSearchSpider(scrapy.Spider):
         for item in data['items']:
             item_updated = int(item['updated'])
             if item_updated >= self.up_to:
-                self.logger.info(f"{self.name}: Found item ID {item['id']}, updated {item['updated']}...")
-                yield self.parse_into_item(item)
+                self.logger.info(f" Found item ID {item['id']}, updated {item['updated']}...")
+                if self.updated_up_to == -1:
+                    self.logger.info(f"Updated `up_to` to {item_updated}")
+                    self.updated_up_to = item_updated
+                elif self.updated_up_to != -1 and item_updated > self.updated_up_to:
+                    self.logger.info(f"Updating `up_to` again to {item_updated} (this shouldn't happen if we're scraping by newest items...)")
+                    self.updated_up_to = item_updated
+                yield self.parse_into_item(item) 
             else:
-                self.logger.info(f"{self.name}: Found item ID {item['id']}, updated {item['updated']} (passed {self.up_to}). Stopping...")
+                self.logger.info(f" Found item ID {item['id']}, updated {item['updated']} (passed {self.up_to}). Stopping...")
                 return
         
         if data['meta']['nextPageToken']:
@@ -78,6 +87,8 @@ class MercariSearchSpider(scrapy.Spider):
         try:
             item['id'] = raw_item['id']
             item['updated'] = raw_item['updated']
-            yield item
-        except:
-            self.logger.warning(f"{self.name}: Item was missing `id` or `updated` field.")
+            return item
+        except KeyError:
+            self.logger.warning(" Item was missing `id` or `updated` field")
+        except Exception as e:
+            self.logger.error(" Unknown error while parsing a fetched item: {e}")

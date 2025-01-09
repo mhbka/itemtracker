@@ -20,13 +20,13 @@ def gen_payload_string(page_token, search_criteria, logger=None):
         "indexRouting": "INDEX_ROUTING_UNSPECIFIED",
         "thumbnailTypes": [],
         "searchCondition": {
-            "keyword": search_criteria["keyword"],
-            "excludeKeyword": search_criteria["excludeKeyword"],
-            "sort": search_criteria["sort"],
-            "order": search_criteria["order"],
-            "status": search_criteria["status"],
+            "keyword": search_criteria.get("keyword", ""),
+            "excludeKeyword": search_criteria.get("excludeKeyword", ""),
+            "sort": "SORT_CREATED_TIME", # Both `sort` and `order` can have other values, but we should always be scraping for the newest items,
+            "order": "ORDER_DESC", # so these are hardcoded to only get the newest items. 
+            "status": search_criteria.get("status", []),
             "sizeId": [],
-            "categoryId": search_criteria["categoryId"],
+            "categoryId": search_criteria.get("categoryId", []),
             "brandId": [],
             "sellerId": [],
             "priceMin": 0,
@@ -42,10 +42,6 @@ def gen_payload_string(page_token, search_criteria, logger=None):
             "skuIds": [],
             "shopIds": []
         },
-        "defaultDatasets": [
-            "DATASET_TYPE_MERCARI",
-            "DATASET_TYPE_BEYOND"
-        ],
         "serviceFrom": "suruga",
         "withItemBrand": True,
         "withItemSize": False,
@@ -58,7 +54,8 @@ def gen_payload_string(page_token, search_criteria, logger=None):
         "withProductSuggest": True,
         "withParentProducts": False,
         "withProductArticles": False,
-        "withSearchConditionId": False
+        "withSearchConditionId": False,
+        "withAuction": False,
     }
     payload_str = json.dumps(payload)
     if logger: logger.info(f"SEARCH PAYLOAD: {payload_str}")

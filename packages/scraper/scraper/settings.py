@@ -20,10 +20,9 @@ LOG_LEVEL = logging.INFO
 
 # Output stream details
 # TODO: all these to .env
-OUTPUT_STREAM_NAME = 'analysis_queue'
-OUTPUT_STREAM_HOST = 'rmq'
-OUTPUT_STREAM_USERNAME = 'guest'
-OUTPUT_STREAM_PASSWORD = 'guest'
+OUTPUT_HOST = "http://localhost:3000"
+MERCARI_SEARCH_ENDPOINT = "/scraper/mercari/ingest_search"
+MERCARI_ITEMS_ENDPOINT = "/scraper/mercari/ingest_items"
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = random.choice(user_agents)
@@ -75,9 +74,8 @@ COOKIES_ENABLED = False
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "scraper.pipelines.dedup.DuplicatesPipeline": 1,
-    "scraper.pipelines.mercari.MercariPipeline": 100,
-    "scraper.pipelines.output_stream.OutputStreamPipeline": 999,
+    "scraper.pipelines.mercari.mercari_search.MercariSearchItemsPipeline": 100,
+    "scraper.pipelines.mercari.mercari_items.MercariItemsPipeline": 101
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

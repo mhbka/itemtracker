@@ -24,7 +24,7 @@ class MercariItemsSpider(scrapy.Spider):
     """
     def start_requests(self):
         if self.gallery_id is None or self.item_ids is None:
-            raise CloseSpider(f"{self.name}: missing `gallery_id` or `item_ids`; closing spider...")
+            raise CloseSpider("missing `gallery_id` or `item_ids`; closing spider...")
         else:
             self.item_ids = json.loads(self.item_ids)
             for id in self.item_ids:
