@@ -1,6 +1,4 @@
-use std::{collections::{HashMap, HashSet}, sync::Arc};
-use tokio::sync::Mutex;
-use tracing::Instrument;
+use std::collections::HashMap;
 use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, scraping_pipeline::GalleryScrapedState}, messages::{message_types::{img_analysis::{ImgAnalysisMessage, StartAnalysisJob, StartAnalysisJobMessage}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ImgAnalysisSender, MarketplaceItemsStorageSender}};
 
 /// This fetches cached items, processes scraped items, and eventually sends them to the next stage. 
@@ -50,18 +48,22 @@ impl OutputProcessor {
             up_to: up_to.clone()
         };
         let (msg, response_receiver) = FetchItemsMessage::new(msg_data);
-        self.item_storage_msg_sender
+        if let Err(err) = self.item_storage_msg_sender
             .send(MarketplaceItemsStorageMessage::FetchItems(msg))
-            .await
-            .unwrap(); // TODO: proper error handling here
+            .await {
+                // If we couldn't request to fetch items, just log it and return all item IDs
+                tracing::error!("Error while sending message to fetch items from item storage: {err}");
+                self.item_storage.insert(storage_key, vec![]);
+                return scraped_item_ids;
+            }
         match response_receiver.await {
             Ok(res) => {
                 self.item_storage.insert(storage_key, res.stored_items);
                 return res.unfetched_marketplace_item_ids;
             },
-            Err(_) => {
-                // If we have RecvError, just log it and return all the item IDs
-                tracing::error!("RecvError while fetching cached items from storage; will scrape all item IDs..."); // TODO: better error message
+            Err(err) => {
+                // If we couldn't receive a response, just log it and return all the item IDs
+                tracing::error!("Error while fetching cached items from storage: {err}"); 
                 self.item_storage.insert(storage_key, vec![]);
                 return scraped_item_ids;
             },
@@ -71,11 +73,11 @@ impl OutputProcessor {
     /// Processes newly scraped items from a marketplace and temporarily stores them until they are to be sent.
     pub async fn process_scraped_items(
         &mut self,
-        gallery_id: GalleryId,
-        marketplace: Marketplace,
+        gallery_id: &GalleryId,
+        marketplace: &Marketplace,
         mut scraped_items: Vec<MarketplaceItemData>
     ) { 
-        let storage_key = (gallery_id, marketplace);
+        let storage_key = (gallery_id.clone(), marketplace.clone());
         match self.item_storage.get_mut(&storage_key) {
             Some(cached_items) => {
                 cached_items.append(&mut scraped_items);
@@ -97,7 +99,7 @@ impl OutputProcessor {
         eval_criteria: EvaluationCriteria
     ) -> Result<(), ScraperError>
     {
-        // TODO: this is pretty ugly, surely there's a way to just filter them without clone
+        // TODO: use a crate `drain_filter`, or replace when it finally makes it into stable
         let mut marketplace_items = HashMap::new();
         self.item_storage.retain(|(stored_gallery_id, marketplace), items| {
             if *stored_gallery_id == gallery_id {
@@ -112,12 +114,13 @@ impl OutputProcessor {
             marketplace_items
         );
         let (msg, response_receiver) = StartAnalysisJobMessage::new(job_msg);
-        self.img_analysis_msg_sender
+        if let Err(err) = self.img_analysis_msg_sender
             .send(ImgAnalysisMessage::StartAnalysis(msg))
-            .await
-            .unwrap(); // TODO: proper error handling here
-        if response_receiver.await.is_err() {
-            tracing::warn!("RecvError while receiving response when sending gallery items");
+            .await {
+                tracing::error!("Error while sending gallery to image analysis module: {err}");
+            }
+        if let Err(err) = response_receiver.await {
+            tracing::warn!("RecvError while receiving response when sending gallery items to image analysis module: {err}");
         }
         Ok(())
     }

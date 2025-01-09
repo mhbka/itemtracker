@@ -80,7 +80,7 @@ impl SearchScraper {
     ) {
         let request_key = (gallery_id.clone(), marketplace.clone());
         let request_handle = tokio::spawn(async move {
-            tracing::trace!("Attempting request for gallery {gallery_id} ({marketplace}): {request:#?}");
+            tracing::trace!("Attempting request for gallery {gallery_id} ({marketplace})");
             // TODO: implement retry for the request here
             match request.send().await {
                 Ok(res) => tracing::trace!("Successfully requested search scrape for gallery {gallery_id} ({marketplace}); response: {}", res.text().await.unwrap()),
@@ -94,7 +94,7 @@ impl SearchScraper {
                     tracing::error!("Attempted to update status for gallery {gallery_id} ({marketplace}) after successful scraping request, but it doesn't exist");
                 }
         });
-        tracing::trace!("Adding search scrape task handle for gallery {} ({})", request_key.0, request_key.1);
+        tracing::trace!("Adding search scrape task handle for {request_key:?}");
         self.requests_in_progress.insert(request_key, request_handle);
     }
     

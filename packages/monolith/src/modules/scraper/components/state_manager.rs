@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, scraping_pipeline::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ImgAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, scraping_pipeline::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ImgAnalysisSender, MarketplaceItemsStorageSender}};
 
 use super::{item_scraper::ItemScraper, output_processor::OutputProcessor, search_scraper::SearchScraper};
 
@@ -51,7 +51,11 @@ impl StateManager {
         let init_gallery_result = self.states
             .lock()
             .await
-            .init_gallery(&gallery.gallery_id, &gallery.marketplaces);
+            .init_gallery(
+                &gallery.gallery_id, 
+                &gallery.marketplaces,
+                &gallery.evaluation_criteria
+            );
         if init_gallery_result.is_err() 
         {
             return Err(ScraperError::StartScrapingGalleryError { 
@@ -77,7 +81,9 @@ impl StateManager {
                 Ok(status) => {
                     match status {
                         MarketplaceStatus::SearchScrapeInProgress(_) => {
-                            gallery_states.update_status(&data.gallery_id, &data.marketplace);
+                            gallery_states
+                                .update_status(&data.gallery_id, &data.marketplace)
+                                .expect("Gallery + marketplace should already exist here");
                             data.scraped_item_ids = self.output_processor
                                 .fetch_cached_items(
                                     &data.gallery_id, 
@@ -118,14 +124,56 @@ impl StateManager {
     /// 
     /// Returns an `Err` if the gallery involved is not currently being scraped.
     pub async fn ingest_scraped_items(&mut self, data: IngestScrapedItems) -> Result<(), ScraperError> {
-
-        Ok(())
+        let mut gallery_states = self.states
+            .lock()
+            .await;
+        match gallery_states.get_status(&data.gallery_id, &data.marketplace) {
+                Ok(status) => {
+                    match status {
+                        MarketplaceStatus::ItemScrapeInProgress(_) => {
+                            gallery_states
+                                .update_status(&data.gallery_id, &data.marketplace)
+                                .expect("Gallery + marketplace should already exist here");
+                            self.output_processor
+                                .process_scraped_items(
+                                    &data.gallery_id, 
+                                    &data.marketplace, 
+                                    data.scraped_items
+                                )
+                                .await;
+                            if gallery_states.is_ready_to_send(&data.gallery_id) {
+                                let gallery_data = gallery_states
+                                    .remove_gallery(&data.gallery_id)
+                                    .expect("Gallery should definitely exist");
+                                return self.output_processor
+                                    .send_gallery_items(data.gallery_id, gallery_data.eval_criteria)
+                                    .await;
+                            }
+                            Ok(())
+                        },
+                        other => {
+                            return Err(ScraperError::IngestScrapedSearchError { 
+                                gallery_id: data.gallery_id, 
+                                marketplace: data.marketplace, 
+                                error: format!("Invalid status for gallery + marketplace ({other:#?})") }
+                            );
+                        }
+                    }
+                }
+                Err(_) => {
+                    return Err(ScraperError::IngestScrapedSearchError { 
+                        gallery_id: data.gallery_id, 
+                        marketplace: data.marketplace, 
+                        error: "This gallery + marketplace is not currently being scraped".into() }
+                    );
+                }
+            }
     }     
 }
 
 /// The inner state of the state manager.
 pub struct GalleryStates {
-    states: HashMap<GalleryId, HashMap<Marketplace, MarketplaceStatus>>
+    states: HashMap<GalleryId, GalleryState>
 }
 
 impl GalleryStates {
@@ -137,7 +185,12 @@ impl GalleryStates {
     /// Initializes the gallery in the state, with all marketplaces set to `MarketplaceStatus::SearchScrapePending`.
     /// 
     /// Returns an `Err` if the gallery already exists.
-    fn init_gallery(&mut self, gallery: &GalleryId, marketplaces: &HashSet<Marketplace>) -> Result<(), ()> {
+    fn init_gallery(
+        &mut self, 
+        gallery: &GalleryId, 
+        marketplaces: &HashSet<Marketplace>,
+        eval_criteria: &EvaluationCriteria
+    ) -> Result<(), ()> {
         if self.has_gallery(gallery) {
             return Err(());
         }
@@ -146,8 +199,11 @@ impl GalleryStates {
             .into_iter()
             .map(|marketplace| (marketplace.clone(), MarketplaceStatus::SearchScrapePending(cur_datetime.clone())))
             .collect();
-        self.states
-            .insert(gallery.clone(), marketplace_statuses);
+        let gallery_state = GalleryState {
+            marketplaces: marketplace_statuses,
+            data: TempGalleryData { eval_criteria: eval_criteria.clone() }
+        };
+        self.states.insert(gallery.clone(), gallery_state);
         Ok(())
     }
 
@@ -161,9 +217,23 @@ impl GalleryStates {
     /// Returns an `Err` if the gallery + marketplace was not found.
     fn get_status(&self, gallery: &GalleryId, marketplace: &Marketplace) -> Result<&MarketplaceStatus, ()> {
         if let Some(gallery) = self.states.get(gallery) {
-            return gallery.get(marketplace).ok_or(());
+            return gallery.marketplaces
+                .get(marketplace)
+                .ok_or(());
         }
         Err(())
+    }
+
+    /// Returns whether all the gallery's marketplaces are `FullyScraped`, ie the gallery is ready to be sent to the next module.
+    /// 
+    /// Returns `false` if the gallery doesn't exist.
+    fn is_ready_to_send(&self, gallery: &GalleryId) -> bool {
+        if let Some(state) = self.states.get(gallery) {
+            return state.marketplaces
+                .values()
+                .all(|status| matches!(status, MarketplaceStatus::FullyScraped(_)));
+        }
+        false
     }
 
     /// Moves forward the status of a marketplace within a gallery, using the current time as the transition time.
@@ -181,14 +251,14 @@ impl GalleryStates {
     /// 
     /// **NOTE**: Be careful in ensuring the action representing the status change actually occurs when calling this.
     pub(super) fn update_status(&mut self, gallery: &GalleryId, marketplace: &Marketplace) -> Result<(), ()> {
-        let marketplaces = match self.states.get_mut(&gallery) {
-            Some(marketplaces) => marketplaces,
+        let state = match self.states.get_mut(&gallery) {
+            Some(state) => state,
             None => {
                 tracing::error!("Gallery {gallery} is not being scraped, so its status cannot be updated");
                 return Err(());
             }
         };
-        let marketplace_status = match marketplaces.get_mut(&marketplace) {
+        let marketplace_status = match state.marketplaces.get_mut(&marketplace) {
             Some(status) => status,
             None => {
                 tracing::error!("Gallery {gallery} does not contain {marketplace}, so its status cannot be updated");
@@ -216,29 +286,37 @@ impl GalleryStates {
         Ok(())
     }
 
-    /// Removes a gallery from the state, signifying that all its marketplaces have been scraped and sent to the next module.
+    /// Removes a gallery from the state and returns its temporary data. 
     /// 
-    /// Returns an `Err` if not all the marketplaces have `FullyScraped` status, or the given gallery is not found.
+    /// Should only be called if all the gallery's marketplaces are fully scraped,
+    /// or you purposely want to remove the gallery from state (ie, the scraping has stalled/errored).
+    /// 
+    /// Returns an `Err` if the given gallery is not found.
     /// 
     /// **NOTE**: Be careful to only call this once the above action has actually occurred.
-    pub(super) fn remove_gallery(&mut self, gallery: &GalleryId) -> Result<(), ()> {
-        let marketplaces = match self.states.get_mut(&gallery) {
-            Some(marketplaces) => marketplaces,
+    pub(super) fn remove_gallery(&mut self, gallery: &GalleryId) -> Result<TempGalleryData, ()> {
+        match self.states.remove(gallery) {
+            Some(state) => Ok(state.data),
             None => {
                 tracing::error!("Gallery {gallery} is not being scraped, so it cannot be removed from state");
-                return Err(());
+                Err(())
             }
-        };
-        if !marketplaces
-            .values()
-            .all(|status| matches!(status, &MarketplaceStatus::FullyScraped(_)))
-        {
-            tracing::error!("Not all marketplaces in gallery {gallery} are fully scraped yet: {marketplaces:#?}");
-            return Err(());
         }
-        self.states.remove(gallery);
-        Ok(())
     }
+}
+
+/// Represents the state of a gallery.
+/// 
+/// Most importantly tracks the status of each of its marketplaces, but also holds other temporary data,
+/// such as the gallery's evaluation criteria.
+struct GalleryState {
+    marketplaces: HashMap<Marketplace, MarketplaceStatus>,
+    data: TempGalleryData
+}
+
+/// Any temporary data for a gallery that needs to be stored while it's here.
+struct TempGalleryData {
+    eval_criteria: EvaluationCriteria
 }
 
 /// These are the possible statuses for a marketplace.
