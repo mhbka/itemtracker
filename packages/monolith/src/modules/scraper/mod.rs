@@ -35,7 +35,7 @@ pub struct ScraperModule {
 }
 
 impl ScraperModule {
-    /// Initializes the module.
+    /// Initialize the module.
     pub fn init(
         config: ScraperConfig,
         msg_receiver: ScraperReceiver,
