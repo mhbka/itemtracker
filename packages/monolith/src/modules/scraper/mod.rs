@@ -2,11 +2,9 @@ mod components;
 mod msg_handler;
 
 use components::state_manager::StateManager;
-
-use crate::{config::ScraperConfig, galleries::{domain_types::GalleryId, scraping_pipeline::GalleryScrapingState}, messages::{
-    message_types::scraper::ScraperMessage, ImgAnalysisSender, MarketplaceItemsStorageSender, ScraperReceiver
+use crate::{config::ScraperConfig, messages::{
+    message_types::scraper::ScraperMessage, ItemAnalysisSender, MarketplaceItemsStorageSender, ScraperReceiver
 }};
-
 
 /// Module in charge of orchestrating the actual scraping through Scrapy spiders.
 /// 
@@ -40,7 +38,7 @@ impl ScraperModule {
         config: ScraperConfig,
         msg_receiver: ScraperReceiver,
         item_storage_msg_sender: MarketplaceItemsStorageSender,
-        img_analysis_msg_sender: ImgAnalysisSender,
+        img_analysis_msg_sender: ItemAnalysisSender,
     ) -> Self
     {   
         let state_manager = StateManager::new(

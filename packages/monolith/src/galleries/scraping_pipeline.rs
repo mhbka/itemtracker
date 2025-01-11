@@ -69,7 +69,7 @@ impl GalleryScrapedState {
 
 /// This is the state of a scraping State after its items are analysed.
 /// 
-/// Initialized in the image analysis module.
+/// Initialized in the item analysis module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryAnalyzedState {
     pub gallery_id: GalleryId,

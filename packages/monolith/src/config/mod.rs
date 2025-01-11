@@ -1,8 +1,7 @@
 use std::env::{self, VarError};
 use serde::{Deserialize, Serialize};
-use dotenv::dotenv;
 
-pub use image_analysis::ImageAnalysisConfig;
+pub use item_analysis::ItemAnalysisConfig;
 pub use image_classifier::ImageClassifierConfig;
 pub use scraper::ScraperConfig;
 pub use scraper_scheduler::ScraperSchedulerConfig;
@@ -10,7 +9,7 @@ pub use storage::StorageConfig;
 
 pub mod scraper_scheduler;
 pub mod scraper;
-pub mod image_analysis;
+pub mod item_analysis;
 pub mod image_classifier;
 pub mod storage;
 
@@ -20,7 +19,7 @@ pub struct AppConfig {
     pub axum_config: AxumConfig,
     pub scraper_scheduler_config: ScraperSchedulerConfig,
     pub scraper_config: ScraperConfig,
-    pub img_analysis_config: ImageAnalysisConfig,
+    pub img_analysis_config: ItemAnalysisConfig,
     pub img_classifier_config: ImageClassifierConfig,
     pub storage_config: StorageConfig
 }
@@ -33,7 +32,7 @@ impl AppConfig {
                 axum_config: AxumConfig::load()?,
                 scraper_scheduler_config: ScraperSchedulerConfig::load()?,
                 scraper_config: ScraperConfig::load()?,
-                img_analysis_config: ImageAnalysisConfig::load()?,
+                img_analysis_config: ItemAnalysisConfig::load()?,
                 img_classifier_config: ImageClassifierConfig::load()?,
                 storage_config: StorageConfig::load()?,
             }

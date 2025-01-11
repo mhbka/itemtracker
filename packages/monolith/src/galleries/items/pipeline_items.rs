@@ -9,7 +9,7 @@ pub struct ScrapedItems {
     pub marketplace_items: HashMap<Marketplace, Vec<MarketplaceItemData>>
 }
 
-/// Items that have been analyzed in the image analysis module.
+/// Items that have been analyzed in the item analysis module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedItems {
     pub items: HashMap<Marketplace, Vec<AnalyzedMarketplaceItem>>,

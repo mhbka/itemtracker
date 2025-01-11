@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, scraping_pipeline::GalleryScrapedState}, messages::{message_types::{img_analysis::{ImgAnalysisMessage, StartAnalysisJob, StartAnalysisJobMessage}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ImgAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, scraping_pipeline::GalleryScrapedState}, messages::{message_types::{item_analysis::{ItemAnalysisMessage, StartAnalysisJob, StartAnalysisJobMessage}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
 
 /// This fetches cached items, processes scraped items, and eventually sends them to the next stage. 
 /// 
@@ -12,14 +12,14 @@ use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDa
 pub(super) struct OutputProcessor {
     item_storage: HashMap<(GalleryId, Marketplace), Vec<MarketplaceItemData>>,
     item_storage_msg_sender: MarketplaceItemsStorageSender,
-    img_analysis_msg_sender: ImgAnalysisSender
+    img_analysis_msg_sender: ItemAnalysisSender
 }
 
 impl OutputProcessor {
     /// Instantiate the `OutputProcessor`.
     pub fn new(
         item_storage_msg_sender: MarketplaceItemsStorageSender,
-        img_analysis_msg_sender: ImgAnalysisSender
+        img_analysis_msg_sender: ItemAnalysisSender
     ) -> Self {
         Self { 
             item_storage: HashMap::new(),
@@ -115,12 +115,12 @@ impl OutputProcessor {
         );
         let (msg, response_receiver) = StartAnalysisJobMessage::new(job_msg);
         if let Err(err) = self.img_analysis_msg_sender
-            .send(ImgAnalysisMessage::StartAnalysis(msg))
+            .send(ItemAnalysisMessage::StartAnalysis(msg))
             .await {
-                tracing::error!("Error while sending gallery to image analysis module: {err}");
+                tracing::error!("Error while sending gallery to item analysis module: {err}");
             }
         if let Err(err) = response_receiver.await {
-            tracing::warn!("RecvError while receiving response when sending gallery items to image analysis module: {err}");
+            tracing::warn!("RecvError while receiving response when sending gallery items to item analysis module: {err}");
         }
         Ok(())
     }

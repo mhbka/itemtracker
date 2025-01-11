@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, scraping_pipeline::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ImgAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, scraping_pipeline::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
 
 use super::{item_scraper::ItemScraper, output_processor::OutputProcessor, search_scraper::SearchScraper};
 
@@ -27,7 +27,7 @@ impl StateManager {
     pub fn new(
         config: &ScraperConfig,
         item_storage_msg_sender: MarketplaceItemsStorageSender,
-        img_analysis_msg_sender: ImgAnalysisSender
+        img_analysis_msg_sender: ItemAnalysisSender
     ) -> Self {
         let states = Arc::new(Mutex::new(GalleryStates::new()));
         let search_scraper = SearchScraper::new(config);

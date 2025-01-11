@@ -1,6 +1,6 @@
 use message_buses::{MessageSender, MessageReceiver};
 use message_types::{
-    img_analysis::ImgAnalysisMessage, 
+    item_analysis::ItemAnalysisMessage, 
     img_classifier::ImgClassifierMessage, 
     scraper_scheduler::SchedulerMessage, 
     scraper::ScraperMessage,
@@ -26,10 +26,10 @@ pub type ScraperSender = MessageSender<ScraperMessage>;
 /// Handle for the scraper module to receive messages.
 pub type ScraperReceiver = MessageReceiver<ScraperMessage>;
 
-/// Handle for sending the image analysis module messages.
-pub type ImgAnalysisSender = MessageSender<ImgAnalysisMessage>;
-/// Handle for the image analysis module to receive messages.
-pub type ImgAnalysisReceiver = MessageReceiver<ImgAnalysisMessage>;
+/// Handle for sending the item analysis module messages.
+pub type ItemAnalysisSender = MessageSender<ItemAnalysisMessage>;
+/// Handle for the item analysis module to receive messages.
+pub type ItemAnalysisReceiver = MessageReceiver<ItemAnalysisMessage>;
 
 /// Handle for sending the image classifier module messages.
 pub type ImgClassifierSender = MessageSender<ImgClassifierMessage>;

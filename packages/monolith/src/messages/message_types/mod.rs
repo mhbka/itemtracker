@@ -1,7 +1,7 @@
 pub mod web_backend;
 pub mod scraper_scheduler;
 pub mod scraper;
-pub mod img_analysis;
+pub mod item_analysis;
 pub mod img_classifier;
 pub mod storage;
 

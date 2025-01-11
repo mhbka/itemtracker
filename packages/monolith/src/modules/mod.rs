@@ -1,15 +1,14 @@
-use image_analysis::ImageAnalysisModule;
+use item_analysis::ItemAnalysisModule;
 use tokio::sync::mpsc;
-
 use scraper::ScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{ImgAnalysisReceiver, ImgAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender}};
+use crate::{config::AppConfig, messages::{ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender}};
 
 pub mod web_backend;
 pub mod scraper_scheduler;
 pub mod scraper;
-pub mod image_analysis;
+pub mod item_analysis;
 pub mod image_classifier;
 pub mod storage;
 
@@ -19,7 +18,7 @@ const MODULE_MESSAGE_BUFFER: usize = 1000;
 pub struct AppModules {
     scheduler_module: ScraperSchedulerModule,
     scraper_module: ScraperModule,
-    analysis_module: ImageAnalysisModule
+    analysis_module: ItemAnalysisModule
 }
 
 impl AppModules {
@@ -36,7 +35,7 @@ impl AppModules {
             connections.marketplace_items_storage.0, 
             connections.img_analysis.0
         );
-        let analysis_module = ImageAnalysisModule::init(
+        let analysis_module = ItemAnalysisModule::init(
             config.img_analysis_config.clone(),
             connections.img_analysis.1
         );
@@ -71,7 +70,7 @@ pub struct AppModulesRunningHandles {
 pub struct AppModuleConnections {
     pub scraper_scheduler: (ScraperSchedulerSender, ScraperSchedulerReceiver),
     pub scraper: (ScraperSender, ScraperReceiver),
-    pub img_analysis: (ImgAnalysisSender, ImgAnalysisReceiver),
+    pub img_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
     pub marketplace_items_storage: (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver)
 }
 
@@ -100,10 +99,10 @@ impl AppModuleConnections {
         (sender, receiver)
     }
 
-    fn init_img_analysis_conn() -> (ImgAnalysisSender, ImgAnalysisReceiver) {
+    fn init_img_analysis_conn() -> (ItemAnalysisSender, ItemAnalysisReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
-        let sender = ImgAnalysisSender::new(sender);
-        let receiver = ImgAnalysisReceiver::new(receiver);
+        let sender = ItemAnalysisSender::new(sender);
+        let receiver = ItemAnalysisReceiver::new(receiver);
         (sender, receiver)
     }
 

@@ -18,7 +18,7 @@
         B[Multiple Marketplaces]:::external
         X{POST Request}:::HTTP
         O{POST Request}:::HTTP
-        D[Image Analysis Module]:::module
+        D[Item Analysis Module]:::module
         E[LLM API]:::external
         F{mpsc}:::channel
         G[Image Classifier Module]:::module
@@ -101,7 +101,7 @@ This module does the actual scraping.
 to receive scraped items.
 
 The scraper has separate spiders for each marketplace. Each spider will scrape its marketplace according to the given search criteria, up to the datetime of the given latest last item.
-The following is then outputted to the **Image Analysis** module:
+The following is then outputted to the **Item Analysis** module:
 - Gallery ID
 - Marketplace scraped
 - Datetime of the latest item scraped's upload/update for the marketplace (to replace the previous one)
@@ -111,7 +111,7 @@ The following is then outputted to the **Image Analysis** module:
 **TBD**: If we go with a Rust scraper module, these will be passed back from the spider to the scraper module first.
 
 
-### Image Analysis
+### Item Analysis
 This module passes information about each scraped item (including images) to an LLM, asks it some user-defined questions, and parses the answers. These questions are known as the
 **evaluation criteria**; there are the following types:
 - Yes/No, eg "Is this a shirt?"

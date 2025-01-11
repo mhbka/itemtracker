@@ -21,12 +21,27 @@ impl EvaluationCriteria {
         Ok(())
     }
 
-    /// A string to pass to the LLM to explain question types,
-    /// and how to answer them so that they can be parsed correctly.
-    pub fn question_description() -> &'static str {
-        "
-        TODO: figure this out
-        "
+    /// A string that describes each question and how to answer it.
+    /// 
+    /// This is passed to the LLM in item analysis, to ensure a correctly structured response.
+    pub fn describe_criteria(&self) -> String {
+        self.criteria
+            .iter()
+            .map(|criterion| return match criterion {
+                Criterion::YesNo(criterion) => {
+                    format!("- {} (ONLY ANSWER WITH 'Y' for Yes, or 'N' for No) \n", criterion.question)
+                },
+                Criterion::YesNoUncertain(criterion) => {
+                    format!("- {} (ONLY ANSWER WITH 'Y' for Yes, 'N' for No, or 'U' for Uncertain) \n", criterion.question)
+                },
+                Criterion::Numerical(criterion) => {
+                    format!("- {} (ONLY ANSWER WITH A FLOATING POINT OR INTEGER NUMBER) \n", criterion.question)
+                },
+                Criterion::OpenEnded(criterion) => {
+                    format!("- {} (ANSWER WITH ANYTHING UNDER 200 CHARACTERS) \n", criterion.question) // arbitrary character limit, should be okay
+                },
+            })
+            .collect()
     }
 }
 
@@ -40,6 +55,7 @@ pub enum Criterion {
 }
 
 impl Criterion {
+
     /// Parses an answer string and sets the criterion's answer parameter to a `Some` if it's valid.
     pub fn parse_answer(&mut self, answer: String) -> Result<(), String> {
         match self {
@@ -73,20 +89,17 @@ impl Criterion {
     }
 }
 
-/// A Yes/No question. Useful for finding out things that should be easy, like "is this a shirt?".
-/// 
-/// Uniquely comes with a `pass_condition`; if set, the item must pass this criterion to be considered "valid".
+/// A Yes/No question. Useful for finding out things that should be obvious, like "is this a shirt?".
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct YesNoQuestion {
     pub question: String,
-    pub pass_condition: Option<YesNo>,
     pub answer: Option<YesNo>
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum YesNo { Yes, No }
 
-/// Similar to Yes/No, but allows the LLM to pick Uncertain if the answer is not obvious, like "is this mug from before 2010?".
+/// Similar to Yes/No, but allows the LLM to pick `Uncertain` if the answer is not obvious, like "is this mug from before 2010?".
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct YesNoUncertainQuestion {
     pub question: String,

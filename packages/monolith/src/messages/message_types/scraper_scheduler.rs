@@ -8,10 +8,10 @@ use super::ModuleMessageWithReturn;
 pub enum SchedulerError {
     /// Emitted when a deleted gallery's ID doesn't exist.
     #[error("Gallery ID '{gallery_id}' not found and cannot be deleted")]
-    GalleryNotFound{ gallery_id: GalleryId },
+    GalleryNotFound { gallery_id: GalleryId },
     /// Emitted when a new gallery's ID already exists.
     #[error("Gallery ID '{gallery_id}' already exists and cannot be added again")]
-    GalleryAlreadyExists{ gallery_id: GalleryId },
+    GalleryAlreadyExists { gallery_id: GalleryId },
 }
 
 /// Possible messages that a scheduler can take.

@@ -42,7 +42,7 @@ impl ValidCronString {
     pub fn get_cron(&mut self) -> Cron {
         Cron::new(&self.0)
             .parse()
-            .unwrap() // OK since this newtype checks for validity during instantiation
+            .expect("Should be valid as we've already checked during instantiation")
     }
 
     /// Get a copy of the string.
