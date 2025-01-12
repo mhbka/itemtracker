@@ -1,4 +1,4 @@
-use futures::future::join;
+use futures::future::{join, join_all};
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
@@ -22,10 +22,10 @@ impl LLMRequester {
     /// Carries out requesting the LLM for a gallery.
     pub async fn request_gallery(&mut self, gallery: GalleryScrapedState) -> Result<(), ItemAnalysisError> {
         let gallery_id = gallery.gallery_id;
-        let items = gallery.items.marketplace_items;
+        let items = gallery.items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
         
-        let gallery_requests = self.build_requests(items, eval_criteria_string);
+        let gallery_requests = self.build_requests(items.clone(), eval_criteria_string);
         for (marketplace, requests) in gallery_requests {
             
         }
@@ -44,15 +44,35 @@ impl LLMRequester {
             .map(|(marketplace, items)| {
                 let item_requests = items
                     .into_iter()
-                    .map(|item| self.build_item_request(item, eval_criteria_string.clone()))
+                    .map(|item| self.build_item_request(item, &eval_criteria_string))
                     .collect();
                 (marketplace, item_requests)
             })
             .collect()
     }
 
-    // TODO: this
-    //async fn execute_requests(&self, gallery_requests: Vec<)
+    /// Executes and handles the requests for a gallery.
+    async fn execute_requests(&self, gallery_requests: Vec<(Marketplace, Vec<RequestBuilder>)>) {
+        for (marketplace, item_requests) in gallery_requests {
+            let request_futures = item_requests
+                .into_iter()
+                .map(|request| request.send());
+            let results = join_all(request_futures).await;
+            for res in results {
+                match res {
+                    Ok(res) => {
+                        match res.json::<AnthropicResponse>().await {
+                            Ok(response) => {
+
+                            },
+                            Err(err) => {}
+                        }
+                    },
+                    Err(err) => {}
+                }
+            }
+        }
+    }
 
     /// Builds the request for a single item.
     /// 
@@ -60,7 +80,7 @@ impl LLMRequester {
     fn build_item_request(
         &self, 
         item: MarketplaceItemData,
-        eval_criteria_string: String
+        eval_criteria_string: &String
     ) -> RequestBuilder {
         let req_form = self.build_request_form(item, eval_criteria_string);
         self.request_client
@@ -74,7 +94,7 @@ impl LLMRequester {
     fn build_request_form(
         &self, 
         item: MarketplaceItemData, 
-        eval_criteria_string: String
+        eval_criteria_string: &String
     ) -> AnthropicRequestForm {
         let system_prompt = format!("
             You will help to evaluate an item listing, consisting of its listed images and a JSON of its information, 

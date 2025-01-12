@@ -13,14 +13,14 @@ pub struct ScrapedItems {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedItems {
     pub items: HashMap<Marketplace, Vec<AnalyzedMarketplaceItem>>,
-    pub error_items: HashMap<Marketplace, Vec<AnalyzedMarketplaceErrorItem>>
+    pub error_items: HashMap<Marketplace, Vec<MarketplaceItemData>>
 }
 
 /// Items that have been classified in the image classifier module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClassifiedItems {
     pub items: HashMap<Marketplace, Vec<ClassifiedMarketplaceItem>>,
-    pub error_items: HashMap<Marketplace, Vec<AnalyzedMarketplaceErrorItem>> // passed on from AnalyzedItems
+    pub error_items: HashMap<Marketplace, Vec<MarketplaceItemData>> 
 }
 
 ///// Subtypes
@@ -30,14 +30,7 @@ pub struct ClassifiedItems {
 pub struct AnalyzedMarketplaceItem {
     pub is_relevant: bool,
     pub item: MarketplaceItemData,
-    pub answers: EvaluationCriteria
-}
-
-/// Analyzed items under a marketplace, which had issues during parsing of answers.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AnalyzedMarketplaceErrorItem {
-    pub item: MarketplaceItemData,
-    pub answers: EvaluationCriteria
+    pub evaluated_criteria: EvaluationCriteria
 }
 
 /// Classified items under a marketplace.
