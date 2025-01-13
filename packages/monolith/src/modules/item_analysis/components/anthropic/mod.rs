@@ -72,13 +72,14 @@ impl AnthropicRequester {
         }
     }
 
+    /// Process the raw LLM output for all items in a gallery's marketplace.
     async fn process_marketplace_results(
         &self,
         eval_criteria: &mut EvaluationCriteria,
         results: Vec<(MarketplaceItemData, Result<reqwest::Response, reqwest::Error>)>,
     ) {
-        let analyzed_items = vec![];
-        let error_items = vec![];
+        let mut analyzed_items = vec![];
+        let mut error_items = vec![];
         for (item, result) in results {
             let mut err_str = None;
             match result {
@@ -86,17 +87,17 @@ impl AnthropicRequester {
                     match res.json::<AnthropicResponse>().await {
                         Ok(response) => {
                             if response.content.len() == 0 {
-                                err_str = Some("Expected 1 message in API content but found none".into());
+                                err_str = Some("Expected 1 message in Anthropic response but found none".into());
                             }
                             else if response.content.len() > 1 {
-                                // We don't expect >1 messages, so log if it happens and just use the first one
-                                tracing::warn!("Received more than 1 message in Anthropic response; using the first...");
+                                tracing::warn!("Unexpectedly received >1 message in Anthropic response; using the first...");
                             }
                             match serde_json::from_str::<EvaluationAnswers>(&response.content[0].text) {
                                 Ok(parsed_message) => {
                                     match eval_criteria.parse_answers(parsed_message.answers) {
                                         Ok(answers) => {
-                                            // TODO: should we log here? or just proceed like usual
+                                            // TODO: determine the actual type this should have
+                                            analyzed_items.push((item.clone(), answers));
                                         },
                                         Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
                                     }
@@ -110,7 +111,8 @@ impl AnthropicRequester {
                 Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
             }
             if let Some(err_str) = err_str {
-                // TODO: make it an error item
+                // TODO: determine the actual type this should have
+                error_items.push((item, err_str));
             }
         }
     }
@@ -155,7 +157,7 @@ impl AnthropicRequester {
             An example is:
             '
             {{
-                'answers': ['Y', 'U', '2024', 'I cannot answer this.']
+                'answers': ['Y', 'U', '1.5', '2024', 'I cannot answer this.']
             }}
             '
         ");

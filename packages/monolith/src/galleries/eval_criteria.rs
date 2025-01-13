@@ -14,22 +14,6 @@ impl EvaluationCriteria {
             criteria
         }
     }
-    
-    /// Parse a list of answers for the evaluation criteria and returns them.
-    /// 
-    /// The list should be in the same order as the criteria.
-    /// 
-    /// Returns an `Err` if `answers` is not the same length as the criteria,
-    /// or an answer is not in the expected format for its criterion.
-    pub fn parse_answers(&mut self, answers: Vec<String>) -> Result<Vec<CriterionAnswer>, String> {
-        if answers.len() != self.criteria.len() {
-            return Err(format!("Expected {} answers, got {}", self.criteria.len(), answers.len()));
-        }
-        let result: Result<Vec<_>, _> = zip(&mut self.criteria, answers)
-            .map(|(criterion, answer)| criterion.parse_answer(answer))
-            .collect();
-        result
-    }
 
     /// A string that describes each question and how to answer it.
     /// 
@@ -56,30 +40,60 @@ impl EvaluationCriteria {
             })
             .collect()
     }
+    
+    /// Parse a list of answers for the evaluation criteria and returns them.
+    /// 
+    /// The list should be in the same order as the criteria.
+    /// 
+    /// Returns an `Err` if `answers` is not the same length as the criteria,
+    /// or an answer is not in the expected format for its criterion.
+    pub fn parse_answers(&mut self, answers: Vec<String>) -> Result<Vec<CriterionAnswer>, String> {
+        if answers.len() != self.criteria.len() {
+            return Err(format!("Expected {} answers, got {}", self.criteria.len(), answers.len()));
+        }
+        let result: Result<Vec<_>, _> = zip(&mut self.criteria, answers)
+            .map(|(criterion, answer)| criterion.parse_answer(answer))
+            .collect();
+        result
+    }
+
+    /// Returns whether all the answers satisfy all `HardCriterion`s present in the criteria.
+    /// 
+    /// If there are no `HardCriterion`, simply returns `true`.
+    /// 
+    /// Returns an `Err` if an answer type doesn't match the corresponding criterion type.
+    /// 
+    /// If you directly pass the successful output from `parse_answers`, this will never occur.
+    pub fn satisfies_hard_criterion(&mut self, answers: Vec<CriterionAnswer>) -> Result<bool, String> {
+        let result = zip(&mut self.criteria, answers)
+            .all(|(criterion, answer)| criterion.)
+    } 
 }
 
-/// A criterion, consisting of its question and the type of question it is (ie, how it should be answered).
+/// A criterion, consisting of:
+/// - Its question,
+/// - The type of question it is (ie, how it should be answered), and
+/// - An optional "hard filter" for the answer called the `HardCriterion`.
+/// 
+/// The hard criterion is available for `YesNo`, `Float` and `Int` criterion.
+/// 
+/// It specifies a mandatory answer or answer range that, if not satisfied,
+/// means the item should be discarded from the gallery.
+/// 
+/// It is most useful for filtering out things that you objectively don't want,
+/// and can be (almost) objectively answered by the LLM, such as "is this a shirt?".
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Criterion {
     question: String,
-    criterion_type: CriterionType
-}
-
-/// The different possible types of criterion.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum CriterionType {
-    YesNo,
-    YesNoUncertain,
-    Int,
-    Float,
-    OpenEnded
+    criterion_type: CriterionType,
+    hard_criterion: Option<HardCriterion>
 }
 
 impl Criterion {
-    /// Parses an answer string and sets the criterion's answer parameter to a `Some` if it's valid.
+    /// Parses an answer string and returns the corresponding `CriterionAnswer`.
     /// 
     /// Returns an `Err` if the answer cannot be parsed into the criterion.
-    pub fn parse_answer(&mut self, answer: String) -> Result<CriterionAnswer, String> {
+    fn parse_answer(&mut self, answer: String) -> Result<CriterionAnswer, String> {
         Ok(
             match self.criterion_type {
                 CriterionType::YesNo => {
@@ -113,6 +127,25 @@ impl Criterion {
             }
         )
     }
+
+    fn satisfies_hard_criterion(&self, answer: CriterionAnswer) -> Result<bool, String> {
+        match (self.hard_criterion) {
+            Some(hard_criterion) => {
+                hard_criterion.is_satisfied(answer)
+            },
+            None => Ok(true),
+        }
+    }
+}
+
+/// The different possible types of criterion.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum CriterionType {
+    YesNo,
+    YesNoUncertain,
+    Int,
+    Float,
+    OpenEnded
 }
 
 /// The possible answers for each criterion.
@@ -125,34 +158,75 @@ pub enum CriterionAnswer {
     OpenEnded(String)
 }
 
-/// A Yes/No question. Useful for finding out things that should be obvious, like "is this a shirt?".
+/// The possible types of hard criterion.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct YesNoQuestion {
-    pub question: String,
+pub enum HardCriterion {
+    YesNo(YesNo),
+    Int(IntHardCriterion),
+    Float(FloatHardCriterion),
 }
 
+impl HardCriterion {
+    /// Returns whether the answer satisfies the hard criterion.
+    /// 
+    /// Returns `true` if the answer type is not `YesNo`/`Int`/`Float`.
+    /// 
+    /// Returns `false` if the answer type is `YesNo`/`Int`/`Float`, but doesn't match the hard criterion type.
+    fn is_satisfied(&self, answer: CriterionAnswer) -> bool {
+        match (self, answer) {
+            (HardCriterion::YesNo(criterion), CriterionAnswer::YesNo(answer)) => {
+                *criterion == answer
+            },
+            (HardCriterion::Int(criterion), CriterionAnswer::Int(answer)) => {
+                criterion.is_satisfied(answer)
+            },
+            (HardCriterion::Float(criterion), CriterionAnswer::Float(answer)) => {
+                criterion.is_satisfied(answer) 
+            },
+            (_, CriterionAnswer::YesNoUncertain(_)) => true,
+            (_, CriterionAnswer::OpenEnded(_)) => true,
+            _ => false
+        }
+    }
+}
+
+/// The hard criterion for an `Int` question.
+pub type IntHardCriterion = NumericalHardCriterion<usize>;
+
+/// The hard criterion for a `Float` question.
+pub type FloatHardCriterion = NumericalHardCriterion<f64>;
+
+/// Generic for a numerical hard criterion.
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum NumericalHardCriterion<T> 
+where 
+    T: PartialOrd + Copy, // TODO: should I have more bounds to ensure a numerical type?
+{
+    LessThan(T),
+    Equal(T),
+    MoreThan(T),
+    Between(T, T),
+}
+
+impl<T> NumericalHardCriterion<T> 
+where 
+    T: PartialOrd + Copy,
+{   
+    /// Returns whether `answer` satisfies the hard criterion.
+    pub fn is_satisfied(&self, answer: T) -> bool {
+        match self {
+            NumericalHardCriterion::LessThan(threshold) => answer < *threshold,
+            NumericalHardCriterion::Equal(target) => answer == *target,
+            NumericalHardCriterion::MoreThan(threshold) => answer > *threshold,
+            NumericalHardCriterion::Between(min, max) => answer >= *min && answer <= *max,
+        }
+    }
+}
+
+/// The response types for a `YesNo` question.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum YesNo { Yes, No }
 
-/// Similar to Yes/No, but allows the LLM to pick `Uncertain` if the answer is not obvious, like "is this mug from before 2010?".
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct YesNoUncertainQuestion {
-    pub question: String
-}
-
+/// The response types for a `YesNoUncertain` question.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum YesNoUncertain { Yes, No, Uncertain }
-
-/// A numerical question, like "what would you rate the condition from 0-10"?
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct NumericalQuestion {
-    pub question: String,
-    pub answer: Option<f32>
-}
-
-/// An open-ended question.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct OpenEndedQuestion {
-    pub question: String,
-    pub answer: Option<String>
-}
