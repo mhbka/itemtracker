@@ -19,7 +19,7 @@ pub struct AppConfig {
     pub axum_config: AxumConfig,
     pub scraper_scheduler_config: ScraperSchedulerConfig,
     pub scraper_config: ScraperConfig,
-    pub img_analysis_config: ItemAnalysisConfig,
+    pub item_analysis_config: ItemAnalysisConfig,
     pub img_classifier_config: ImageClassifierConfig,
     pub storage_config: StorageConfig
 }
@@ -32,7 +32,7 @@ impl AppConfig {
                 axum_config: AxumConfig::load()?,
                 scraper_scheduler_config: ScraperSchedulerConfig::load()?,
                 scraper_config: ScraperConfig::load()?,
-                img_analysis_config: ItemAnalysisConfig::load()?,
+                item_analysis_config: ItemAnalysisConfig::load()?,
                 img_classifier_config: ImageClassifierConfig::load()?,
                 storage_config: StorageConfig::load()?,
             }

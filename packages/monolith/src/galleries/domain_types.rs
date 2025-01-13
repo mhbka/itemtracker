@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for ValidCronString {
 
 /// A String wrapper for a gallery ID.
 /// 
-/// There is (currently) no special functionality or validation; this exist simply because the gallery ID is a heavily used domain type.
+/// There is (currently) no special functionality or validation; this exists simply because the gallery ID is a heavily used domain type.
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct GalleryId(String);
 
@@ -89,7 +89,7 @@ impl Display for GalleryId {
 
 /// A String wrapper for a marketplace item ID.
 /// 
-/// There is (currently) no special functionality or validation; this exists simply because the gallery ID is a heavily used domain type.
+/// There is (currently) no special functionality or validation; this exists simply because the item ID is a heavily used domain type.
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct ItemId(String);
 

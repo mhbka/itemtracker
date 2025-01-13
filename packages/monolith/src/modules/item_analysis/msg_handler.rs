@@ -14,7 +14,7 @@ pub(super) async fn handle_start_analysis_msg(msg: StartAnalysisJobMessage, modu
     }
     module.galleries_in_progress.push(gallery_id.clone());
     match module.llm_requester
-        .request_gallery(gallery)
+        .handle_gallery(gallery)
         .await {
             Ok(_) => {
                 

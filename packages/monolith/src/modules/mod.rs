@@ -3,7 +3,7 @@ use tokio::sync::mpsc;
 use scraper::ScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender}};
+use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender}};
 
 pub mod web_backend;
 pub mod scraper_scheduler;
@@ -33,11 +33,12 @@ impl AppModules {
             config.scraper_config.clone(), 
             connections.scraper.1, 
             connections.marketplace_items_storage.0, 
-            connections.img_analysis.0
+            connections.item_analysis.0
         );
         let analysis_module = ItemAnalysisModule::init(
-            config.img_analysis_config.clone(),
-            connections.img_analysis.1
+            config.item_analysis_config.clone(),
+            connections.item_analysis.1,
+            connections.image_classifier.0
         );
         AppModules {
             scheduler_module,
@@ -70,7 +71,8 @@ pub struct AppModulesRunningHandles {
 pub struct AppModuleConnections {
     pub scraper_scheduler: (ScraperSchedulerSender, ScraperSchedulerReceiver),
     pub scraper: (ScraperSender, ScraperReceiver),
-    pub img_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
+    pub item_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
+    pub image_classifier: (ImageClassifierSender, ImageClassifierReceiver),
     pub marketplace_items_storage: (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver)
 }
 
@@ -80,7 +82,8 @@ impl AppModuleConnections {
         Self {
             scraper_scheduler: Self::init_scheduler_conn(),
             scraper: Self::init_scraper_conn(),
-            img_analysis: Self::init_img_analysis_conn(),
+            item_analysis: Self::init_item_analysis_conn(),
+            image_classifier: Self::init_image_classifier_conn(),
             marketplace_items_storage: Self::init_marketplace_items_storage_conn()
         }
     }
@@ -99,10 +102,17 @@ impl AppModuleConnections {
         (sender, receiver)
     }
 
-    fn init_img_analysis_conn() -> (ItemAnalysisSender, ItemAnalysisReceiver) {
+    fn init_item_analysis_conn() -> (ItemAnalysisSender, ItemAnalysisReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
         let sender = ItemAnalysisSender::new(sender);
         let receiver = ItemAnalysisReceiver::new(receiver);
+        (sender, receiver)
+    }
+
+    fn init_image_classifier_conn() -> (ImageClassifierSender, ImageClassifierReceiver) {
+        let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
+        let sender = ImageClassifierSender::new(sender);
+        let receiver = ImageClassifierReceiver::new(receiver);
         (sender, receiver)
     }
 

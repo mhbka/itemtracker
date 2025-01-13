@@ -32,9 +32,9 @@ pub type ItemAnalysisSender = MessageSender<ItemAnalysisMessage>;
 pub type ItemAnalysisReceiver = MessageReceiver<ItemAnalysisMessage>;
 
 /// Handle for sending the image classifier module messages.
-pub type ImgClassifierSender = MessageSender<ImgClassifierMessage>;
+pub type ImageClassifierSender = MessageSender<ImgClassifierMessage>;
 /// Handle for the image classifier module to receive messages.
-pub type ImgClassifierReceiver = MessageReceiver<ImgClassifierMessage>;
+pub type ImageClassifierReceiver = MessageReceiver<ImgClassifierMessage>;
 
 /// Handle for sending the marketplace items storage module messages.
 pub type MarketplaceItemsStorageSender = MessageSender<MarketplaceItemsStorageMessage>;

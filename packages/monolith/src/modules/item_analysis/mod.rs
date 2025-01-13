@@ -1,5 +1,5 @@
 use components::request_orchestrator::RequestOrchestrator;
-use crate::{config::ItemAnalysisConfig, galleries::domain_types::GalleryId, messages::{message_types::item_analysis::ItemAnalysisMessage, ItemAnalysisReceiver}};
+use crate::{config::ItemAnalysisConfig, galleries::domain_types::GalleryId, messages::{message_types::item_analysis::ItemAnalysisMessage, ImageClassifierSender, ItemAnalysisReceiver}};
 
 mod msg_handler;
 mod components;
@@ -7,23 +7,27 @@ mod components;
 /// Module in charge of orchestrating analysis of scraped items.
 pub struct ItemAnalysisModule {
     config: ItemAnalysisConfig,
-    msg_receiver: ItemAnalysisReceiver,
     llm_requester: RequestOrchestrator,
-    galleries_in_progress: Vec<GalleryId>
+    galleries_in_progress: Vec<GalleryId>,
+    msg_receiver: ItemAnalysisReceiver
 }
 
 impl ItemAnalysisModule {
     /// Initialize the module.
     pub fn init(
         config: ItemAnalysisConfig, 
-        msg_receiver: ItemAnalysisReceiver
+        msg_receiver: ItemAnalysisReceiver,
+        img_classifier_msg_sender: ImageClassifierSender
     ) -> Self {
-        let llm_requester = RequestOrchestrator::new(config.clone());
+        let llm_requester = RequestOrchestrator::new(
+            config.clone(),
+            img_classifier_msg_sender
+        );
         Self { 
             config, 
-            msg_receiver,
             galleries_in_progress: vec![],
-            llm_requester
+            llm_requester,
+            msg_receiver
         }
     }
 
