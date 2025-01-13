@@ -113,15 +113,12 @@ impl OutputProcessor {
             eval_criteria, 
             marketplace_items
         );
-        let (msg, response_receiver) = StartAnalysisJobMessage::new(job_msg);
+        let msg = StartAnalysisJobMessage::new(job_msg);
         if let Err(err) = self.img_analysis_msg_sender
             .send(ItemAnalysisMessage::StartAnalysis(msg))
             .await {
                 tracing::error!("Error while sending gallery to item analysis module: {err}");
             }
-        if let Err(err) = response_receiver.await {
-            tracing::warn!("RecvError while receiving response when sending gallery items to item analysis module: {err}");
-        }
         Ok(())
     }
 }

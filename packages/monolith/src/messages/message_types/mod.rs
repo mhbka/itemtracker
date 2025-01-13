@@ -9,12 +9,41 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::oneshot;
 
+/// Represents a message to a module.
+/// 
+/// This is used for one-way communication, 
+/// such as passing a gallery from one stage in the pipeline to the next.
+/// 
+/// ## Note (to self?)
+/// If you want to communicate that something in the pipeline has failed,
+/// you should emit a log (and in the future, let some state-tracking module know?).
+/// 
+/// Don't use `ModuleMessageWithReturn` with a `Result` return type to represent
+/// if the next module is successful.
+#[derive(Debug)]
+pub struct ModuleMessage<Message> 
+where Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug {
+    message: Message,
+}
+
+impl<Message> ModuleMessage<Message>
+where Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug {
+    /// Initialize the message, return it as well as the oneshot channel receiver.
+    pub fn new(message: Message) -> Self {
+        Self { message }
+    }
+
+    /// Obtain the actual message, consuming this `ModuleMessage`.
+    pub fn get_msg(self) -> Message {
+        self.message
+    }
+}
+
+
 /// Generic struct for a message to a module that requires a response.
 /// 
-/// This is used for things like "cross-module" function calls.
-/// 
-/// For eg, deleting a gallery in the scheduler can fail if the gallery ID doesn't exist, 
-/// so such a message should have a response to let the callee know the gallery was actually deleted.
+/// This is used for things like "cross-module" function calls,
+/// such as fetching some data from a storage module.
 /// 
 /// ## Use
 /// 

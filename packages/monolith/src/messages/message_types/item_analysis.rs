@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::galleries::{domain_types::{GalleryId, Marketplace}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, pipeline_states::GalleryScrapedState};
-use super::ModuleMessageWithReturn;
+use super::ModuleMessage;
+
 
 /// Possible errors emitted from the item analysis module.
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
@@ -16,7 +17,7 @@ pub enum ItemAnalysisMessage {
 }
 
 /// Message to start analysis of newly scraped items.
-pub type StartAnalysisJobMessage = ModuleMessageWithReturn<StartAnalysisJob, ()>;
+pub type StartAnalysisJobMessage = ModuleMessage<StartAnalysisJob>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StartAnalysisJob {

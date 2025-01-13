@@ -1,4 +1,4 @@
-use components::llm_requester::LLMRequester;
+use components::request_orchestrator::RequestOrchestrator;
 use crate::{config::ItemAnalysisConfig, galleries::domain_types::GalleryId, messages::{message_types::item_analysis::ItemAnalysisMessage, ItemAnalysisReceiver}};
 
 mod msg_handler;
@@ -8,7 +8,7 @@ mod components;
 pub struct ItemAnalysisModule {
     config: ItemAnalysisConfig,
     msg_receiver: ItemAnalysisReceiver,
-    llm_requester: LLMRequester,
+    llm_requester: RequestOrchestrator,
     galleries_in_progress: Vec<GalleryId>
 }
 
@@ -18,7 +18,7 @@ impl ItemAnalysisModule {
         config: ItemAnalysisConfig, 
         msg_receiver: ItemAnalysisReceiver
     ) -> Self {
-        let llm_requester = LLMRequester::new(config.clone());
+        let llm_requester = RequestOrchestrator::new(config.clone());
         Self { 
             config, 
             msg_receiver,

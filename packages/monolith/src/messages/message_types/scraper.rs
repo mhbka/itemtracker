@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use crate::galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::item_data::MarketplaceItemData, pipeline_states::GalleryScrapingState};
-use super::ModuleMessageWithReturn;
+use super::ModuleMessage;
 use thiserror::Error;
 
 /// Possible errors emitted from the scraper.
@@ -35,7 +35,7 @@ pub enum ScraperMessage {
 }
 
 /// Message for starting a new scraping task for the gallery.
-pub type StartScrapingGalleryMessage = ModuleMessageWithReturn<StartScrapingGallery, Result<(), ScraperError>>;
+pub type StartScrapingGalleryMessage = ModuleMessage<StartScrapingGallery>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StartScrapingGallery {
@@ -43,7 +43,7 @@ pub struct StartScrapingGallery {
 }
 
 /// Message for sending scraped item IDs back to the scraper module, to be cache-fetched/individually scraped.
-pub type IngestScrapedSearchMessage = ModuleMessageWithReturn<IngestScrapedSearch, Result<(), ScraperError>>;
+pub type IngestScrapedSearchMessage = ModuleMessage<IngestScrapedSearch>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IngestScrapedSearch {
@@ -54,7 +54,7 @@ pub struct IngestScrapedSearch {
 }
 
 /// Message for sending freshly scraped items back to the scraper module, to be processed and sent to the next stage.
-pub type IngestScrapedItemsMessage = ModuleMessageWithReturn<IngestScrapedItems, Result<(), ScraperError>>;
+pub type IngestScrapedItemsMessage = ModuleMessage<IngestScrapedItems>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IngestScrapedItems {

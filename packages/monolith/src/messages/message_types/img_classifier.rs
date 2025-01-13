@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use crate::galleries::pipeline_states::GalleryAnalyzedState;
-use super::ModuleMessageWithReturn;
+use super::ModuleMessage;
 
 #[derive(Debug)]
 pub enum ImgClassifierMessage {
@@ -8,7 +8,7 @@ pub enum ImgClassifierMessage {
 }
 
 /// Message to start classifying analyzed items.
-pub type StartClassificationJobMessage = ModuleMessageWithReturn<StartClassificationJob, ()>;
+pub type StartClassificationJobMessage = ModuleMessage<StartClassificationJob>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StartClassificationJob {

@@ -40,14 +40,12 @@ impl RawScraperScheduler {
     pub async fn add_gallery(&self, new_gallery: NewGallery) -> Result<(), SchedulerError>
     {
         let new_gallery = new_gallery.gallery;
-
         let gallery_id = new_gallery.gallery_id.clone();
         let mut galleries = self.galleries.write().await;
-        if galleries.contains_key(&new_gallery.gallery_id) {
+        if galleries.contains_key(&gallery_id) {
             tracing::error!("Gallery with ID {} already exists", gallery_id);
             return Err(SchedulerError::GalleryAlreadyExists{ gallery_id });
         }
-
         let handle = self.generate_gallery_task(new_gallery).await;
         galleries.insert(gallery_id, handle);
         Ok(())
@@ -84,7 +82,7 @@ impl RawScraperScheduler {
     }
 
     /// Spawns a task to periodically trigger scraper requests for the input gallery,
-    /// returning a handle to the tokio task, and an Arc Mutex handle to the task struct.
+    /// returning a handle to the task, and an Arc Mutex handle to the task struct.
     async fn generate_gallery_task(&self, gallery: GalleryInitializationState) 
     -> (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>) 
     {
