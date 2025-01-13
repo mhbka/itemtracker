@@ -40,6 +40,17 @@ impl EvaluationCriteria {
             })
             .collect()
     }
+
+    /// Parses a list of answer strings into `CriterionAnswer`s and checks whether all answers satisfy hard criteria (if any).
+    /// 
+    /// This is just a combination of the `parse_answers` and `satisfies_hard_criteria` methods, for convenience.
+    /// 
+    /// Check them for details on return values/error cases.
+    pub fn parse_answers_and_check_hard_criteria(&mut self, answers: Vec<String>) -> Result<(Vec<CriterionAnswer>, bool), String> {
+        let parsed_answers = self.parse_answers(answers)?;
+        let satisfies_hard_criteria = self.satisfies_hard_criteria(&parsed_answers)?;
+        Ok((parsed_answers, satisfies_hard_criteria))
+    }
     
     /// Parse a list of answers for the evaluation criteria and returns them.
     /// 
@@ -64,9 +75,14 @@ impl EvaluationCriteria {
     /// Returns an `Err` if an answer type doesn't match the corresponding criterion type.
     /// 
     /// If you directly pass the successful output from `parse_answers`, this will never occur.
-    pub fn satisfies_hard_criterion(&mut self, answers: Vec<CriterionAnswer>) -> Result<bool, String> {
-        let result = zip(&mut self.criteria, answers)
-            .all(|(criterion, answer)| criterion.)
+    pub fn satisfies_hard_criteria(&mut self, answers: &Vec<CriterionAnswer>) -> Result<bool, String> {
+        zip(&mut self.criteria, answers)
+            .try_fold(true, |prev, (criterion, answer)| {
+                match criterion.satisfies_hard_criterion(&answer) {
+                    Ok(val) => Ok(val && prev),
+                    Err(err) => Err(err)
+                }
+            })
     } 
 }
 
@@ -128,8 +144,13 @@ impl Criterion {
         )
     }
 
-    fn satisfies_hard_criterion(&self, answer: CriterionAnswer) -> Result<bool, String> {
-        match (self.hard_criterion) {
+    /// Returns whether the answer satisfies the hard criterion.
+    /// 
+    /// Returns `true` if the hard criterion is `None`, or the answer type doesn't have a hard criterion.
+    /// 
+    /// Returns an `Err` if the answer type has a hard criterion type, but they don't match (ie `YesNo` and `Int`).
+    fn satisfies_hard_criterion(&self, answer: &CriterionAnswer) -> Result<bool, String> {
+        match &self.hard_criterion {
             Some(hard_criterion) => {
                 hard_criterion.is_satisfied(answer)
             },
@@ -171,21 +192,25 @@ impl HardCriterion {
     /// 
     /// Returns `true` if the answer type is not `YesNo`/`Int`/`Float`.
     /// 
-    /// Returns `false` if the answer type is `YesNo`/`Int`/`Float`, but doesn't match the hard criterion type.
-    fn is_satisfied(&self, answer: CriterionAnswer) -> bool {
+    /// Returns an `Err` if it is, but it doesn't match the hard criterion type.
+    fn is_satisfied(&self, answer: &CriterionAnswer) -> Result<bool, String> {
         match (self, answer) {
             (HardCriterion::YesNo(criterion), CriterionAnswer::YesNo(answer)) => {
-                *criterion == answer
+                Ok(criterion == answer)
             },
             (HardCriterion::Int(criterion), CriterionAnswer::Int(answer)) => {
-                criterion.is_satisfied(answer)
+                Ok(criterion.is_satisfied(answer))
             },
             (HardCriterion::Float(criterion), CriterionAnswer::Float(answer)) => {
-                criterion.is_satisfied(answer) 
+                Ok(criterion.is_satisfied(answer))
             },
-            (_, CriterionAnswer::YesNoUncertain(_)) => true,
-            (_, CriterionAnswer::OpenEnded(_)) => true,
-            _ => false
+            (_, CriterionAnswer::YesNoUncertain(_)) => {
+                Ok(true)
+            },
+            (_, CriterionAnswer::OpenEnded(_)) => {
+                Ok(true)
+            },
+            _ => Err(format!("Answer ({answer:?}) doesn't match hard criterion ({self:?}) type"))
         }
     }
 }
@@ -213,12 +238,12 @@ where
     T: PartialOrd + Copy,
 {   
     /// Returns whether `answer` satisfies the hard criterion.
-    pub fn is_satisfied(&self, answer: T) -> bool {
+    pub fn is_satisfied(&self, answer: &T) -> bool {
         match self {
-            NumericalHardCriterion::LessThan(threshold) => answer < *threshold,
-            NumericalHardCriterion::Equal(target) => answer == *target,
-            NumericalHardCriterion::MoreThan(threshold) => answer > *threshold,
-            NumericalHardCriterion::Between(min, max) => answer >= *min && answer <= *max,
+            NumericalHardCriterion::LessThan(threshold) => answer < threshold,
+            NumericalHardCriterion::Equal(target) => answer == target,
+            NumericalHardCriterion::MoreThan(threshold) => answer > threshold,
+            NumericalHardCriterion::Between(min, max) => answer >= min && answer <= max,
         }
     }
 }

@@ -94,8 +94,8 @@ impl AnthropicRequester {
                             }
                             match serde_json::from_str::<EvaluationAnswers>(&response.content[0].text) {
                                 Ok(parsed_message) => {
-                                    match eval_criteria.parse_answers(parsed_message.answers) {
-                                        Ok(answers) => {
+                                    match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
+                                        Ok((answers, satisfies_hard_criteria)) => {
                                             // TODO: determine the actual type this should have
                                             analyzed_items.push((item.clone(), answers));
                                         },
