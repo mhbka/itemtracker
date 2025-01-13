@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::galleries::scraping_pipeline::GalleryAnalyzedState;
+use crate::galleries::pipeline_states::GalleryAnalyzedState;
 use super::ModuleMessageWithReturn;
 
 #[derive(Debug)]

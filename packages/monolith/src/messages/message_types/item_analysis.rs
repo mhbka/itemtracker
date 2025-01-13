@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
-use crate::galleries::{domain_types::{GalleryId, Marketplace}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, scraping_pipeline::GalleryScrapedState};
+use crate::galleries::{domain_types::{GalleryId, Marketplace}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, pipeline_states::GalleryScrapedState};
 use super::ModuleMessageWithReturn;
 
 /// Possible errors emitted from the item analysis module.

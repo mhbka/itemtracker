@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter::zip};
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder};
 use types::{AnthropicMessage, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, scraping_pipeline::GalleryScrapedState}};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems, ScrapedItems}}, pipeline_states::{GalleryAnalyzedState, GalleryScrapedState}}};
 
 pub(super) mod types;
 
@@ -22,14 +22,19 @@ impl AnthropicRequester {
     }
 
     /// Perform analysis of a gallery's items.
-    pub async fn analyze_gallery(&mut self, mut gallery: GalleryScrapedState) {
+    pub async fn analyze_gallery(&mut self, mut gallery: GalleryScrapedState) -> GalleryAnalyzedState {
         let items = gallery.items.marketplace_items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
         let gallery_requests = self.build_requests(items, eval_criteria_string);
-        let results = self.execute_and_handle_requests(
+        let analyzed_items = self.execute_and_handle_requests(
             &mut gallery.evaluation_criteria, 
             gallery_requests
         ).await;
+        GalleryAnalyzedState {
+            gallery_id: gallery.gallery_id,
+            items: analyzed_items,
+            evaluation_criteria: gallery.evaluation_criteria
+        }
     }
 
     /// Build the requests for all the gallery's items.
@@ -58,7 +63,8 @@ impl AnthropicRequester {
         &self, 
         eval_criteria: &mut EvaluationCriteria,
         gallery_requests: HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>
-    ) {
+    ) -> AnalyzedItems {
+        let mut gallery_items = HashMap::new();
         for (marketplace, items_and_requests) in gallery_requests {
             let (items, item_requests): (Vec<_>, Vec<_>) = items_and_requests
                 .into_iter()
@@ -68,8 +74,12 @@ impl AnthropicRequester {
                 .map(|request| request.send());
             let results = join_all(request_futures).await;
             let items_and_results: Vec<_> = zip(items, results).collect();
-            let processed_results = self.process_marketplace_results(eval_criteria, items_and_results).await;
+            let marketplace_items = self
+                .process_marketplace_results(eval_criteria, items_and_results)
+                .await;
+            gallery_items.insert(marketplace, marketplace_items);
         }
+        AnalyzedItems { items: gallery_items }
     }
 
     /// Process the raw LLM output for all items in a gallery's marketplace.
@@ -77,8 +87,9 @@ impl AnthropicRequester {
         &self,
         eval_criteria: &mut EvaluationCriteria,
         results: Vec<(MarketplaceItemData, Result<reqwest::Response, reqwest::Error>)>,
-    ) {
-        let mut analyzed_items = vec![];
+    ) -> MarketplaceAnalyzedItems {
+        let mut relevant_items = vec![];
+        let mut irrelevant_items = vec![];
         let mut error_items = vec![];
         for (item, result) in results {
             let mut err_str = None;
@@ -96,8 +107,15 @@ impl AnthropicRequester {
                                 Ok(parsed_message) => {
                                     match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
                                         Ok((answers, satisfies_hard_criteria)) => {
-                                            // TODO: determine the actual type this should have
-                                            analyzed_items.push((item.clone(), answers));
+                                            let analyzed_item = AnalyzedMarketplaceItem {
+                                                item: item.clone(), // need to clone in case it's used in the error path
+                                                evaluation_answers: answers
+                                            };
+                                            if satisfies_hard_criteria {
+                                                relevant_items.push(analyzed_item);
+                                            } else {
+                                                irrelevant_items.push(analyzed_item);
+                                            }
                                         },
                                         Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
                                     }
@@ -110,10 +128,15 @@ impl AnthropicRequester {
                 },
                 Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
             }
-            if let Some(err_str) = err_str {
-                // TODO: determine the actual type this should have
-                error_items.push((item, err_str));
+            if let Some(error) = err_str {
+                let err_item = ErrorAnalyzedMarketplaceItem { item, error };
+                error_items.push(err_item);
             }
+        }
+        MarketplaceAnalyzedItems {
+            relevant_items,
+            irrelevant_items,
+            error_items
         }
     }
 

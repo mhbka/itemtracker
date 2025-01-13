@@ -4,7 +4,7 @@ use tokio::task::JoinHandle;
 use crate::galleries::domain_types::GalleryId;
 use crate::messages::ScraperSender;
 use crate::{
-    galleries::scraping_pipeline::GalleryInitializationState, 
+    galleries::pipeline_states::GalleryInitializationState, 
     messages::message_types::scraper_scheduler::{EditGallery, NewGallery, SchedulerError}
 };
 

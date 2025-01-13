@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, scraping_pipeline::GalleryScrapedState}, messages::{message_types::{item_analysis::{ItemAnalysisMessage, StartAnalysisJob, StartAnalysisJobMessage}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, pipeline_states::GalleryScrapedState}, messages::{message_types::{item_analysis::{ItemAnalysisMessage, StartAnalysisJob, StartAnalysisJobMessage}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
 
 /// This fetches cached items, processes scraped items, and eventually sends them to the next stage. 
 /// 

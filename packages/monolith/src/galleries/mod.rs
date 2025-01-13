@@ -2,7 +2,7 @@
 
 pub mod items;
 pub mod domain_types;
-pub mod scraping_pipeline;
+pub mod pipeline_states;
 pub mod eval_criteria;
 pub mod search_criteria;
 

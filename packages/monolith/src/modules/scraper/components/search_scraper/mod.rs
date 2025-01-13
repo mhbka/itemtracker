@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use request_form::SearchScraperRequestForm;
 use reqwest::{Client, RequestBuilder};
 use tokio::{sync::Mutex, task::JoinHandle};
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace}, scraping_pipeline::GalleryScrapingState}};
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace}, pipeline_states::GalleryScrapingState}};
 use super::state_manager::GalleryStates;
 
 mod request_form;

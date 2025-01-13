@@ -2,7 +2,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use tokio::sync::Mutex;
 use crate::{
-    galleries::scraping_pipeline::GalleryInitializationState, 
+    galleries::pipeline_states::GalleryInitializationState, 
     messages::{
         message_types::scraper::{
             ScraperMessage, 

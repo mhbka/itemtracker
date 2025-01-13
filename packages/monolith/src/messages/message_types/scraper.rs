@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::item_data::MarketplaceItemData, scraping_pipeline::GalleryScrapingState};
+use crate::galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::item_data::MarketplaceItemData, pipeline_states::GalleryScrapingState};
 use super::ModuleMessageWithReturn;
 use thiserror::Error;
 

@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, scraping_pipeline::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_states::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
 
 use super::{item_scraper::ItemScraper, output_processor::OutputProcessor, search_scraper::SearchScraper};
 

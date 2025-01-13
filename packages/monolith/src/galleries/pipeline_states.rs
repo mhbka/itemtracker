@@ -57,7 +57,7 @@ impl GalleryScrapingState {
 /// 
 /// Initialized in the scraper module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct  GalleryScrapedState {
+pub struct GalleryScrapedState {
     pub gallery_id: GalleryId,
     pub items: ScrapedItems,
     pub evaluation_criteria: EvaluationCriteria,
@@ -67,13 +67,14 @@ impl GalleryScrapedState {
 
 }
 
-/// This is the state of a scraping State after its items are analysed.
+/// This is the state of a scraping State after its items are analyzed.
 /// 
 /// Initialized in the item analysis module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryAnalyzedState {
     pub gallery_id: GalleryId,
     pub items: AnalyzedItems,
+    pub evaluation_criteria: EvaluationCriteria // TODO: do I still need this here?
 }
 
 impl GalleryAnalyzedState {

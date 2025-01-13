@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use crate::galleries::{eval_criteria::EvaluationCriteria, domain_types::Marketplace};
+use crate::galleries::{domain_types::Marketplace, eval_criteria::{CriterionAnswer, EvaluationCriteria}};
 use super::item_data::MarketplaceItemData;
 
 /// Items that have been freshly scraped in the scraper module.
@@ -12,8 +12,7 @@ pub struct ScrapedItems {
 /// Items that have been analyzed in the item analysis module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedItems {
-    pub items: HashMap<Marketplace, Vec<AnalyzedMarketplaceItem>>,
-    pub error_items: HashMap<Marketplace, Vec<MarketplaceItemData>>
+    pub items: HashMap<Marketplace, MarketplaceAnalyzedItems>
 }
 
 /// Items that have been classified in the image classifier module.
@@ -25,12 +24,26 @@ pub struct ClassifiedItems {
 
 ///// Subtypes
 
-/// Analyzed items under a marketplace.
+/// All analyzed items under a marketplace.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MarketplaceAnalyzedItems {
+    pub relevant_items: Vec<AnalyzedMarketplaceItem>,
+    pub irrelevant_items: Vec<AnalyzedMarketplaceItem>,
+    pub error_items: Vec<ErrorAnalyzedMarketplaceItem>
+}
+
+/// All Analyzed items under a marketplace.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedMarketplaceItem {
-    pub is_relevant: bool,
     pub item: MarketplaceItemData,
-    pub evaluated_criteria: EvaluationCriteria
+    pub evaluation_answers: Vec<CriterionAnswer>
+}
+
+/// Analyzed items under a marketplace.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ErrorAnalyzedMarketplaceItem {
+    pub item: MarketplaceItemData,
+    pub error: String
 }
 
 /// Classified items under a marketplace.
