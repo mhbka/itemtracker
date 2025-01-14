@@ -98,7 +98,8 @@ impl OutputProcessor {
         gallery_id: GalleryId,
         eval_criteria: EvaluationCriteria
     ) -> Result<(), ScraperError>
-    {
+    {   
+        tracing::trace!("Attempting to send gallery items for gallery {gallery_id}");
         // TODO: use a crate `drain_filter`, or replace when it finally makes it into stable
         let mut marketplace_items = HashMap::new();
         self.item_storage.retain(|(stored_gallery_id, marketplace), items| {
@@ -109,7 +110,7 @@ impl OutputProcessor {
             true
         });
         let msg = StartAnalysisJob::build(
-            gallery_id, 
+            gallery_id.clone(), 
             eval_criteria, 
             marketplace_items
         );
@@ -118,6 +119,7 @@ impl OutputProcessor {
             .await {
                 tracing::error!("Error while sending gallery to item analysis module: {err}");
             }
+        tracing::info!("Successfully sent gallery items for gallery {gallery_id}");
         Ok(())
     }
 }

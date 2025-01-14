@@ -76,8 +76,8 @@ impl ItemScraper {
         let request_handle = tokio::spawn(async move {
             tracing::trace!("Attempting request for gallery {gallery_id} ({marketplace})");
             // TODO: implement retry for the request here
-            match request.send().await {
-                Ok(res) => tracing::trace!("Successfully requested item scrape for gallery {gallery_id} ({marketplace}); response: {}", res.text().await.unwrap()),
+            match request.send().await {    
+                Ok(res) => tracing::info!("Successfully requested item scrape for gallery {gallery_id} ({marketplace}); response: {}", res.text().await.unwrap()),
                 Err(err) => tracing::error!("Failed to request search scrape for gallery {gallery_id} ({marketplace}): {err:#?}")
             }
             if gallery_states

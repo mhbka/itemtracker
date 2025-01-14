@@ -58,10 +58,12 @@ impl StateManager {
             );
         if init_gallery_result.is_err() 
         {
-            return Err(ScraperError::StartScrapingGalleryError { 
-                gallery_id: gallery.gallery_id, 
-                error: "Gallery already exists".into() 
-            });
+            return Err(
+                ScraperError::StartScrapingGalleryError { 
+                    gallery_id: gallery.gallery_id, 
+                    error: "Gallery already exists".into() 
+                }
+            );
         }
         tracing::trace!("Scheduling scrape search for gallery: {gallery:#?}");
         self.search_scraper
@@ -152,19 +154,23 @@ impl StateManager {
                             Ok(())
                         },
                         other => {
-                            return Err(ScraperError::IngestScrapedSearchError { 
-                                gallery_id: data.gallery_id, 
-                                marketplace: data.marketplace, 
-                                error: format!("Invalid status for gallery + marketplace ({other:#?})") }
+                            return Err(
+                                ScraperError::IngestScrapedSearchError { 
+                                    gallery_id: data.gallery_id, 
+                                    marketplace: data.marketplace, 
+                                    error: format!("Invalid status for gallery + marketplace ({other:#?})") 
+                                }
                             );
                         }
                     }
                 }
                 Err(_) => {
-                    return Err(ScraperError::IngestScrapedSearchError { 
-                        gallery_id: data.gallery_id, 
-                        marketplace: data.marketplace, 
-                        error: "This gallery + marketplace is not currently being scraped".into() }
+                    return Err(
+                        ScraperError::IngestScrapedSearchError { 
+                            gallery_id: data.gallery_id, 
+                            marketplace: data.marketplace, 
+                            error: "This gallery + marketplace is not currently being scraped".into() 
+                        }
                     );
                 }
             }
