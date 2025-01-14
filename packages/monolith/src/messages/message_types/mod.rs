@@ -9,37 +9,6 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::oneshot;
 
-/// Represents a message to a module.
-/// 
-/// This is used for one-way communication, 
-/// such as passing a gallery from one stage in the pipeline to the next.
-/// 
-/// ## Note (to self?)
-/// If you want to communicate that something in the pipeline has failed,
-/// you should emit a log (and in the future, let some state-tracking module know?).
-/// 
-/// Don't use `ModuleMessageWithReturn` with a `Result` return type to represent
-/// if the next module is successful.
-#[derive(Debug)]
-pub struct ModuleMessage<Message> 
-where Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug {
-    message: Message,
-}
-
-impl<Message> ModuleMessage<Message>
-where Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug {
-    /// Initialize the message, return it as well as the oneshot channel receiver.
-    pub fn new(message: Message) -> Self {
-        Self { message }
-    }
-
-    /// Obtain the actual message, consuming this `ModuleMessage`.
-    pub fn get_msg(self) -> Message {
-        self.message
-    }
-}
-
-
 /// Generic struct for a message to a module that requires a response.
 /// 
 /// This is used for things like "cross-module" function calls,
@@ -48,8 +17,15 @@ where Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug {
 /// ## Use
 /// 
 /// - `new()` returns this struct along with a **receiver** for receiving the response. 
-/// - This struct is sent to an actor via something like an mpsc channel, which can use `get_msg()` to get the actual message data. 
+/// - This struct is sent to an actor via something like an mpsc channel, which uses `get_msg()` to get the actual message data. 
 /// - After acting on the message, the actor can pass a response to `respond()`, which the original function can receive by `await`ing the **receiver**.
+/// 
+/// ## Note
+/// 
+/// This should not be used for communicating the success/failure of an operation triggered by a message,
+/// ie communicating failure to start a search scrape back to the scheduler.
+/// 
+/// Such issues should be logged with `tracing` and (in the future) communicated to the state-tracking module.
 /// 
 /// ## Example
 /// 

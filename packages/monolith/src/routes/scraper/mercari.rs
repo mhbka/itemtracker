@@ -1,5 +1,5 @@
 use axum::{routing::post, Json, Router, http::StatusCode};
-use crate::{config::AxumConfig, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedItemsMessage, IngestScrapedSearch, IngestScrapedSearchMessage, ScraperError, ScraperMessage, StartScrapingGallery, StartScrapingGalleryMessage}, ScraperSender}, modules::AppModuleConnections};
+use crate::{config::AxumConfig, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperMessage, StartScrapingGallery}, ScraperSender}, modules::AppModuleConnections};
 
 /// Build the routes for ingesting scraped Mercari data.
 /// 
@@ -28,10 +28,9 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
 
 #[tracing::instrument(skip(sender))]
 async fn start_scrape(
-    Json(data): Json<StartScrapingGallery>,
+    Json(msg): Json<StartScrapingGallery>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let msg = StartScrapingGalleryMessage::new(data);
     sender.send(ScraperMessage::StartScrapingGallery(msg)).await.unwrap();
     Ok(StatusCode::OK)
 }
@@ -41,10 +40,9 @@ async fn start_scrape(
 /// TODO: Return a nicer error type?
 #[tracing::instrument(skip(sender))]
 async fn ingest_item_ids(
-    Json(data): Json<IngestScrapedSearch>,
+    Json(msg): Json<IngestScrapedSearch>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let msg = IngestScrapedSearchMessage::new(data);
     let send_res = sender.send(ScraperMessage::IngestScrapedSearch(msg)).await;  
     if let Err(err) = send_res {
         let err_str = format!("Critical error: Unable to send a message through ScraperSender ({err:?})");
@@ -59,10 +57,9 @@ async fn ingest_item_ids(
 /// TODO: Return a nicer error type?
 #[tracing::instrument(skip(sender))]
 async fn ingest_items(
-    Json(data): Json<IngestScrapedItems>,
+    Json(msg): Json<IngestScrapedItems>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    let msg = IngestScrapedItemsMessage::new(data);
     let send_res = sender.send(ScraperMessage::IngestScrapedItems(msg)).await;  
     if let Err(err) = send_res {
         let err_str = format!("Critical error: Unable to send a message through ScraperSender ({err:?})");

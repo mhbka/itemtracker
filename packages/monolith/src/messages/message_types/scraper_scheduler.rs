@@ -14,7 +14,7 @@ pub enum SchedulerError {
     GalleryAlreadyExists { gallery_id: GalleryId },
 }
 
-/// Possible messages that a scheduler can take.
+/// The types of messages that scheduler module can take.
 #[derive(Debug)]
 pub enum SchedulerMessage {
     NewGallery(NewGalleryMessage),

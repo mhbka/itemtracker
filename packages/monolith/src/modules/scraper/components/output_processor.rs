@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, pipeline_states::GalleryScrapedState}, messages::{message_types::{item_analysis::{ItemAnalysisMessage, StartAnalysisJob, StartAnalysisJobMessage}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, eval_criteria::{self, EvaluationCriteria}, items::{item_data::MarketplaceItemData, pipeline_items::ScrapedItems}, pipeline_states::GalleryScrapedState}, messages::{message_types::{item_analysis::{ItemAnalysisMessage, StartAnalysisJob}, scraper::ScraperError, storage::marketplace_items::{FetchItems, FetchItemsMessage, MarketplaceItemsStorageMessage}}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
 
 /// This fetches cached items, processes scraped items, and eventually sends them to the next stage. 
 /// 
@@ -108,12 +108,11 @@ impl OutputProcessor {
             }
             true
         });
-        let job_msg = StartAnalysisJob::build(
+        let msg = StartAnalysisJob::build(
             gallery_id, 
             eval_criteria, 
             marketplace_items
         );
-        let msg = StartAnalysisJobMessage::new(job_msg);
         if let Err(err) = self.img_analysis_msg_sender
             .send(ItemAnalysisMessage::StartAnalysis(msg))
             .await {

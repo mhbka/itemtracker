@@ -1,15 +1,13 @@
 use serde::{Serialize, Deserialize};
 use crate::galleries::pipeline_states::GalleryAnalyzedState;
-use super::ModuleMessage;
 
+/// The types of messages the image classifer module can take.
 #[derive(Debug)]
 pub enum ImgClassifierMessage {
-    StartClassification(StartClassificationJobMessage)
+    StartClassification(StartClassificationJob)
 }
 
-/// Message to start classifying analyzed items.
-pub type StartClassificationJobMessage = ModuleMessage<StartClassificationJob>;
-
+/// Message to start image classification for a gallery.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StartClassificationJob {
     pub gallery: GalleryAnalyzedState

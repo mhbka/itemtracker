@@ -6,8 +6,7 @@ use crate::{
     messages::{
         message_types::scraper::{
             ScraperMessage, 
-            StartScrapingGallery, 
-            StartScrapingGalleryMessage
+            StartScrapingGallery
         },
     ScraperSender}};
 
@@ -35,8 +34,7 @@ impl ScheduledGalleryTask {
             let gallery = self.gallery
                 .clone()
                 .to_next_stage(); // TODO: Should `previous_scraped_item_datetime` be set in the scraping stage for better accuracy?
-            let scraping_job = StartScrapingGallery { gallery };
-            let msg = StartScrapingGalleryMessage::new(scraping_job);
+            let msg = StartScrapingGallery { gallery };
             if let Err(err) =  self.scraper_msg_sender
                 .lock()
                 .await

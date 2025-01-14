@@ -2,7 +2,7 @@ use futures::future::{join, join_all};
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::{config::ItemAnalysisConfig, galleries::pipeline_states::GalleryScrapedState, messages::{message_types::item_analysis::ItemAnalysisError, ImageClassifierSender}};
+use crate::{config::ItemAnalysisConfig, galleries::pipeline_states::GalleryScrapedState, messages::{message_types::{img_classifier::{ImgClassifierMessage, StartClassificationJob}, item_analysis::ItemAnalysisError}, ImageClassifierSender}};
 
 use super::anthropic::AnthropicRequester;
 
@@ -32,6 +32,8 @@ impl RequestOrchestrator {
         let analyzed_gallery = self.anthropic_requester
             .analyze_gallery(gallery)
             .await;
+        let msg = StartClassificationJob { gallery: analyzed_gallery };
+        self.img_classifier_msg_sender.send(ImgClassifierMessage::StartClassification(msg)).await;
         Ok(())
     }
 }
