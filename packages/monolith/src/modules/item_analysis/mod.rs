@@ -33,6 +33,7 @@ impl ItemAnalysisModule {
 
     /// Start accepting and handling messages.
     pub async fn run(&mut self) {
+        tracing::info!("ItemAnalysisModule is running...");
         while let Some(msg) = self.msg_receiver.receive().await {
             self.process_msg(msg).await;
         }

@@ -6,6 +6,7 @@ use super::ItemAnalysisModule;
 
 // TODO: 
 pub(super) async fn handle_start_analysis_msg(msg: StartAnalysisJob, module: &mut ItemAnalysisModule) {
+    tracing::trace!("Received message to begin analysis for gallery {}", msg.gallery.gallery_id);
     let gallery = msg.gallery;
     let gallery_id = gallery.gallery_id.clone();
     if module.galleries_in_progress.contains(&gallery_id) {

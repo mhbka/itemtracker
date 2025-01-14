@@ -5,6 +5,7 @@ use crate::messages::message_types::scraper::{IngestScrapedItems, IngestScrapedS
 use super::ScraperModule;
 
 pub(super) async fn handle_start_scraping_gallery_msg(msg: StartScrapingGallery, module: &mut ScraperModule) {
+    tracing::trace!("Received message to start scraping gallery {}", msg.gallery.gallery_id);
     let schedule_result = module.state_manager
         .start_scraping_gallery(msg.gallery)
         .await;
@@ -14,6 +15,7 @@ pub(super) async fn handle_start_scraping_gallery_msg(msg: StartScrapingGallery,
 }
 
 pub(super) async fn handle_ingest_scraped_search_msg(msg: IngestScrapedSearch, module: &mut ScraperModule) {
+    tracing::trace!("Received message to ingest scraped search for gallery {} ({})", msg.gallery_id, msg.marketplace);
     let schedule_result = module.state_manager
         .ingest_scraped_search(msg)
         .await;
@@ -23,6 +25,7 @@ pub(super) async fn handle_ingest_scraped_search_msg(msg: IngestScrapedSearch, m
 }
 
 pub(super) async fn handle_ingest_scraped_items_msg(msg: IngestScrapedItems, module: &mut ScraperModule) {
+    tracing::trace!("Received message to ingest scraped items for gallery {} ({})", msg.gallery_id, msg.marketplace);
     let schedule_result = module.state_manager
         .ingest_scraped_items(msg)
         .await;

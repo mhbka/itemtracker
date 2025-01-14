@@ -85,7 +85,7 @@ impl StateManager {
                         MarketplaceStatus::SearchScrapeInProgress(_) => {
                             gallery_states
                                 .update_status(&data.gallery_id, &data.marketplace)
-                                .expect("Gallery + marketplace should already exist here");
+                                .expect("Gallery + marketplace already proven to exist here");
                             data.scraped_item_ids = self.output_processor
                                 .fetch_cached_items(
                                     &data.gallery_id, 
@@ -144,6 +144,7 @@ impl StateManager {
                                 )
                                 .await;
                             if gallery_states.is_ready_to_send(&data.gallery_id) {
+                                tracing::info!("All marketplaces for gallery {} are scraped, ready to send to next module", data.gallery_id);
                                 let gallery_data = gallery_states
                                     .remove_gallery(&data.gallery_id)
                                     .expect("Gallery should definitely exist");

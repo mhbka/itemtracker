@@ -37,6 +37,7 @@ impl OutputProcessor {
         up_to: &UnixUtcDateTime,
         scraped_item_ids: Vec<ItemId>,
     ) -> Vec<ItemId> {
+        tracing::trace!("Attempting to fetch cached items for gallery {gallery_id} ({marketplace})");
         let storage_key = (gallery_id.clone(), marketplace.clone());
         if self.item_storage.contains_key(&storage_key) {
             tracing::warn!("Tried to fetch cached items for gallery {gallery_id} {marketplace} when they were already fetched");
@@ -51,13 +52,18 @@ impl OutputProcessor {
         if let Err(err) = self.item_storage_msg_sender
             .send(MarketplaceItemsStorageMessage::FetchItems(msg))
             .await {
-                // If we couldn't request to fetch items, just log it and return all item IDs
-                tracing::error!("Error while sending message to fetch items from item storage: {err}");
+                tracing::error!("Error while sending message to fetch items from item storage (will scrape all item IDs): {err}");
                 self.item_storage.insert(storage_key, vec![]);
                 return scraped_item_ids;
             }
         match response_receiver.await {
             Ok(res) => {
+                tracing::info!(
+                    "Successfully fetched {} cached items for gallery {} ({})",
+                    res.stored_items.len(),
+                    gallery_id,
+                    marketplace
+                );
                 self.item_storage.insert(storage_key, res.stored_items);
                 return res.unfetched_marketplace_item_ids;
             },
@@ -77,6 +83,7 @@ impl OutputProcessor {
         marketplace: &Marketplace,
         mut scraped_items: Vec<MarketplaceItemData>
     ) { 
+        tracing::trace!("Attempting to process scraped items for gallery {gallery_id} ({marketplace})");
         let storage_key = (gallery_id.clone(), marketplace.clone());
         match self.item_storage.get_mut(&storage_key) {
             Some(cached_items) => {
@@ -90,6 +97,7 @@ impl OutputProcessor {
                 self.item_storage.insert(storage_key, scraped_items);
             }
         };
+        tracing::info!("Successfully processed scraped items for gallery {gallery_id} ({marketplace})");
     }
 
     /// Sends all items under a gallery to the next stage.
