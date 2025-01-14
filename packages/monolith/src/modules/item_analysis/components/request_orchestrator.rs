@@ -1,9 +1,4 @@
-use futures::future::{join, join_all};
-use reqwest::{Client, RequestBuilder};
-use serde::{Deserialize, Serialize};
-
 use crate::{config::ItemAnalysisConfig, galleries::pipeline_states::GalleryScrapedState, messages::{message_types::{img_classifier::{ImgClassifierMessage, StartClassificationJob}, item_analysis::ItemAnalysisError}, ImageClassifierSender}};
-
 use super::anthropic::AnthropicRequester;
 
 /// Orchestrates requesting of the LLM for a gallery's items.
@@ -29,11 +24,21 @@ impl RequestOrchestrator {
         &mut self, 
         gallery: GalleryScrapedState,
     ) -> Result<(), ItemAnalysisError> {
+        let gallery_id = gallery.gallery_id.clone();
         let analyzed_gallery = self.anthropic_requester
             .analyze_gallery(gallery)
             .await;
         let msg = StartClassificationJob { gallery: analyzed_gallery };
-        self.img_classifier_msg_sender.send(ImgClassifierMessage::StartClassification(msg)).await;
+        match self.img_classifier_msg_sender
+            .send(ImgClassifierMessage::StartClassification(msg))
+            .await {
+                Ok(_) => {
+                    tracing::info!("Successfully sent analyzed gallery items for gallery {gallery_id} to image classifier module");
+                }
+                Err(err) => {
+                    tracing::error!("Error while sending analyzed gallery items to image classifier: {err}")
+                },
+            }
         Ok(())
     }
 }

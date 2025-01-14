@@ -97,6 +97,7 @@ impl AnthropicRequester {
                 Ok(res) => {
                     match res.json::<AnthropicResponse>().await {
                         Ok(response) => {
+                            tracing::info!("Successful response: {response:#?}"); // delete this later on
                             if response.content.len() == 0 {
                                 err_str = Some("Expected 1 message in Anthropic response but found none".into());
                             }
@@ -129,10 +130,18 @@ impl AnthropicRequester {
                 Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
             }
             if let Some(error) = err_str {
+                tracing::warn!("Item {} had an error during item analysis: {}", item.id, error);
                 let err_item = ErrorAnalyzedMarketplaceItem { item, error };
                 error_items.push(err_item);
             }
         }
+        tracing::info!(
+            "Item analysis results:
+            - {} relevant items
+            - {} irrelevant items
+            - {} error items",
+            relevant_items.len(), irrelevant_items.len(), error_items.len()
+        );
         MarketplaceAnalyzedItems {
             relevant_items,
             irrelevant_items,
