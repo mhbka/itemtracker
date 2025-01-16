@@ -17,7 +17,25 @@ pub struct AnthropicRequestForm {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnthropicMessage {
     pub role: String,
-    pub content: String
+    pub content: Vec<AnthropicMessageContent>
+}
+
+/// The layout of content inside an Anthropic API request message.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AnthropicMessageContent {
+    #[serde(alias = "type")] // can't directly name a pub struct member `type` as it's a keyword
+    pub content_type: String,
+    pub text: Option<String>,
+    pub source: Option<AnthropicImageMessageContent>
+}   
+
+/// Used to send image blocks in an Anthropic API message.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AnthropicImageMessageContent {
+    #[serde(alias = "type")] // can't directly name a pub struct member `type` as it's a keyword
+    pub source_type: String,
+    pub media_type: String,
+    pub data: String
 }
 
 /// The response received from a Anthropic API request.

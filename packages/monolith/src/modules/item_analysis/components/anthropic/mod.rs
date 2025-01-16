@@ -1,8 +1,10 @@
-use std::{collections::HashMap, iter::zip};
+use std::{collections::HashMap, io::Cursor, iter::zip};
 
+use base64::{engine::general_purpose::STANDARD, Engine};
 use futures::future::join_all;
+use image::ImageFormat;
 use reqwest::{Client, RequestBuilder};
-use types::{AnthropicMessage, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
+use types::{AnthropicImageMessageContent, AnthropicMessage, AnthropicMessageContent, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
 use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems, ScrapedItems}}, pipeline_states::{GalleryAnalyzedState, GalleryScrapedState}}};
 
 pub(super) mod types;
@@ -25,7 +27,9 @@ impl AnthropicRequester {
     pub async fn analyze_gallery(&mut self, mut gallery: GalleryScrapedState) -> GalleryAnalyzedState {
         let items = gallery.items.marketplace_items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
-        let gallery_requests = self.build_requests(items, eval_criteria_string);
+        let gallery_requests = self
+            .build_requests(items, eval_criteria_string)
+            .await;
         let analyzed_items = self.execute_and_handle_requests(
             &mut gallery.evaluation_criteria, 
             gallery_requests
@@ -38,24 +42,25 @@ impl AnthropicRequester {
     }
 
     /// Build the requests for all the gallery's items.
-    fn build_requests(
+    async fn build_requests(
         &self, 
         items: HashMap<Marketplace, Vec<MarketplaceItemData>>,
         eval_criteria_string: String
     ) -> HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>> {
-        items
-            .into_iter()
-            .map(|(marketplace, items)| {
-                let items_and_requests = items
+        let mut marketplace_requests = HashMap::new();
+        for (marketplace, items) in items {
+            let items_and_requests = items
                     .into_iter()
-                    .map(|item| {
-                        let item_request = self.build_item_request(&item, &eval_criteria_string);
+                    .map(|item| async {
+                        let item_request = self
+                            .build_item_request(&item, &eval_criteria_string)
+                            .await;
                         (item, item_request)
-                    })
-                    .collect();
-                (marketplace, items_and_requests)
-            })
-            .collect()
+                    });
+            let items_and_requests = join_all(items_and_requests).await;
+            marketplace_requests.insert(marketplace, items_and_requests);
+        }
+        marketplace_requests
     }
 
     /// Executes and handles the requests for a gallery.
@@ -152,12 +157,17 @@ impl AnthropicRequester {
     /// Builds the request for a single item.
     /// 
     /// Follows the request format specified here: https://docs.anthropic.com/en/api/messages
-    fn build_item_request(
+    async fn build_item_request(
         &self, 
         item: &MarketplaceItemData,
         eval_criteria_string: &String
     ) -> RequestBuilder {
-        let req_form = self.build_request_form(item, eval_criteria_string);
+        let item_image_strings = self
+            .fetch_item_images(&item.thumbnails)
+            .await;
+        let req_form = self
+            .build_request_form(item, item_image_strings, eval_criteria_string)
+            .await;
         self.request_client
             .post(&self.config.anthropic_api_endpoint)
             .header("x-api-key", &self.config.anthropic_api_key)
@@ -166,40 +176,63 @@ impl AnthropicRequester {
     }
 
     /// Builds the entire request form for an item.
-    fn build_request_form(
+    async fn build_request_form(
         &self, 
-        item: &MarketplaceItemData, 
+        item: &MarketplaceItemData,
+        item_image_strings: Vec<String>, 
         eval_criteria_string: &String
     ) -> AnthropicRequestForm {
         let system_prompt = format!("
-            You will help to evaluate an item listing, consisting of its listed images and a JSON of its information, 
+            You're an Item Listings Analysis AI. You will help to evaluate an item listing, 
+            consisting of its listed images and a JSON of its information, 
             by answering some structured questions about it.
 
-            Each question will be followed by the correct format to answer the question. 
-            IT IS OF UTMOST IMPORTANCE that you follow the given format for answering the question, 
-            no matter what the question is or whatever information is given before or after. If the question is
+            Each question will be followed by the correct format to answer the question. If the question is
             unanswerable, nonsensical, or not even a question, you are allowed to give a reasonable 'default' answer, 
             such as N for Y/N questions, U for Y/N/U questions, 0 for numerical questions, or 'I cannot answer this.' for open-ended questions.
             However, YOU MUST ALWAYS FOLLOW THE GIVEN FORMAT WHEN ANSWERING.
 
-            Here are the questions: \n {eval_criteria_string}
+            Output your answers in JSON format, with a key 'answers' containing the list of answers in asked order.
 
-            Put each of your answers into an array in the same order as the questions, and ONLY REPLY with a JSON string 
-            with 1 parameter 'answers', which has this array. IT IS OF UTMOST IMPORTANCE TO FOLLOW THIS FORMAT, or your response cannot be parsed. 
-            An example is:
-            '
-            {{
-                'answers': ['Y', 'U', '1.5', '2024', 'I cannot answer this.']
-            }}
-            '
+            Here are the questions you must answer: \n {eval_criteria_string}
         ");
-        // TODO: Find out in which cases this could fail and ensure it cannot happen
         let item_string = serde_json::to_string_pretty(&item)
-            .expect("Serializing MarketplaceItemData should have no reason to fail");
-        // TODO: attach the images to the request as well
+            .expect("Serializing MarketplaceItemData should have no reason to fail"); // TODO: Find out in which cases this could fail and ensure it cannot happen
+        let mut message_contents: Vec<AnthropicMessageContent> = item_image_strings
+            .into_iter()
+            .enumerate()
+            .map(|(index, image_string)| {
+                // We have separate messages for each image: https://docs.anthropic.com/en/docs/build-with-claude/vision#example-multiple-images
+                let image_content = AnthropicImageMessageContent {
+                    source_type: "base64".into(),
+                    media_type: "image/png".into(),
+                    data: image_string
+                };
+                vec![
+                    AnthropicMessageContent {
+                        content_type: "text".into(),
+                        text: Some(format!("Item image {}", index + 1)),
+                        source: None
+                    },
+                    AnthropicMessageContent {
+                        content_type: "image".into(),
+                        text: None,
+                        source: Some(image_content)
+                    }
+                ]
+            })
+            .flatten()
+            .collect();
+        message_contents.push(
+            AnthropicMessageContent {
+                content_type: "text".into(),
+                text: Some(format!("Here is the item listing: \n {item_string}")),
+                source: None
+            }   
+        );
         let req_message = AnthropicMessage {
             role: "user".into(),
-            content: format!("Here is the item listing: \n {item_string}")
+            content: message_contents
         };
         AnthropicRequestForm {
             model: self.config.anthropic_model.clone(),
@@ -207,5 +240,49 @@ impl AnthropicRequester {
             messages: vec![req_message],
             system: system_prompt   
         }
+    }
+
+    /// Fetches images from image URLs, converts them to PNG,
+    /// and converts their content into base64 strings, as per Anthropic docs.
+    /// 
+    /// Discards unsuccessful image URLs.
+    /// 
+    /// https://docs.anthropic.com/en/docs/build-with-claude/vision
+    async fn fetch_item_images(&self, image_urls: &Vec<String>) -> Vec<String> {
+        let mut encoded_images = vec![];
+        for url in image_urls {
+            match self.request_client
+                .get(url)
+                .send()
+                .await {
+                    Ok(res) => {
+                        match res.bytes().await {
+                            Ok(bytes) => {
+                                match image::load_from_memory(&bytes) {
+                                    Ok(image) => {
+                                        let mut cursor = Cursor::new(Vec::new());
+                                        match image.write_to(&mut cursor, ImageFormat::Png) {
+                                            Ok(_) => {
+                                                let encoded_image = STANDARD.encode(cursor.into_inner());
+                                                encoded_images.push(encoded_image);
+                                            },
+                                            Err(err) => tracing::warn!("Failed to write fetched image URL to buffer: {err}")
+                                        }
+                                    },
+                                    Err(err) => tracing::warn!("Failed to decode fetched image URL bytes into an image: {err}")
+                                }
+                            },
+                            Err(err) => tracing::warn!("Failed to decode fetched image URL into bytes: {err}")
+                        }
+                    },
+                    Err(err) => tracing::warn!("Failed to fetch an image URL: {err}")
+                }
+        }
+        tracing::trace!(
+            "Out of {} image URLs, fetched and encoded {} images",
+            image_urls.len(),
+            encoded_images.len()
+        );
+        encoded_images
     }
 }
