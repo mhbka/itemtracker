@@ -17,7 +17,7 @@ async fn main() {
 
     let app_config = AppConfig::load().unwrap();
     let module_connections = AppModuleConnections::new();
-    let router= routes::build_router(&app_config.axum_config, &module_connections);
+    let router = routes::build_router(&app_config.axum_config, &module_connections);
     let app_modules = AppModules::init(&app_config, module_connections).run();
 
     tracing::info!("App started");

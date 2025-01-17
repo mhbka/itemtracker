@@ -5,6 +5,9 @@ mod msg_handler;
 mod components;
 
 /// Module in charge of orchestrating analysis of scraped items.
+/// 
+/// At its core, it just calls out to an LLM with the item information + images;
+/// the rest is just error handling/data parsing/other administration.
 pub struct ItemAnalysisModule {
     config: ItemAnalysisConfig,
     llm_requester: RequestOrchestrator,

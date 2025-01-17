@@ -1,3 +1,4 @@
+use image_classifier::ImageClassifierModule;
 use item_analysis::ItemAnalysisModule;
 use tokio::sync::mpsc;
 use scraper::ScraperModule;
@@ -19,7 +20,8 @@ const MODULE_MESSAGE_BUFFER: usize = 1000;
 pub struct AppModules {
     scheduler_module: ScraperSchedulerModule,
     scraper_module: ScraperModule,
-    analysis_module: ItemAnalysisModule
+    analysis_module: ItemAnalysisModule,
+    classifier_module: ImageClassifierModule
 }
 
 impl AppModules {
@@ -41,10 +43,15 @@ impl AppModules {
             connections.item_analysis.1,
             connections.image_classifier.0
         );
+        let classifier_module = ImageClassifierModule::init(
+            config.img_classifier_config.clone(),
+            connections.image_classifier.1
+        );
         AppModules {
             scheduler_module,
             scraper_module,
-            analysis_module
+            analysis_module,
+            classifier_module
         }
     }
 
@@ -53,10 +60,12 @@ impl AppModules {
         let scheduler_task = tokio::spawn(async move { self.scheduler_module.run().await; });
         let scraper_task = tokio::spawn(async move { self.scraper_module.run().await; });
         let analysis_task = tokio::spawn(async move { self.analysis_module.run().await; });
+        let classifier_task = tokio::spawn(async move { self.classifier_module.run().await; });
         AppModulesRunningHandles {
             scheduler_task,
             scraper_task,
-            analysis_task
+            analysis_task,
+            classifier_task
         }
     }
 }
@@ -65,7 +74,8 @@ impl AppModules {
 pub struct AppModulesRunningHandles {
     scheduler_task: JoinHandle<()>,
     scraper_task: JoinHandle<()>,
-    analysis_task: JoinHandle<()>
+    analysis_task: JoinHandle<()>,
+    classifier_task: JoinHandle<()>,
 }
 
 /// Struct for initializing inter-module connections.
