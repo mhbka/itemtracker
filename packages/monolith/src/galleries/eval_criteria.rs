@@ -34,10 +34,10 @@ impl EvaluationCriteria {
                     format!("- {} (ONLY ANSWER WITH 'Y' for Yes, 'N' for No, or 'U' for Uncertain) \n", criterion.question)
                 },
                 CriterionType::Int => {
-                    format!("- {} (ONLY ANSWER WITH AN INTEGER NUMBER) \n", criterion.question)
+                    format!("- {} (ONLY ANSWER WITH AN INTEGER NUMBER AS A STRING) \n", criterion.question)
                 },
                 CriterionType::Float => {
-                    format!("- {} (ONLY ANSWER WITH A FLOATING POINT NUMBER) \n", criterion.question)
+                    format!("- {} (ONLY ANSWER WITH A FLOATING POINT NUMBER AS A STRING) \n", criterion.question)
                 },
                 CriterionType::OpenEnded => {
                     format!("- {} (ANSWER WITH ANYTHING UNDER 200 CHARACTERS) \n", criterion.question) // arbitrary character limit, should be okay
