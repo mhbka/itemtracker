@@ -17,9 +17,13 @@ impl EvaluationCriteria {
     }
 
     /// A string that describes each question and how to answer it.
-    /// 
     /// This is passed to the LLM in item analysis, to ensure a correctly structured response.
+    /// 
+    /// If there are no criteria, the description simply states that there are no questions.
     pub fn describe_criteria(&self) -> String {
+        if self.criteria.len() == 0 {
+            return "THERE ARE NO QUESTIONS".into();
+        }
         self.criteria
             .iter()
             .map(|criterion| return match criterion.criterion_type {

@@ -206,6 +206,7 @@ impl AnthropicRequester {
             However, YOU MUST ALWAYS FOLLOW THE GIVEN FORMAT WHEN ANSWERING.
 
             Output your answers in JSON format, with a key 'answers' containing the list of answers in asked order.
+            If there are no questions, return the list empty.
 
             Here are the questions you must answer: \n {eval_criteria_string}
         ");
@@ -215,7 +216,7 @@ impl AnthropicRequester {
             .into_iter()
             .enumerate()
             .map(|(index, image_string)| {
-                // We have separate messages for each image: https://docs.anthropic.com/en/docs/build-with-claude/vision#example-multiple-images
+                // Follows the recommended format for sending multiple images: https://docs.anthropic.com/en/docs/build-with-claude/vision#example-multiple-images
                 let image_content = AnthropicImageMessageContent {
                     source_type: "base64".into(),
                     media_type: "image/png".into(),
