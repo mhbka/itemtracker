@@ -3,7 +3,7 @@ use std::{collections::HashMap, io::Cursor, iter::zip};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use futures::future::join_all;
 use image::ImageFormat;
-use reqwest::{Client, RequestBuilder};
+use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{AnthropicImageMessageContent, AnthropicMessage, AnthropicMessageContent, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
 use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems, ScrapedItems}}, pipeline_states::{GalleryAnalyzedState, GalleryScrapedState}}};
 
@@ -78,7 +78,7 @@ impl AnthropicRequester {
                 .into_iter()
                 .map(|request| request.send());
             let results = join_all(request_futures).await;
-            let items_and_results: Vec<_> = zip(items, results).collect();
+            let items_and_results = zip(items, results).collect();
             let marketplace_items = self
                 .process_marketplace_results(eval_criteria, items_and_results)
                 .await;
@@ -100,36 +100,44 @@ impl AnthropicRequester {
             let mut err_str = None;
             match result {
                 Ok(res) => {
-                    match res.json::<AnthropicResponse>().await {
-                        Ok(response) => {
-                            tracing::info!("Successful response: {response:#?}"); // delete this later on
-                            if response.content.len() == 0 {
-                                err_str = Some("Expected 1 message in Anthropic response but found none".into());
-                            }
-                            else if response.content.len() > 1 {
-                                tracing::warn!("Unexpectedly received >1 message in Anthropic response; using the first...");
-                            }
-                            match serde_json::from_str::<EvaluationAnswers>(&response.content[0].text) {
-                                Ok(parsed_message) => {
-                                    match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
-                                        Ok((answers, satisfies_hard_criteria)) => {
-                                            let analyzed_item = AnalyzedMarketplaceItem {
-                                                item: item.clone(), // need to clone in case it's used in the error path
-                                                evaluation_answers: answers
-                                            };
-                                            if satisfies_hard_criteria {
-                                                relevant_items.push(analyzed_item);
-                                            } else {
-                                                irrelevant_items.push(analyzed_item);
+                    match res.status() {
+                        StatusCode::OK => {
+                            match res.json::<AnthropicResponse>().await {
+                                Ok(response) => {
+                                    tracing::info!("Successful response: {response:#?}"); // TODO: delete this later on
+                                    if response.content.len() == 0 {
+                                        err_str = Some("Expected 1 message in Anthropic response but found none".into());
+                                    }
+                                    else if response.content.len() > 1 {
+                                        tracing::warn!("Unexpectedly received >1 message in Anthropic response; using the first...");
+                                    }
+                                    match serde_json::from_str::<EvaluationAnswers>(&response.content[0].text) {
+                                        Ok(parsed_message) => {
+                                            match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
+                                                Ok((answers, satisfies_hard_criteria)) => {
+                                                    let analyzed_item = AnalyzedMarketplaceItem {
+                                                        item: item.clone(), 
+                                                        evaluation_answers: answers
+                                                    };
+                                                    if satisfies_hard_criteria {
+                                                        relevant_items.push(analyzed_item);
+                                                    } else {
+                                                        irrelevant_items.push(analyzed_item);
+                                                    }
+                                                },
+                                                Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
                                             }
                                         },
-                                        Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
+                                        Err(err) => err_str = Some(format!("Unable to parse Anthropic message content into answers: {err}"))
                                     }
                                 },
-                                Err(err) => err_str = Some(format!("Unable to parse Anthropic message content into answers: {err}"))
+                                Err(err) => err_str = Some(format!("Unable to parse Anthropic response: {err:#?}"))
                             }
                         },
-                        Err(err) => err_str = Some(format!("Unable to parse Anthropic response: {err}"))
+                        other => {
+                            let res = res.text().await;
+                            err_str = Some(format!("Received unexpected status code ({other}) from Anthropic API; response: {res:#?}"));
+                        }
                     }
                 },
                 Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
@@ -141,10 +149,7 @@ impl AnthropicRequester {
             }
         }
         tracing::info!(
-            "Item analysis results:
-            - {} relevant items
-            - {} irrelevant items
-            - {} error items",
+            "Item analysis results: {} relevant items, {} irrelevant items, and {} error items",
             relevant_items.len(), irrelevant_items.len(), error_items.len()
         );
         MarketplaceAnalyzedItems {
@@ -166,8 +171,16 @@ impl AnthropicRequester {
             .fetch_item_images(&item.thumbnails)
             .await;
         let req_form = self
-            .build_request_form(item, item_image_strings, eval_criteria_string)
+            .build_request_form(
+                item, 
+                item_image_strings, 
+                eval_criteria_string
+            )
             .await;
+        tracing::info!(
+            "Anthropic form: {}",
+            serde_json::to_string_pretty(&req_form).unwrap()
+        );
         self.request_client
             .post(&self.config.anthropic_api_endpoint)
             .header("x-api-key", &self.config.anthropic_api_key)
@@ -211,7 +224,7 @@ impl AnthropicRequester {
                 vec![
                     AnthropicMessageContent {
                         content_type: "text".into(),
-                        text: Some(format!("Item image {}", index + 1)),
+                        text: Some(format!("Item image {}: ", index + 1)),
                         source: None
                     },
                     AnthropicMessageContent {
@@ -279,9 +292,9 @@ impl AnthropicRequester {
                 }
         }
         tracing::trace!(
-            "Out of {} image URLs, fetched and encoded {} images",
-            image_urls.len(),
-            encoded_images.len()
+            "Successfully fetched and encoded {}/{} image URLs",
+            encoded_images.len(),
+            image_urls.len()
         );
         encoded_images
     }

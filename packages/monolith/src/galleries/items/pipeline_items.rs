@@ -32,7 +32,7 @@ pub struct MarketplaceAnalyzedItems {
     pub error_items: Vec<ErrorAnalyzedMarketplaceItem>
 }
 
-/// All Analyzed items under a marketplace.
+/// An analyzed item under a marketplace.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedMarketplaceItem {
     pub item: MarketplaceItemData,

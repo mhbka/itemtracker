@@ -9,6 +9,7 @@ pub struct EvaluationCriteria {
 }
 
 impl EvaluationCriteria {
+    /// Initialize with a list of criteria.
     pub fn new(criteria: Vec<Criterion>) -> Self {
         EvaluationCriteria {
             criteria
@@ -70,10 +71,9 @@ impl EvaluationCriteria {
 
     /// Returns whether all the answers satisfy all `HardCriterion`s present in the criteria.
     /// 
-    /// If there are no `HardCriterion`, simply returns `true`.
+    /// If none of the criteria have `HardCriterion`, simply returns `true`.
     /// 
-    /// Returns an `Err` if an answer type doesn't match the corresponding criterion type.
-    /// 
+    /// Returns an `Err` if any answer type doesn't match the corresponding criterion type.
     /// If you directly pass the successful output from `parse_answers`, this will never occur.
     pub fn satisfies_hard_criteria(&mut self, answers: &Vec<CriterionAnswer>) -> Result<bool, String> {
         zip(&mut self.criteria, answers)
@@ -151,9 +151,7 @@ impl Criterion {
     /// Returns an `Err` if the answer type has a hard criterion type, but they don't match (ie `YesNo` and `Int`).
     fn satisfies_hard_criterion(&self, answer: &CriterionAnswer) -> Result<bool, String> {
         match &self.hard_criterion {
-            Some(hard_criterion) => {
-                hard_criterion.is_satisfied(answer)
-            },
+            Some(hard_criterion) => hard_criterion.is_satisfied(answer),
             None => Ok(true),
         }
     }
@@ -225,7 +223,7 @@ pub type FloatHardCriterion = NumericalHardCriterion<f64>;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NumericalHardCriterion<T> 
 where 
-    T: PartialOrd + Copy, // TODO: should I have more bounds to ensure a numerical type?
+    T: PartialOrd + Copy,
 {
     LessThan(T),
     Equal(T),

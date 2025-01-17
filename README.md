@@ -16,9 +16,9 @@ cargo run --release
 You need Python + a virtual env and package manager installed. We use `uv` but the same thing can be accomplished with `venv` + `pip`:
 ```Powershell
 cd packages/scraper
-uv venv # This command only needs to be ran once; the virtual env persists afterwards
+uv venv # This only needs to be ran once, to instantiate the virtual env
 .venv\Scripts\activate
-uv pip install requirements.txt # This command only needs to be ran whenever there are updates/changes/additions to dependencies 
+uv pip install requirements.txt # This only needs to be ran whenever there are changes to dependencies 
 scrapyd
 ```
 

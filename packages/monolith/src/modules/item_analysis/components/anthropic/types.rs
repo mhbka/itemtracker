@@ -23,16 +23,18 @@ pub struct AnthropicMessage {
 /// The layout of content inside an Anthropic API request message.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnthropicMessageContent {
-    #[serde(alias = "type")] // can't directly name a pub struct member `type` as it's a keyword
+    #[serde(rename = "type")] // API expects `type` but it's a keyword
     pub content_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")] 
     pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<AnthropicImageMessageContent>
 }   
 
 /// Used to send image blocks in an Anthropic API message.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnthropicImageMessageContent {
-    #[serde(alias = "type")] // can't directly name a pub struct member `type` as it's a keyword
+    #[serde(rename = "type")] // API expects `type` but it's a keyword
     pub source_type: String,
     pub media_type: String,
     pub data: String
@@ -53,7 +55,7 @@ pub struct AnthropicResponse {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnthropicResponseContent {
     pub text: String,
-    #[serde(alias = "type")] // can't directly name a pub struct member `type` as it's a keyword
+    #[serde(rename = "type")] // API expects `type` but it's a keyword
     pub content_type: String
 }
 
