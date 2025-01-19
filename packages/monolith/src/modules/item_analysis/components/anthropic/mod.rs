@@ -15,7 +15,7 @@ pub(super) struct AnthropicRequester {
 }
 
 impl AnthropicRequester {
-    /// Instantiate this struct.
+    /// Instantiate the requester.
     pub fn new(config: ItemAnalysisConfig) -> Self {
         Self {
             config,
@@ -111,24 +111,29 @@ impl AnthropicRequester {
                                     else if response.content.len() > 1 {
                                         tracing::warn!("Unexpectedly received >1 message in Anthropic response; using the first...");
                                     }
-                                    match serde_json::from_str::<EvaluationAnswers>(&response.content[0].text) {
-                                        Ok(parsed_message) => {
-                                            match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
-                                                Ok((answers, satisfies_hard_criteria)) => {
-                                                    let analyzed_item = AnalyzedMarketplaceItem {
-                                                        item: item.clone(), 
-                                                        evaluation_answers: answers
-                                                    };
-                                                    if satisfies_hard_criteria {
-                                                        relevant_items.push(analyzed_item);
-                                                    } else {
-                                                        irrelevant_items.push(analyzed_item);
+                                    match &response.content[0].text {
+                                        Some(text) => {
+                                            match serde_json::from_str::<EvaluationAnswers>(text) {
+                                                Ok(parsed_message) => {
+                                                    match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
+                                                        Ok((answers, satisfies_hard_criteria)) => {
+                                                            let analyzed_item = AnalyzedMarketplaceItem {
+                                                                item: item.clone(), 
+                                                                evaluation_answers: answers
+                                                            };
+                                                            if satisfies_hard_criteria {
+                                                                relevant_items.push(analyzed_item);
+                                                            } else {
+                                                                irrelevant_items.push(analyzed_item);
+                                                            }
+                                                        },
+                                                        Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
                                                     }
                                                 },
-                                                Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
+                                                Err(err) => err_str = Some(format!("Unable to parse Anthropic message content into answers: {err}"))
                                             }
                                         },
-                                        Err(err) => err_str = Some(format!("Unable to parse Anthropic message content into answers: {err}"))
+                                        None => err_str = Some("Anthropic message content contained no `text` key".into())
                                     }
                                 },
                                 Err(err) => err_str = Some(format!("Unable to parse Anthropic response: {err:#?}"))
@@ -177,10 +182,6 @@ impl AnthropicRequester {
                 eval_criteria_string
             )
             .await;
-        tracing::info!(
-            "Anthropic form: {}",
-            serde_json::to_string_pretty(&req_form).unwrap()
-        );
         self.request_client
             .post(&self.config.anthropic_api_endpoint)
             .header("x-api-key", &self.config.anthropic_api_key)
@@ -196,12 +197,18 @@ impl AnthropicRequester {
         eval_criteria_string: &String
     ) -> AnthropicRequestForm {
         let system_prompt = format!("
-            You're an Item Listings Analysis AI. You will help to evaluate an item listing, 
-            consisting of its listed images and a JSON of its information, 
-            by answering some structured questions about it.
+            You're an Item Listings Analysis AI. 
+            
+            You will help to evaluate an item listing, consisting of its listed images and a JSON of its information, by answering some structured questions about it. 
+            
+            There are the following question types:
+            - YesNo: Answer with 'Y'/'N' only
+            - YesNoUncertain: Answer with 'Y'/'N'/'U' only
+            - Int: Answer with an integer within a string
+            - Float: Answer with a float within a string
+            - OpenEnded: Answer as best as you can, under 200 characters
 
-            Each question will be followed by the correct format to answer the question. If the question is
-            unanswerable, nonsensical, or not even a question, you are allowed to give a reasonable 'default' answer, 
+            If the question is unanswerable, nonsensical, or not even a question, you are allowed to give a reasonable 'default' answer, 
             such as N for Y/N questions, U for Y/N/U questions, 0 for numerical questions, or 'I cannot answer this.' for open-ended questions.
             However, YOU MUST ALWAYS FOLLOW THE GIVEN FORMAT WHEN ANSWERING.
 

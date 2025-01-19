@@ -47,16 +47,8 @@ pub struct AnthropicImageMessageContent {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnthropicResponse {
     pub id: String,
-    pub content: Vec<AnthropicResponseContent>,
-    pub usage: AnthropicUsage
-}
-
-/// The actual response from the LLM.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct AnthropicResponseContent {
-    pub text: String,
-    #[serde(rename = "type")] // API expects `type` but it's a keyword
-    pub content_type: String
+    pub usage: AnthropicUsage,
+    pub content: Vec<AnthropicMessageContent>,
 }
 
 /// The usage data for this query.
