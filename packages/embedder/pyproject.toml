@@ -1,0 +1,13 @@
+[project]
+name = "embedder"
+version = "0.1.0"
+description = "Handles embedding of image/text"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.1.0",
+    "pillow>=11.1.0",
+    "tokenizers>=0.21.0",
+    "torch>=2.6.0",
+    "transformers>=4.48.2",
+]
