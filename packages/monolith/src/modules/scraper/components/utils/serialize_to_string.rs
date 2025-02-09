@@ -2,7 +2,7 @@
 use serde::{Serialize, Serializer};
 
 /// Seralizes `T` as a string first so that `serde_urlencoded` doesn't error due to nested structs.
-pub(super) fn serialize_to_string<T, S>(
+pub fn serialize_to_string<T, S>(
     criteria: &T, 
     serializer: S
 ) -> Result<S::Ok, S::Error>

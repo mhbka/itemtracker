@@ -7,6 +7,7 @@ use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketp
 use super::state_manager::GalleryStates;
 
 mod request_form;
+mod mercari;
 
 /// This scraper is in charge of using item IDs to scrape detailed data for each item.
 pub(super) struct SearchScraper {

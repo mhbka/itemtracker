@@ -1,10 +1,9 @@
 use std::{collections::HashMap, iter::zip};
 
 use futures::future::join_all;
-use reqwest::{Client, RequestBuilder};
-use types::{OpenAIImageURLMessage, OpenAIMessage, OpenAIMessageContent, OpenAIRequestForm};
-
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::AnalyzedItems}, pipeline_states::{GalleryAnalyzedState, GalleryScrapedState}}};
+use reqwest::{Client, RequestBuilder, StatusCode};
+use types::{OpenAIImageURLMessage, OpenAIMessage, OpenAIMessageContent, OpenAIRequestForm, OpenAIResponse};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryAnalyzedState, GalleryScrapedState}}, modules::item_analysis::components::anthropic::types::EvaluationAnswers};
 
 mod types;
 
@@ -60,6 +59,83 @@ impl OpenAIRequester {
             gallery_items.insert(marketplace, marketplace_items);
         }
         AnalyzedItems { items: gallery_items }
+    }
+
+    /// Process the raw LLM output for all items in a gallery's marketplace.
+    async fn process_marketplace_results(
+        &self,
+        eval_criteria: &mut EvaluationCriteria,
+        results: Vec<(MarketplaceItemData, Result<reqwest::Response, reqwest::Error>)>,
+    ) -> MarketplaceAnalyzedItems {
+        let mut relevant_items = vec![];
+        let mut irrelevant_items = vec![];
+        let mut error_items = vec![];
+        for (item, result) in results {
+            let mut err_str = None;
+            match result {
+                Ok(res) => {
+                    match res.status() {
+                        StatusCode::OK => {
+                            match res.json::<OpenAIResponse>().await {
+                                Ok(response) => {
+                                    tracing::info!("Successful response: {response:#?}"); // TODO: delete this later on
+                                    if response.choices.len() == 0 {
+                                        err_str = Some("Expected 1 message in Anthropic response but found none".into());
+                                    }
+                                    else if response.choices.len() > 1 {
+                                        tracing::warn!("Unexpectedly received >1 message in Anthropic response; using the first...");
+                                    }
+                                    match &response.choices[0].text {
+                                        Some(text) => {
+                                            match serde_json::from_str::<EvaluationAnswers>(text) {
+                                                Ok(parsed_message) => {
+                                                    match eval_criteria.parse_answers_and_check_hard_criteria(parsed_message.answers) {
+                                                        Ok((answers, satisfies_hard_criteria)) => {
+                                                            let analyzed_item = AnalyzedMarketplaceItem {
+                                                                item: item.clone(), 
+                                                                evaluation_answers: answers
+                                                            };
+                                                            if satisfies_hard_criteria {
+                                                                relevant_items.push(analyzed_item);
+                                                            } else {
+                                                                irrelevant_items.push(analyzed_item);
+                                                            }
+                                                        },
+                                                        Err(err) => err_str = Some(format!("Unable to parse answers into evaluation criteria: {err}"))
+                                                    }
+                                                },
+                                                Err(err) => err_str = Some(format!("Unable to parse Anthropic message content into answers: {err}"))
+                                            }
+                                        },
+                                        None => err_str = Some("Anthropic message content contained no `text` key".into())
+                                    }
+                                },
+                                Err(err) => err_str = Some(format!("Unable to parse Anthropic response: {err:#?}"))
+                            }
+                        },
+                        other => {
+                            let res = res.text().await;
+                            err_str = Some(format!("Received unexpected status code ({other}) from Anthropic API; response: {res:#?}"));
+                        }
+                    }
+                },
+                Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
+            }
+            if let Some(error) = err_str {
+                tracing::warn!("Item {} had an error during item analysis: {}", item.id, error);
+                let err_item = ErrorAnalyzedMarketplaceItem { item, error };
+                error_items.push(err_item);
+            }
+        }
+        tracing::info!(
+            "Item analysis results: {} relevant items, {} irrelevant items, and {} error items",
+            relevant_items.len(), irrelevant_items.len(), error_items.len()
+        );
+        MarketplaceAnalyzedItems {
+            relevant_items,
+            irrelevant_items,
+            error_items
+        }
     }
 
     /// Build the requests for all the gallery's items.

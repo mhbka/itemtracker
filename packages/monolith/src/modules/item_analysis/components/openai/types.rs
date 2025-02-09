@@ -23,7 +23,7 @@ pub struct OpenAIMessage {
     pub content: Vec<OpenAIMessageContent>
 }
 
-/// The layout of content inside an OpenAI API request message.
+/// The content inside an OpenAI API request message.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OpenAIMessageContent {
     #[serde(rename = "type")] // API expects `type` but it's a keyword
