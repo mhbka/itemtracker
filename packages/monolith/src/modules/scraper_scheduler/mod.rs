@@ -1,5 +1,4 @@
 mod components;
-mod msg_handler;
 
 use std::sync::Arc;
 use components::scheduler::RawScraperScheduler;
@@ -48,13 +47,25 @@ impl ScraperSchedulerModule {
     async fn process_msg(&mut self, msg: SchedulerMessage) {
         match msg {
             SchedulerMessage::NewGallery(msg) => {
-                msg_handler::handle_new_gallery_msg(msg, self).await;
+                let gallery = msg.get_msg();
+                let result = self.scheduler.add_gallery(gallery).await;
+                if msg.respond(result).is_err() {
+                    tracing::error!("Was unable to respond to a message for creating a gallery");
+                }
             },
             SchedulerMessage::DeleteGallery(msg) => {
-                msg_handler::handle_delete_gallery_msg(msg, self).await;
+                let gallery_id = msg.get_msg().gallery_id;
+                    let result = self.scheduler.delete_gallery(gallery_id).await;
+                    if msg.respond(result).is_err() {
+                        tracing::error!("Was unable to respond to a message for deleting a gallery");
+                    }
             },
             SchedulerMessage::EditGallery(msg) => {
-                msg_handler::handle_edit_gallery_msg(msg, self).await;
+                let gallery = msg.get_msg();
+                let result = self.scheduler.update_gallery(gallery).await;
+                if msg.respond(result).is_err() {
+                    tracing::error!("Was unable to respond to a message for editing a gallery");
+                }
             },
         }
     }

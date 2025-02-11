@@ -4,7 +4,7 @@ use tokio::sync::mpsc;
 use scraper::ScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender}};
+use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender, StateTrackerReceiver, StateTrackerSender}};
 
 pub mod web_backend;
 pub mod state_tracker;
@@ -35,6 +35,7 @@ impl AppModules {
         let scraper_module = ScraperModule::init(
             config.scraper_config.clone(), 
             connections.scraper.1, 
+            connections.state_tracker.0,
             connections.marketplace_items_storage.0, 
             connections.item_analysis.0
         );
@@ -80,6 +81,7 @@ pub struct AppModulesRunningHandles {
 
 /// Struct for initializing inter-module connections.
 pub struct AppModuleConnections {
+    pub state_tracker: (StateTrackerSender, StateTrackerReceiver),
     pub scraper_scheduler: (ScraperSchedulerSender, ScraperSchedulerReceiver),
     pub scraper: (ScraperSender, ScraperReceiver),
     pub item_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
@@ -91,12 +93,20 @@ impl AppModuleConnections {
     /// Initialize the app module connections.
     pub fn new() -> Self {
         Self {
+            state_tracker: Self::init_state_tracker_conn(),
             scraper_scheduler: Self::init_scheduler_conn(),
             scraper: Self::init_scraper_conn(),
             item_analysis: Self::init_item_analysis_conn(),
             image_classifier: Self::init_image_classifier_conn(),
             marketplace_items_storage: Self::init_marketplace_items_storage_conn()
         }
+    }
+
+    fn init_state_tracker_conn() -> (StateTrackerSender, StateTrackerReceiver) {
+        let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
+        let sender = StateTrackerSender::new(sender);
+        let receiver = StateTrackerReceiver::new(receiver);
+        (sender, receiver)
     }
 
     fn init_scheduler_conn() -> (ScraperSchedulerSender, ScraperSchedulerReceiver) {

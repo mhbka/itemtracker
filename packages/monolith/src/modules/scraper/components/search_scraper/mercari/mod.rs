@@ -20,10 +20,12 @@ impl MercariSearchScraper {
         }
     }
 
-    /// Attempt to scrape item IDs according to a search criteria.
-    /// 
-    /// Returns an `Err` if any errors occurred while scraping.
-    pub(super) async fn request(&self, gallery: &GalleryScrapingState) -> Result<Vec<ItemId>, String> {
+    /// Performs the search scrape for Mercari.
+    pub(super) async fn request(
+        &self, 
+        search_criteria: &GallerySearchCriteria,
+        previous_scraped_item_datetime: UnixUtcDateTime
+    ) -> Result<Vec<ItemId>, String> {
         let dpop_key = match generate_dpop(&REQ_URL, "get") {
             Ok(key) => key,
             Err(err) => return Err(err)
@@ -33,11 +35,11 @@ impl MercariSearchScraper {
         loop { // keep requesting new pages of search; break only when `scraped_next_page_token` is None
             let request = self.build_request(
                 &dpop_key, 
-                &gallery.search_criteria, 
+                search_criteria, 
                 &next_page_token
             );
             let response = request.send().await;
-            match self.handle_response(&gallery.previous_scraped_item_datetime, response).await {
+            match self.handle_response(&previous_scraped_item_datetime, response).await {
                 Ok((scraped_item_ids, scraped_next_page_token)) => {
                     item_ids.extend_from_slice(&scraped_item_ids);
                     match scraped_next_page_token {

@@ -16,10 +16,7 @@ impl MercariItemScraper {
         }
     }
 
-    /// Attempt to scrape a list of item IDs,
-    /// returning a list with (in order) the item's data, or an `Err` if the scrape wasn't successful.
-    /// 
-    /// Returns the `Vec` with a single `Err` if the *dpop* key generation was unsuccessful (should never happen).
+    /// Performs the item scraping for Mercari.
     pub async fn request(&self, item_ids: Vec<ItemId>) -> Vec<Result<MarketplaceItemData, String>> {
         let dpop_key = match generate_dpop(&REQ_URL, "get") {
             Ok(key) => key,
@@ -50,7 +47,7 @@ impl MercariItemScraper {
             .header("content-type", "application/json")
     }    
 
-    /// Parses the raw responses from the item scrape. 
+    /// Handle the raw responses from the item scrape. 
     async fn handle_responses(&self, responses: Vec<(ItemId, Result<reqwest::Response, reqwest::Error>)>) -> Vec<Result<MarketplaceItemData, String>> {
         let parsed_response_futures = responses.into_iter()
             .map(|(id, response)| async move {

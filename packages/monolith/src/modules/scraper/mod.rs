@@ -67,7 +67,7 @@ impl ScraperModule {
             ScraperMessage::StartScrapingGallery{ gallery } => {
                 tracing::trace!("Received message to start scraping gallery {}", gallery.gallery_id);
                 let schedule_result = self.state_manager
-                    .start_scraping_gallery(gallery)
+                    .scrape_gallery(gallery)
                     .await;
                 if let Err(err) = schedule_result {
                     tracing::error!("Error(s) scheduling scraping tasks ({err:#?})");

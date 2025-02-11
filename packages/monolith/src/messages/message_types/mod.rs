@@ -24,9 +24,9 @@ use tokio::sync::oneshot;
 /// ## Note
 /// 
 /// This should not be used for communicating the success/failure of an operation triggered by a message,
-/// ie communicating failure to start a search scrape back to the scheduler.
+/// such as communicating failure of a search scrape back to the scheduler.
 /// 
-/// Such issues should be logged with `tracing` and (in the future) communicated to the state-tracking module.
+/// Such issues should be communicated to the state tracker module.
 /// 
 /// ## Example
 /// 

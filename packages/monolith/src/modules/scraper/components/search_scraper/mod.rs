@@ -1,9 +1,8 @@
-use std::sync::Arc;
+use std::collections::HashMap;
 
+use futures::future::join_all;
 use mercari::MercariSearchScraper;
-use tokio::sync::Mutex;
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace}, pipeline_states::GalleryScrapingState}};
-use super::state_manager::GalleryStates;
+use crate::{config::ScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, items::item_data::MarketplaceItemData, pipeline_states::GalleryScrapingState}};
 
 mod mercari;
 
@@ -22,16 +21,25 @@ impl SearchScraper {
         }
     }
 
-    /// Schedules scraping jobs to scrape each marketplace's search within the gallery.
-    pub async fn schedule_scrape_search(
-        &mut self, 
-        gallery: &GalleryScrapingState, 
-        gallery_states: Arc<Mutex<GalleryStates>>
-    ) {   
-        for marketplace in &gallery.marketplaces {
-            let scrape_result = match marketplace {
-                Marketplace::Mercari => self.mercari_scraper.request(gallery).await,
-            };
-        }
+    /// Attempt to scrape item IDs according to a search criteria.
+    /// 
+    /// Returns an `Err` for whichever marketplaces had errors while scraping.
+    pub async fn scrape_search(&mut self, gallery: &GalleryScrapingState) -> HashMap<Marketplace, Result<Vec<ItemId>, String>> {
+        let results = join_all(
+            gallery.marketplaces_updated_datetimes
+                .clone()
+                .into_iter()
+                .map(|(marketplace, previous_scraped_item_datetime)| async {
+                    let item_ids = match marketplace {
+                        Marketplace::Mercari => self.mercari_scraper
+                            .request(&gallery.search_criteria, previous_scraped_item_datetime)
+                            .await
+                    };
+                    (marketplace, item_ids)
+                })
+            ).await;
+        results
+            .into_iter()
+            .collect()
     }
 }

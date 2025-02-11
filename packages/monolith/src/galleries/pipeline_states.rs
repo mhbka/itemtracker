@@ -1,7 +1,7 @@
 //! This module holds types related to each stage of the scraping pipeline.
 //! We can map each stage's state to the next stage using `map_to_next_stage`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use serde::{Serialize, Deserialize};
 use super::{
     domain_types::{GalleryId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::pipeline_items::{
@@ -19,8 +19,7 @@ pub struct GalleryInitializationState {
     pub gallery_id: GalleryId,
     pub scraping_periodicity: ValidCronString,
     pub search_criteria: GallerySearchCriteria,
-    pub marketplaces: HashSet<Marketplace>,
-    pub previous_scraped_item_datetime: UnixUtcDateTime,
+    pub marketplace_previous_scraped_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub evaluation_criteria: EvaluationCriteria,
 }
 
@@ -30,8 +29,8 @@ impl GalleryInitializationState {
         GalleryScrapingState {
             gallery_id: self.gallery_id,
             search_criteria: self.search_criteria,
-            marketplaces: self.marketplaces,
-            previous_scraped_item_datetime: self.previous_scraped_item_datetime,
+            marketplaces_updated_datetimes: self.marketplace_previous_scraped_datetimes,
+            failed_marketplace_reasons: HashMap::new(),
             evaluation_criteria: self.evaluation_criteria,
         }
     }
@@ -44,14 +43,17 @@ impl GalleryInitializationState {
 pub struct GalleryScrapingState {
     pub gallery_id: GalleryId,
     pub search_criteria: GallerySearchCriteria,
-    pub marketplaces: HashSet<Marketplace>,
-    pub previous_scraped_item_datetime: UnixUtcDateTime,
+    pub marketplaces_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
+    pub failed_marketplace_reasons: HashMap<Marketplace, String>,
     pub evaluation_criteria: EvaluationCriteria,
 }
 
 impl GalleryScrapingState {
 
 }
+
+/// This is the state of a marketplace after it has been search-scraped.
+
 
 /// This is the state of a scraping job after the items are scraped.
 /// 
