@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
-use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_states::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ItemAnalysisSender, MarketplaceItemsStorageSender}};
+use crate::{config::ScraperConfig, galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_states::GalleryScrapingState}, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperError}, ItemAnalysisSender, MarketplaceItemsStorageSender, StateTrackerSender}};
 
 use super::{item_scraper::ItemScraper, output_processor::OutputProcessor, search_scraper::SearchScraper};
 
@@ -14,6 +14,7 @@ use super::{item_scraper::ItemScraper, output_processor::OutputProcessor, search
 /// 
 /// All messages that "do something" related to scraping come through here.
 pub struct StateManager {
+    state_tracker_msg_sender: StateTrackerSender,
     states: Arc<Mutex<GalleryStates>>,
     search_scraper: SearchScraper,
     item_scraper: ItemScraper,
@@ -26,6 +27,7 @@ impl StateManager {
     /// TODO: Be able to instantiate the state from (and persist to) a DB or something
     pub fn new(
         config: &ScraperConfig,
+        state_tracker_msg_sender: StateTrackerSender,
         item_storage_msg_sender: MarketplaceItemsStorageSender,
         img_analysis_msg_sender: ItemAnalysisSender
     ) -> Self {
@@ -37,6 +39,7 @@ impl StateManager {
             img_analysis_msg_sender.clone(), 
         );
         Self {
+            state_tracker_msg_sender,
             states,
             search_scraper,
             item_scraper,
@@ -70,52 +73,6 @@ impl StateManager {
             .schedule_scrape_search(&gallery, self.states.clone())
             .await;
         Ok(())
-    }
-
-    /// Handle the ingestion of scraped search data + starting of the gallery's marketplace's item scrape.
-    /// 
-    /// Returns an `Err` if the gallery + marketplace's status is not currently `MarketplaceStatus::SearchScrapeInProgress`.
-    pub async fn ingest_scraped_search(&mut self, mut data: IngestScrapedSearch) -> Result<(), ScraperError> {
-        let mut gallery_states = self.states
-            .lock()
-            .await;
-        match gallery_states.get_status(&data.gallery_id, &data.marketplace) {
-                Ok(status) => {
-                    match status {
-                        MarketplaceStatus::SearchScrapeInProgress(_) => {
-                            gallery_states
-                                .update_status(&data.gallery_id, &data.marketplace)
-                                .expect("Gallery + marketplace already proven to exist here");
-                            data.scraped_item_ids = self.output_processor
-                                .fetch_cached_items(
-                                    &data.gallery_id, 
-                                    &data.marketplace, 
-                                    &data.updated_up_to,
-                                    data.scraped_item_ids, 
-                                )
-                                .await;
-                            self.item_scraper
-                                .schedule_scrape_items(data, self.states.clone())
-                                .await;
-                            Ok(())
-                        },
-                        other => {
-                            return Err(ScraperError::IngestScrapedSearchError { 
-                                gallery_id: data.gallery_id, 
-                                marketplace: data.marketplace, 
-                                error: format!("Invalid status for gallery + marketplace ({other:#?})") }
-                            );
-                        }
-                    }
-                }
-                Err(_) => {
-                    return Err(ScraperError::IngestScrapedSearchError { 
-                        gallery_id: data.gallery_id, 
-                        marketplace: data.marketplace, 
-                        error: "This gallery + marketplace is not currently being scraped".into() }
-                    );
-                }
-            }
     }
 
     /// Handle scraped items for a marketplace.

@@ -1,5 +1,7 @@
 use reqwest::{Client, RequestBuilder};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use crate::galleries::domain_types::UnixUtcDateTime;
 use crate::galleries::search_criteria::GallerySearchCriteria;
 use crate::modules::scraper::components::utils::generate_dpop::generate_dpop;
 use crate::galleries::{domain_types::ItemId, pipeline_states::GalleryScrapingState};
@@ -28,14 +30,14 @@ impl MercariSearchScraper {
         };
         let mut item_ids = vec![];
         let mut next_page_token = "".to_string();
-        loop {
+        loop { // keep requesting new pages of search; break only when `scraped_next_page_token` is None
             let request = self.build_request(
                 &dpop_key, 
                 &gallery.search_criteria, 
                 &next_page_token
             );
             let response = request.send().await;
-            match self.handle_response(response).await {
+            match self.handle_response(&gallery.previous_scraped_item_datetime, response).await {
                 Ok((scraped_item_ids, scraped_next_page_token)) => {
                     item_ids.extend_from_slice(&scraped_item_ids);
                     match scraped_next_page_token {
@@ -55,13 +57,38 @@ impl MercariSearchScraper {
     /// if present, the next page should continue to be scraped as well.
     /// 
     /// Returns an `Err` if the response had an error.
-    async fn handle_response(&self, response: Result<reqwest::Response, reqwest::Error>) -> Result<(Vec<ItemId>, Option<String>), String> {
+    async fn handle_response(
+        &self, 
+        previous_scraped_item_datetime: &UnixUtcDateTime,
+        response: Result<reqwest::Response, reqwest::Error>
+    ) -> Result<(Vec<ItemId>, Option<String>), String> {
         match response {
             Ok(res) => {
                 match res.error_for_status() {
                     Ok(res) => {
-                        match res.json::<Value>().await {
-                            Ok(res) => { todo!() },
+                        match res.json::<MercariSearchData>().await {
+                            Ok(res) => {
+                                let mut items = res.items.into_iter();
+                                match items.all(|item| &item.updated > previous_scraped_item_datetime) {
+                                    true => {
+                                        let item_ids = items
+                                            .map(|item| item.id.into())
+                                            .collect();
+                                        let next_page_token = match res.meta.next_page_token.as_ref() {
+                                            "" => None,
+                                            _ => Some(res.meta.next_page_token)
+                                        };
+                                        return Ok((item_ids, next_page_token));
+                                    },
+                                    false => {
+                                        let item_ids = items
+                                            .filter(|item| &item.updated > previous_scraped_item_datetime)
+                                            .map(|item| item.id.into())
+                                            .collect();
+                                        return Ok((item_ids, None));
+                                    }
+                                }
+                            },
                             Err(err) => Err(format!("Error deserializing scraped search data: {err}")),
                         }
                     },
@@ -136,4 +163,31 @@ impl MercariSearchScraper {
             }
         )
     }
+}
+
+/// The data returned from a search scrape.
+/// 
+/// Note: Other values are returned than what is here, but we only deserialize whatever we need.
+#[derive(Serialize, Deserialize)]
+struct MercariSearchData {
+    pub items: Vec<MercariSearchItemData>,
+    pub meta: MercariSearchMetadata
+}
+
+/// Represents a single item's data from the search scrape.
+/// 
+/// Note: Other values are returned than what is here, but we only deserialize whatever we need.
+#[derive(Serialize, Deserialize)]
+struct MercariSearchItemData {
+    pub id: String,
+    pub updated: UnixUtcDateTime
+}
+
+/// Metadata returned in a search scrape.
+///
+/// Note: Other values are returned than what is here, but we only deserialize whatever we need.
+#[derive(Serialize, Deserialize)]
+struct MercariSearchMetadata {
+    #[serde(rename(deserialize = "nextPageToken"))]
+    pub next_page_token: String
 }

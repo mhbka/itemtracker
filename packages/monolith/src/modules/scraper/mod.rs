@@ -1,9 +1,8 @@
 mod components;
-mod msg_handler;
 
 use components::state_manager::StateManager;
 use crate::{config::ScraperConfig, messages::{
-    message_types::scraper::ScraperMessage, ItemAnalysisSender, MarketplaceItemsStorageSender, ScraperReceiver
+    message_types::scraper::ScraperMessage, ItemAnalysisSender, MarketplaceItemsStorageSender, ScraperReceiver, StateTrackerSender
 }};
 
 /// Module in charge of orchestrating the actual scraping through Scrapy spiders.
@@ -37,12 +36,14 @@ impl ScraperModule {
     pub fn init(
         config: ScraperConfig,
         msg_receiver: ScraperReceiver,
+        state_tracker_msg_sender: StateTrackerSender,
         item_storage_msg_sender: MarketplaceItemsStorageSender,
         img_analysis_msg_sender: ItemAnalysisSender,
     ) -> Self
     {   
         let state_manager = StateManager::new(
             &config, 
+            state_tracker_msg_sender,
             item_storage_msg_sender, 
             img_analysis_msg_sender
         );
@@ -61,17 +62,16 @@ impl ScraperModule {
     }
 
     /// Handle each message variant.
-    #[tracing::instrument(skip(self, msg))]
     async fn process_msg(&mut self, msg: ScraperMessage) {
         match msg {
-            ScraperMessage::StartScrapingGallery(msg) => {
-                msg_handler::handle_start_scraping_gallery_msg(msg, self).await;
-            },
-            ScraperMessage::IngestScrapedSearch(msg) => {
-                msg_handler::handle_ingest_scraped_search_msg(msg, self).await;
-            },
-            ScraperMessage::IngestScrapedItems(msg) => {
-                msg_handler::handle_ingest_scraped_items_msg(msg, self).await;
+            ScraperMessage::StartScrapingGallery{ gallery } => {
+                tracing::trace!("Received message to start scraping gallery {}", gallery.gallery_id);
+                let schedule_result = self.state_manager
+                    .start_scraping_gallery(gallery)
+                    .await;
+                if let Err(err) = schedule_result {
+                    tracing::error!("Error(s) scheduling scraping tasks ({err:#?})");
+                };
             },
         }
     }

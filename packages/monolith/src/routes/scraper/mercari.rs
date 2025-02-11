@@ -1,5 +1,5 @@
 use axum::{routing::post, Json, Router, http::StatusCode};
-use crate::{config::AxumConfig, messages::{message_types::scraper::{IngestScrapedItems, IngestScrapedSearch, ScraperMessage, StartScrapingGallery}, ScraperSender}, modules::AppModuleConnections};
+use crate::{config::AxumConfig, galleries::pipeline_states::GalleryScrapingState, messages::{message_types::scraper::ScraperMessage, ScraperSender}, modules::AppModuleConnections};
 
 /// Build the routes for ingesting scraped Mercari data.
 /// 
@@ -13,58 +13,14 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
         move |body| start_scrape(body, scraper_sender)
     ));
 
-    let scraper_sender = module_connections.scraper.0.clone();
-    router = router.route("/ingest_search", post(
-        move |body| ingest_item_ids(body, scraper_sender)
-    ));
-
-    let scraper_sender = module_connections.scraper.0.clone();
-    router = router.route("/ingest_items", post(
-        move |body| ingest_items(body, scraper_sender)
-    ));
-
     router
 }
 
 #[tracing::instrument(skip(sender))]
 async fn start_scrape(
-    Json(msg): Json<StartScrapingGallery>,
+    Json(gallery): Json<GalleryScrapingState>,
     mut sender: ScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    sender.send(ScraperMessage::StartScrapingGallery(msg)).await.unwrap();
-    Ok(StatusCode::OK)
-}
-
-/// Handler for ingesting scraped Mercari item IDs and passing them to the scraper module to be scraped.
-/// 
-/// TODO: Return a nicer error type?
-#[tracing::instrument(skip(sender))]
-async fn ingest_item_ids(
-    Json(msg): Json<IngestScrapedSearch>,
-    mut sender: ScraperSender
-) -> Result<StatusCode, (StatusCode, String)> {
-    let send_res = sender.send(ScraperMessage::IngestScrapedSearch(msg)).await;  
-    if let Err(err) = send_res {
-        let err_str = format!("Critical error: Unable to send a message through ScraperSender ({err:?})");
-        tracing::error!("{err_str}");
-        panic!("{err_str}");
-    }
-    Ok(StatusCode::OK)
-}
-
-/// Ingests scraped Mercari item data from the route and passes it to the scraper module.
-/// 
-/// TODO: Return a nicer error type?
-#[tracing::instrument(skip(sender))]
-async fn ingest_items(
-    Json(msg): Json<IngestScrapedItems>,
-    mut sender: ScraperSender
-) -> Result<StatusCode, (StatusCode, String)> {
-    let send_res = sender.send(ScraperMessage::IngestScrapedItems(msg)).await;  
-    if let Err(err) = send_res {
-        let err_str = format!("Critical error: Unable to send a message through ScraperSender ({err:?})");
-        tracing::error!("{err_str}");
-        panic!("{err_str}");
-    }
+    sender.send(ScraperMessage::StartScrapingGallery { gallery }).await.unwrap();
     Ok(StatusCode::OK)
 }

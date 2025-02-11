@@ -1,11 +1,6 @@
 use message_buses::{MessageSender, MessageReceiver};
 use message_types::{
-    item_analysis::ItemAnalysisMessage, 
-    img_classifier::ImgClassifierMessage, 
-    scraper_scheduler::SchedulerMessage, 
-    scraper::ScraperMessage,
-    web_backend::WebBackendMessage,
-    storage::marketplace_items::MarketplaceItemsStorageMessage
+    img_classifier::ImgClassifierMessage, item_analysis::ItemAnalysisMessage, scraper::ScraperMessage, scraper_scheduler::SchedulerMessage, state_tracker::StateTrackerMessage, storage::marketplace_items::MarketplaceItemsStorageMessage, web_backend::WebBackendMessage
 };
 
 pub mod message_buses;
@@ -15,6 +10,11 @@ pub mod message_types;
 pub type WebBackendSender = MessageSender<WebBackendMessage>;
 /// Handle for the web backend to receive messages.
 pub type WebBackendReceiver = MessageReceiver<WebBackendMessage>;
+
+/// Handle for sending the scraper scheduler messages.
+pub type StateTrackerSender = MessageSender<StateTrackerMessage>;
+/// Handle for the scraper scheduler to receive messages.
+pub type StateTrackerReceiver = MessageReceiver<StateTrackerMessage>;
 
 /// Handle for sending the scraper scheduler messages.
 pub type ScraperSchedulerSender = MessageSender<SchedulerMessage>;

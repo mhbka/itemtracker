@@ -5,8 +5,10 @@ pub use item_analysis::ItemAnalysisConfig;
 pub use image_classifier::ImageClassifierConfig;
 pub use scraper::ScraperConfig;
 pub use scraper_scheduler::ScraperSchedulerConfig;
+use state_tracker::StateTrackerConfig;
 pub use storage::StorageConfig;
 
+pub mod state_tracker;
 pub mod scraper_scheduler;
 pub mod scraper;
 pub mod item_analysis;
@@ -17,6 +19,7 @@ pub mod storage;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppConfig {
     pub axum_config: AxumConfig,
+    pub state_tracker_config: StateTrackerConfig,
     pub scraper_scheduler_config: ScraperSchedulerConfig,
     pub scraper_config: ScraperConfig,
     pub item_analysis_config: ItemAnalysisConfig,
@@ -30,6 +33,7 @@ impl AppConfig {
         Ok(
             AppConfig {
                 axum_config: AxumConfig::load()?,
+                state_tracker_config: StateTrackerConfig::load()?,
                 scraper_scheduler_config: ScraperSchedulerConfig::load()?,
                 scraper_config: ScraperConfig::load()?,
                 item_analysis_config: ItemAnalysisConfig::load()?,

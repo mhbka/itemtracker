@@ -45,7 +45,6 @@ impl ScraperSchedulerModule {
     }
 
     /// Handle each message variant.
-    #[instrument(skip(self, msg))]
     async fn process_msg(&mut self, msg: SchedulerMessage) {
         match msg {
             SchedulerMessage::NewGallery(msg) => {

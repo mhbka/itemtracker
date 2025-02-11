@@ -45,8 +45,8 @@ impl ItemAnalysisModule {
     /// Handle each message variant.
     async fn process_msg(&mut self, msg: ItemAnalysisMessage) {
         match msg {
-            ItemAnalysisMessage::StartAnalysis(msg) => {
-                msg_handler::handle_start_analysis_msg(msg, self).await;
+            ItemAnalysisMessage::StartAnalysis { gallery} => {
+                msg_handler::handle_start_analysis_msg(gallery, self).await;
             },
         }
     }

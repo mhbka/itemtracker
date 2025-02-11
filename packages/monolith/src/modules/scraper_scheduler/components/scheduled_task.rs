@@ -1,14 +1,8 @@
 use std::sync::Arc;
 use chrono::Utc;
 use tokio::sync::Mutex;
-use crate::{
-    galleries::pipeline_states::GalleryInitializationState, 
-    messages::{
-        message_types::scraper::{
-            ScraperMessage, 
-            StartScrapingGallery
-        },
-    ScraperSender}};
+
+use crate::{galleries::pipeline_states::GalleryInitializationState, messages::{message_types::scraper::ScraperMessage, ScraperSender}};
 
 /// A wrapper representing the actual running scheduler task for a gallery, which starts on `run()`.
 pub struct ScheduledGalleryTask {
@@ -34,11 +28,10 @@ impl ScheduledGalleryTask {
             let gallery = self.gallery
                 .clone()
                 .to_next_stage(); // TODO: Should `previous_scraped_item_datetime` be set in the scraping stage for better accuracy?
-            let msg = StartScrapingGallery { gallery };
             if let Err(err) =  self.scraper_msg_sender
                 .lock()
                 .await
-                .send(ScraperMessage::StartScrapingGallery(msg))
+                .send(ScraperMessage::StartScrapingGallery { gallery })
                 .await {
                     tracing::error!(
                         "Error attempting to send a message to the scraper to start scraping (gallery {}): {}",

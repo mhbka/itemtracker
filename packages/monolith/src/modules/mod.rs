@@ -7,7 +7,7 @@ use tokio::task::JoinHandle;
 use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender}};
 
 pub mod web_backend;
-pub mod state_management;
+pub mod state_tracker;
 pub mod scraper_scheduler;
 pub mod scraper;
 pub mod item_analysis;

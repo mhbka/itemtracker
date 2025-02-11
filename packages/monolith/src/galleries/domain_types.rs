@@ -112,10 +112,16 @@ impl Display for ItemId {
     }
 }
 
+impl From<String> for ItemId {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
 /// A DateTime<Utc> wrapper that (de)serializes to/from a UNIX timestamp integer.
 /// 
 /// There is (currently) no special functionality or validation; this exists simply because UNIX timestamps are easier to work with.
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct UnixUtcDateTime(DateTime<Utc>);
 
 impl UnixUtcDateTime {
