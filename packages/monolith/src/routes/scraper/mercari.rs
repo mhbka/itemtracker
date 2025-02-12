@@ -1,5 +1,5 @@
 use axum::{routing::post, Json, Router, http::StatusCode};
-use crate::{config::AxumConfig, galleries::pipeline_states::GalleryScrapingState, messages::{message_types::scraper::ScraperMessage, ScraperSender}, modules::AppModuleConnections};
+use crate::{config::AxumConfig, galleries::pipeline_states::GallerySearchScrapingState, messages::{message_types::search_scraper::SearchScraperMessage, SearchScraperSender}, modules::AppModuleConnections};
 
 /// Build the routes for ingesting scraped Mercari data.
 /// 
@@ -18,9 +18,9 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
 
 #[tracing::instrument(skip(sender))]
 async fn start_scrape(
-    Json(gallery): Json<GalleryScrapingState>,
-    mut sender: ScraperSender
+    Json(gallery): Json<GallerySearchScrapingState>,
+    mut sender: SearchScraperSender
 ) -> Result<StatusCode, (StatusCode, String)> {
-    sender.send(ScraperMessage::StartScrapingGallery { gallery }).await.unwrap();
+    sender.send(SearchScraperMessage::ScrapeSearch { gallery }).await.unwrap();
     Ok(StatusCode::OK)
 }

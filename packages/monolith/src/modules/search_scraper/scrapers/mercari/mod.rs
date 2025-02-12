@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::galleries::domain_types::UnixUtcDateTime;
 use crate::galleries::search_criteria::GallerySearchCriteria;
-use crate::modules::scraper::components::utils::generate_dpop::generate_dpop;
-use crate::galleries::{domain_types::ItemId, pipeline_states::GalleryScrapingState};
+use crate::galleries::domain_types::ItemId;
+use crate::utils::generate_dpop::generate_dpop;
 
 const REQ_URL: &str = "https://api.mercari.jp/v2/entities:search";
 

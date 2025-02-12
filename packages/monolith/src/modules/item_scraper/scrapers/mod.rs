@@ -2,19 +2,19 @@ use std::collections::HashMap;
 
 use futures::future::join_all;
 use mercari::MercariItemScraper;
-use crate::{config::ScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, items::item_data::MarketplaceItemData}};
+use crate::{config::ItemScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, items::item_data::MarketplaceItemData}};
 
 mod mercari;
 
 /// This scraper is in charge of scraping detailed data for each item ID.
 pub(super) struct ItemScraper { 
-    config: ScraperConfig,
+    config: ItemScraperConfig,
     mercari_scraper: MercariItemScraper
 }
 
 impl ItemScraper {
     /// Instantiate a `IndividualScraper`.
-    pub fn new(config: &ScraperConfig) -> Self {
+    pub fn new(config: &ItemScraperConfig) -> Self {
         Self {
             config: config.clone(),
             mercari_scraper: MercariItemScraper::new()

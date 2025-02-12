@@ -1,4 +1,4 @@
-use crate::{galleries::domain_types::GalleryId, modules::state_tracker::gallery_state::GalleryState};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::GalleryPipelineStates};
 use super::ModuleMessageWithReturn;
 
 /// The types of messages that the state tracker module can take.
@@ -26,10 +26,10 @@ pub enum StateTrackerMessage {
 pub type AddNewGalleryMessage = ModuleMessageWithReturn<GalleryId, Result<(), ()>>;
 
 /// Message for fetching a gallery's state.
-pub type TakeGalleryStateMessage = ModuleMessageWithReturn<GalleryId, Result<GalleryState, ()>>;
+pub type TakeGalleryStateMessage = ModuleMessageWithReturn<GalleryId, Result<GalleryPipelineStates, ()>>;
 
 /// Message for updating a gallery's state.
-pub type PutGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryState), Result<(), ()>>;
+pub type PutGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStates), Result<(), ()>>;
 
 /// Message for removing a gallery from the state.
 pub type RemoveGalleryMessage = ModuleMessageWithReturn<GalleryId, Result<(), ()>>;

@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter::zip};
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{OpenAIImageURLMessage, OpenAIMessage, OpenAIMessageContent, OpenAIRequestForm, OpenAIResponse};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryAnalyzedState, GalleryScrapedState}}, modules::item_analysis::components::anthropic::types::EvaluationAnswers};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}, modules::item_analysis::components::anthropic::types::EvaluationAnswers};
 
 mod types;
 
@@ -22,7 +22,7 @@ impl OpenAIRequester {
     }
 
     /// Perform analysis of a gallery's items.
-    pub async fn analyze_gallery(&mut self, mut gallery: GalleryScrapedState) -> GalleryAnalyzedState {
+    pub async fn analyze_gallery(&mut self, mut gallery: GalleryItemAnalysisState) -> GalleryClassifierState {
         let items = gallery.items.marketplace_items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
         let gallery_requests = self.build_requests(items, eval_criteria_string);
@@ -30,7 +30,7 @@ impl OpenAIRequester {
             &mut gallery.evaluation_criteria, 
             gallery_requests
         ).await;
-        GalleryAnalyzedState {
+        GalleryClassifierState {
             gallery_id: gallery.gallery_id,
             items: analyzed_items,
             evaluation_criteria: gallery.evaluation_criteria

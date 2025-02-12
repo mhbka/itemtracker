@@ -1,8 +1,6 @@
 use components::inner_state::InnerState;
-
 use crate::{config::state_tracker::StateTrackerConfig, messages::{message_types::state_tracker::StateTrackerMessage, StateTrackerReceiver}};
 
-pub mod gallery_state;
 mod components;
 
 /// This module tracks (and sometimes manages) the state of galleries in the pipeline.

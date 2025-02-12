@@ -1,12 +1,12 @@
 //! This module holds handlers for messages received by the module.
 //! 
 //! The only reason for putting these here is to make the module file itself neater.
-use crate::galleries::pipeline_states::GalleryScrapedState;
+use crate::galleries::pipeline_states::GalleryItemAnalysisState;
 
 use super::ItemAnalysisModule;
 
 // TODO: 
-pub(super) async fn handle_start_analysis_msg(gallery: GalleryScrapedState, module: &mut ItemAnalysisModule) {
+pub(super) async fn handle_start_analysis_msg(gallery: GalleryItemAnalysisState, module: &mut ItemAnalysisModule) {
     tracing::trace!("Received message to begin analysis for gallery {}", gallery.gallery_id);
     let gallery_id = gallery.gallery_id.clone();
     if module.galleries_in_progress.contains(&gallery_id) {

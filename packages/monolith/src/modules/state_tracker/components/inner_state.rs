@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{galleries::{domain_types::{GalleryId, UnixUtcDateTime}, eval_criteria::EvaluationCriteria}, modules::state_tracker::gallery_state::GalleryState};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::{GallerySearchScrapingState, GalleryPipelineStates}};
 
 /// Stores + manages the actual state of galleries.
 pub struct InnerState {
-    states: HashMap<GalleryId, Option<GalleryState>>
+    states: HashMap<GalleryId, Option<GalleryPipelineStates>>
 }
 
 impl InnerState {
@@ -18,16 +18,11 @@ impl InnerState {
     /// Add a new gallery to the state.
     /// 
     /// Returns an `Err` if the gallery is already in state.
-    pub fn add_gallery(&mut self, gallery_id: GalleryId, eval_criteria: EvaluationCriteria) -> Result<(), ()> {
+    pub fn add_gallery(&mut self, gallery_id: GalleryId, state: GallerySearchScrapingState) -> Result<(), ()> {
         if self.states.contains_key(&gallery_id) {
             return Err(());
         }
-        let new_state = GalleryState::SearchScraping { 
-            scraped_item_ids: HashMap::new(), 
-            updated_up_to: HashMap::new(), 
-            failed_marketplace_reasons: HashMap::new(),
-            eval_criteria: eval_criteria
-        };
+        let new_state = GalleryPipelineStates::SearchScraping(state);
         self.states.insert(gallery_id, Some(new_state));
         Ok(())
     }
@@ -35,7 +30,7 @@ impl InnerState {
     /// Take the gallery's state.
     /// 
     /// Returns an `Err` if the gallery doesn't exist or the state has already been taken.
-    pub fn take_gallery_state(&mut self, gallery_id: &GalleryId) -> Result<GalleryState, ()> {
+    pub fn take_gallery_state(&mut self, gallery_id: &GalleryId) -> Result<GalleryPipelineStates, ()> {
         match self.states.remove(gallery_id) {
             Some(state) => state.ok_or(()),
             None => Err(())
@@ -45,7 +40,7 @@ impl InnerState {
     /// Put back the gallery's state.
     /// 
     /// Returns an `Err` if the gallery doesn't exist, or the state isn't taken.
-    pub fn put_gallery_state(&mut self, gallery_id: GalleryId, gallery_state: GalleryState) -> Result<(), ()> {
+    pub fn put_gallery_state(&mut self, gallery_id: GalleryId, gallery_state: GalleryPipelineStates) -> Result<(), ()> {
         match self.states.contains_key(&gallery_id) {
             false => {
                 self.states.insert(gallery_id, Some(gallery_state));

@@ -1,6 +1,6 @@
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder};
-use crate::{galleries::{domain_types::ItemId, items::item_data::MarketplaceItemData}, modules::scraper::components::utils::generate_dpop::generate_dpop};
+use crate::{galleries::{domain_types::ItemId, items::item_data::MarketplaceItemData}, utils::generate_dpop::generate_dpop};
 
 const REQ_URL: &str = "https://api.mercari.jp/items/get"; // TODO: move to config
 

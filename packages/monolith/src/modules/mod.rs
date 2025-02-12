@@ -1,15 +1,16 @@
 use image_classifier::ImageClassifierModule;
 use item_analysis::ItemAnalysisModule;
 use tokio::sync::mpsc;
-use scraper::ScraperModule;
+use search_scraper::SearchScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, ScraperSender, StateTrackerReceiver, StateTrackerSender}};
+use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, SearchScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
 
 pub mod web_backend;
 pub mod state_tracker;
 pub mod scraper_scheduler;
-pub mod scraper;
+pub mod search_scraper;
+pub mod item_scraper;
 pub mod item_analysis;
 pub mod image_classifier;
 pub mod storage;
@@ -19,7 +20,7 @@ const MODULE_MESSAGE_BUFFER: usize = 1000;
 /// Struct for instantiating the app's modules.
 pub struct AppModules {
     scheduler_module: ScraperSchedulerModule,
-    scraper_module: ScraperModule,
+    search_scraper_module: SearchScraperModule,
     analysis_module: ItemAnalysisModule,
     classifier_module: ImageClassifierModule
 }
@@ -32,7 +33,7 @@ impl AppModules {
             connections.scraper_scheduler.1, 
             connections.scraper.0
         );
-        let scraper_module = ScraperModule::init(
+        let search_scraper_module = SearchScraperModule::init(
             config.scraper_config.clone(), 
             connections.scraper.1, 
             connections.state_tracker.0,
@@ -50,7 +51,7 @@ impl AppModules {
         );
         AppModules {
             scheduler_module,
-            scraper_module,
+            search_scraper_module,
             analysis_module,
             classifier_module
         }
@@ -59,7 +60,7 @@ impl AppModules {
     /// Start running all of the app's modules.
     pub fn run(mut self) -> AppModulesRunningHandles {
         let scheduler_task = tokio::spawn(async move { self.scheduler_module.run().await; });
-        let scraper_task = tokio::spawn(async move { self.scraper_module.run().await; });
+        let scraper_task = tokio::spawn(async move { self.search_scraper_module.run().await; });
         let analysis_task = tokio::spawn(async move { self.analysis_module.run().await; });
         let classifier_task = tokio::spawn(async move { self.classifier_module.run().await; });
         AppModulesRunningHandles {
@@ -83,7 +84,7 @@ pub struct AppModulesRunningHandles {
 pub struct AppModuleConnections {
     pub state_tracker: (StateTrackerSender, StateTrackerReceiver),
     pub scraper_scheduler: (ScraperSchedulerSender, ScraperSchedulerReceiver),
-    pub scraper: (ScraperSender, ScraperReceiver),
+    pub scraper: (SearchScraperSender, SearchScraperReceiver),
     pub item_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
     pub image_classifier: (ImageClassifierSender, ImageClassifierReceiver),
     pub marketplace_items_storage: (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver)
@@ -116,10 +117,10 @@ impl AppModuleConnections {
         (sender, receiver)
     }
 
-    fn init_scraper_conn() -> (ScraperSender, ScraperReceiver) {
+    fn init_scraper_conn() -> (SearchScraperSender, SearchScraperReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
-        let sender = ScraperSender::new(sender);
-        let receiver = ScraperReceiver::new(receiver);
+        let sender = SearchScraperSender::new(sender);
+        let receiver = SearchScraperReceiver::new(receiver);
         (sender, receiver)
     }
 

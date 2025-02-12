@@ -1,4 +1,4 @@
-use crate::{config::ItemAnalysisConfig, galleries::pipeline_states::GalleryScrapedState, messages::{message_types::{img_classifier::ImgClassifierMessage, item_analysis::ItemAnalysisError}, ImageClassifierSender}};
+use crate::{config::ItemAnalysisConfig, galleries::pipeline_states::GalleryItemAnalysisState, messages::{message_types::{img_classifier::ImgClassifierMessage, item_analysis::ItemAnalysisError}, ImageClassifierSender}};
 use super::anthropic::AnthropicRequester;
 
 /// Orchestrates requesting of the LLM for a gallery's items.
@@ -22,7 +22,7 @@ impl RequestOrchestrator {
     /// Request analysis of a gallery's items, and sends the items to the next stage.
     pub async fn handle_gallery(
         &mut self, 
-        gallery: GalleryScrapedState,
+        gallery: GalleryItemAnalysisState,
     ) -> Result<(), ItemAnalysisError> {
         let gallery_id = gallery.gallery_id.clone();
         let analyzed_gallery = self.anthropic_requester

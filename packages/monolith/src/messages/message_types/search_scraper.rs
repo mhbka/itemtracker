@@ -1,10 +1,10 @@
 use serde::{Serialize, Deserialize};
-use crate::galleries::{domain_types::GalleryId, pipeline_states::GalleryScrapingState};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::GallerySearchScrapingState};
 use thiserror::Error;
 
 /// Possible errors emitted from the scraper.
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
-pub enum ScraperError {
+pub enum SearchScraperError {
     #[error("Gallery {gallery_id} is already in state")]
     GalleryAlreadyExists { gallery_id: GalleryId },
     #[error("All marketplaces for gallery {gallery_id} failed to scrape")]
@@ -17,7 +17,7 @@ pub enum ScraperError {
 
 /// The types of messages that the scraper module can take.
 #[derive(Debug)]
-pub enum ScraperMessage {
+pub enum SearchScraperMessage {
     /// This is the trigger for starting a new scraping job for a gallery.
-    StartScrapingGallery { gallery: GalleryScrapingState }
+    ScrapeSearch { gallery: GallerySearchScrapingState }
 }

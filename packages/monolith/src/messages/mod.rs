@@ -1,6 +1,6 @@
 use message_buses::{MessageSender, MessageReceiver};
 use message_types::{
-    img_classifier::ImgClassifierMessage, item_analysis::ItemAnalysisMessage, scraper::ScraperMessage, scraper_scheduler::SchedulerMessage, state_tracker::StateTrackerMessage, storage::marketplace_items::MarketplaceItemsStorageMessage, web_backend::WebBackendMessage
+    img_classifier::ImgClassifierMessage, item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::StateTrackerMessage, storage::marketplace_items::MarketplaceItemsStorageMessage, web_backend::WebBackendMessage
 };
 
 pub mod message_buses;
@@ -21,10 +21,15 @@ pub type ScraperSchedulerSender = MessageSender<SchedulerMessage>;
 /// Handle for the scraper scheduler to receive messages.
 pub type ScraperSchedulerReceiver = MessageReceiver<SchedulerMessage>;
 
-/// Handle for sending messages to the scraper.
-pub type ScraperSender = MessageSender<ScraperMessage>;
-/// Handle for the scraper module to receive messages.
-pub type ScraperReceiver = MessageReceiver<ScraperMessage>;
+/// Handle for sending messages to the search scraper.
+pub type SearchScraperSender = MessageSender<SearchScraperMessage>;
+/// Handle for the search scraper module to receive messages.
+pub type SearchScraperReceiver = MessageReceiver<SearchScraperMessage>;
+
+/// Handle for sending messages to the item scraper.
+pub type ItemScraperSender = MessageSender<ItemScraperMessage>;
+/// Handle for the item scraper module to receive messages.
+pub type ItemScraperReceiver = MessageReceiver<ItemScraperMessage>;
 
 /// Handle for sending the item analysis module messages.
 pub type ItemAnalysisSender = MessageSender<ItemAnalysisMessage>;

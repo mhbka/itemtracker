@@ -1,10 +1,9 @@
-mod components;
+use scheduler::SchedulerHandler;
+use tracing::info;
+use crate::{config::ScraperSchedulerConfig, messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, SearchScraperSender, StateTrackerSender}};
 
-use std::sync::Arc;
-use components::scheduler::RawScraperScheduler;
-use tokio::sync::Mutex;
-use tracing::{info, instrument};
-use crate::{config::ScraperSchedulerConfig, messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, ScraperSender}};
+mod scheduled_task;
+mod scheduler;
 
 /// Module in charge of scheduling scraping tasks.
 /// 
@@ -12,9 +11,9 @@ use crate::{config::ScraperSchedulerConfig, messages::{message_types::scraper_sc
 /// 
 /// Whenever a gallery is scheduled to be scraped, it is sent through the `scraper_msg_sender`.
 pub struct ScraperSchedulerModule {
-    scheduler: RawScraperScheduler,
+    scheduler: SchedulerHandler,
     msg_receiver: ScraperSchedulerReceiver,
-    scraper_msg_sender: Arc<Mutex<ScraperSender>>
+    scraper_msg_sender: SearchScraperSender
 }
 
 impl ScraperSchedulerModule {
@@ -22,13 +21,12 @@ impl ScraperSchedulerModule {
     pub fn init( 
         config: ScraperSchedulerConfig,
         msg_receiver: ScraperSchedulerReceiver,
-        scraper_msg_sender: ScraperSender
+        scraper_msg_sender: SearchScraperSender,
+        state_tracker_sender: StateTrackerSender
     ) -> Self
     {
-        let scraper_msg_sender = Arc::new(Mutex::new(scraper_msg_sender));
-        let scheduler = RawScraperScheduler::new(scraper_msg_sender.clone());
         ScraperSchedulerModule {
-            scheduler,
+            scheduler: SchedulerHandler::new(scraper_msg_sender.clone(), state_tracker_sender),
             msg_receiver,
             scraper_msg_sender
         }

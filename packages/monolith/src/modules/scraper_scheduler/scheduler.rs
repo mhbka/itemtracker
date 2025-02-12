@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
 use crate::galleries::domain_types::GalleryId;
-use crate::messages::ScraperSender;
+use crate::messages::{SearchScraperSender, StateTrackerSender};
 use crate::{
     galleries::pipeline_states::GalleryInitializationState, 
     messages::message_types::scraper_scheduler::{EditGallery, NewGallery, SchedulerError}
@@ -10,33 +10,31 @@ use crate::{
 
 use super::scheduled_task::ScheduledGalleryTask;
 
+/// A map of gallery IDs to their scheduling task.
+/// 
+/// Aliased since the signature is pretty long.
+type GallerySchedulingHandles = Arc<RwLock<HashMap<GalleryId, (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>)>>>;
+
 /// The actual scheduler for the scraper.
-pub struct RawScraperScheduler {
-    /// A mapping of gallery IDs to their running scheduling tasks.
-    /// 
-    /// Contains the `JoinHandle` to the actual running task, as well as a
-    /// `ScheduledGalleryTaskHandle` which can be used to modify the task's gallery's parameters.
-    galleries: Arc<RwLock<HashMap<GalleryId, (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>)>>>,
-    
-    /// Handle for sending messages to the scraper.
-    /// 
-    /// This is cloned and passed into each gallery task.
-    scraper_msg_sender: Arc<Mutex<ScraperSender>>
+pub struct SchedulerHandler {
+    galleries: GallerySchedulingHandles, 
+    scraper_msg_sender: SearchScraperSender,
+    state_tracker_sender: StateTrackerSender
 }
 
-impl RawScraperScheduler {
+impl SchedulerHandler {
     /// Instantiate the scheduler.
     /// 
     /// TODO: be able to instantiate from a Vec of galleries here
-    pub fn new(scraper_msg_sender: Arc<Mutex<ScraperSender>>) -> Self {
+    pub fn new(scraper_msg_sender: SearchScraperSender, state_tracker_sender: StateTrackerSender) -> Self {
         Self {
             galleries: Arc::new(RwLock::new(HashMap::new())),
-            scraper_msg_sender
+            scraper_msg_sender,
+            state_tracker_sender
         }
     }
 
     /// Add a new gallery to the scheduler.
-    #[tracing::instrument(skip(self))]
     pub async fn add_gallery(&self, new_gallery: NewGallery) -> Result<(), SchedulerError>
     {
         let new_gallery = new_gallery.gallery;
@@ -52,7 +50,6 @@ impl RawScraperScheduler {
     }
 
     /// Delete a gallery from the scheduler.
-    #[tracing::instrument(skip(self))]
     pub async fn delete_gallery(&self, gallery_id: GalleryId) -> Result<(), SchedulerError> 
     {
         let mut galleries = self.galleries.write().await;
@@ -66,7 +63,6 @@ impl RawScraperScheduler {
     }
 
     /// Update a gallery in the scheduler.
-    #[tracing::instrument(skip(self))]
     pub async fn update_gallery(&self, edited_gallery: EditGallery) -> Result<(), SchedulerError>
     {   
         let gallery = edited_gallery.gallery;
@@ -86,10 +82,14 @@ impl RawScraperScheduler {
     async fn generate_gallery_task(&self, gallery: GalleryInitializationState) 
     -> (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>) 
     {
-        let scraper_msg_sender = self.scraper_msg_sender.clone();
-        let task = Arc::new(Mutex::new(ScheduledGalleryTask::new(gallery, scraper_msg_sender)));
+        let task = ScheduledGalleryTask::new(
+            gallery, 
+            self.state_tracker_sender.clone(),
+            self.scraper_msg_sender.clone()
+        );
+        let task = Arc::new(Mutex::new(task));
         let cloned_task = task.clone();
-        let join_handle = tokio::spawn(
+        let task_handle = tokio::spawn(
             async move {
                 cloned_task
                     .lock()
@@ -98,7 +98,6 @@ impl RawScraperScheduler {
                     .await;
             }
         );
-
-        (task, join_handle)
+        (task, task_handle)
     }
 }

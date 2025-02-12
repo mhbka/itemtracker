@@ -3,6 +3,7 @@ mod galleries;
 mod modules;
 mod messages;
 mod routes;
+mod utils;
 
 use axum::Router;
 use config::{AppConfig, AxumConfig};
