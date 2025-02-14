@@ -5,7 +5,7 @@ use crate::galleries::domain_types::GalleryId;
 use crate::messages::{SearchScraperSender, StateTrackerSender};
 use crate::{
     galleries::pipeline_states::GalleryInitializationState, 
-    messages::message_types::scraper_scheduler::{EditGallery, NewGallery, SchedulerError}
+    messages::message_types::scraper_scheduler::SchedulerError
 };
 
 use super::scheduled_task::ScheduledGalleryTask;
@@ -35,9 +35,8 @@ impl SchedulerHandler {
     }
 
     /// Add a new gallery to the scheduler.
-    pub async fn add_gallery(&self, new_gallery: NewGallery) -> Result<(), SchedulerError>
+    pub async fn add_gallery(&self, new_gallery: GalleryInitializationState) -> Result<(), SchedulerError>
     {
-        let new_gallery = new_gallery.gallery;
         let gallery_id = new_gallery.gallery_id.clone();
         let mut galleries = self.galleries.write().await;
         if galleries.contains_key(&gallery_id) {
@@ -63,17 +62,16 @@ impl SchedulerHandler {
     }
 
     /// Update a gallery in the scheduler.
-    pub async fn update_gallery(&self, edited_gallery: EditGallery) -> Result<(), SchedulerError>
+    pub async fn update_gallery(&self, updated_gallery: GalleryInitializationState) -> Result<(), SchedulerError>
     {   
-        let gallery = edited_gallery.gallery;
         let mut galleries = self.galleries.write().await;
-        if let Some(task) = galleries.get_mut(&gallery.gallery_id) {
+        if let Some(task) = galleries.get_mut(&updated_gallery.gallery_id) {
             let mut scheduled_gallery = task.0.lock().await;
-            scheduled_gallery.update_gallery(gallery);
+            scheduled_gallery.update_gallery(updated_gallery);
             Ok(())
         } else {
-            tracing::error!("Gallery with ID {} not found", gallery.gallery_id);
-            Err(SchedulerError::GalleryNotFound{ gallery_id: gallery.gallery_id})
+            tracing::error!("Gallery with ID {} not found", updated_gallery.gallery_id);
+            Err(SchedulerError::GalleryNotFound{ gallery_id: updated_gallery.gallery_id})
         }
     }
 

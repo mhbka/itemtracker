@@ -12,11 +12,6 @@ pub type WebBackendSender = MessageSender<WebBackendMessage>;
 pub type WebBackendReceiver = MessageReceiver<WebBackendMessage>;
 
 /// Handle for sending the scraper scheduler messages.
-pub type StateTrackerSender = MessageSender<StateTrackerMessage>;
-/// Handle for the scraper scheduler to receive messages.
-pub type StateTrackerReceiver = MessageReceiver<StateTrackerMessage>;
-
-/// Handle for sending the scraper scheduler messages.
 pub type ScraperSchedulerSender = MessageSender<SchedulerMessage>;
 /// Handle for the scraper scheduler to receive messages.
 pub type ScraperSchedulerReceiver = MessageReceiver<SchedulerMessage>;
@@ -45,3 +40,8 @@ pub type ImageClassifierReceiver = MessageReceiver<ImgClassifierMessage>;
 pub type MarketplaceItemsStorageSender = MessageSender<MarketplaceItemsStorageMessage>;
 /// Handle for the marketplace items storage storage module to receive messages.
 pub type MarketplaceItemsStorageReceiver = MessageReceiver<MarketplaceItemsStorageMessage>;
+
+/// Handle for sending the scraper scheduler messages.
+pub type StateTrackerSender = MessageSender<StateTrackerMessage>;
+/// Handle for the scraper scheduler to receive messages.
+pub type StateTrackerReceiver = MessageReceiver<StateTrackerMessage>;

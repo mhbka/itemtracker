@@ -1,7 +1,7 @@
 //! This module contains message buses, which are effectively just mpsc sender/receiver wrappers.
-
 use tokio::sync::mpsc::{error::SendError, Receiver, Sender};
 use std::fmt::Debug;
+
 
 /// A handle for sending messages of type T to a module.
 #[derive(Debug)]
@@ -16,7 +16,6 @@ impl<T: Debug> MessageSender<T> {
     }
 
     /// Send a message through the sender.
-    #[tracing::instrument(skip(self))]
     pub async fn send(&mut self, message: T) -> Result<(), SendError<T>> {
         self.sender
             .send(message)
@@ -43,7 +42,6 @@ impl <T: Debug> MessageReceiver<T> {
     }
 
     /// Receive a message through the receiver.
-    #[tracing::instrument(skip(self))]
     pub async fn receive(&mut self) -> Option<T> {
         self.receiver.recv().await
     }

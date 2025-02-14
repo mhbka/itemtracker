@@ -7,7 +7,7 @@ pub mod item_analysis;
 pub mod img_classifier;
 pub mod storage;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, future::Future};
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::oneshot;
 
@@ -18,9 +18,10 @@ use tokio::sync::oneshot;
 /// 
 /// ## Use
 /// 
-/// - `new()` returns this struct along with a **receiver** for receiving the response. 
-/// - This struct is sent to an actor via something like an mpsc channel, which uses `get_msg()` to get the actual message data. 
-/// - After acting on the message, the actor can pass a response to `respond()`, which the original function can receive by `await`ing the **receiver**.
+/// - A sender calls `new()`, returning this along with a *receiver* for receiving the response 
+/// - The message is sent to an actor via a channel
+/// - The actor calls `act` or `act_async` with a (async) closure, to act on the message data and return a response
+/// - The sender `await`s the *receiver* to receive this response
 /// 
 /// ## Note
 /// 
@@ -28,11 +29,6 @@ use tokio::sync::oneshot;
 /// such as communicating failure of a search scrape back to the scheduler.
 /// 
 /// Such issues should be communicated to the state tracker module.
-/// 
-/// ## Example
-/// 
-/// ```rust
-/// WIP
 /// ```
 #[derive(Debug)]
 pub struct ModuleMessageWithReturn<Message, Return>
@@ -56,13 +52,36 @@ where
         (message, receiver)
     }
 
+    /* 
     /// Obtain a clone of the message.
-    pub fn get_msg(&self) -> Message {
+    fn get_msg(&self) -> Message {
         self.message.clone()
     }
 
     /// Attempt to send the response.
-    pub fn respond(self, response: Return) -> Result<(), Return> {
+    fn respond(self, response: Return) -> Result<(), Return> {
+        self.respond_to.send(response)
+    }
+    */
+
+    /// Act upon the message and provide a response to it.
+    /// 
+    /// Returns an `Err` with the response value if it couldn't be successfully delivered.
+    pub fn act<F>(self, f: F) -> Result<(), Return>
+    where 
+        F: FnOnce(Message) -> Return {
+        let response = f(self.message);
+        self.respond_to.send(response)
+    }
+
+    /// Act asynchronously upon the message and provide a response to it.
+    /// 
+    /// Returns an `Err` with the response value if it couldn't be successfully delivered.
+    pub async fn act_async<F, Fut>(self, f: F) -> Result<(), Return>
+    where 
+        F: FnOnce(Message) -> Fut,
+        Fut: Future<Output = Return> {
+        let response = f(self.message).await;
         self.respond_to.send(response)
     }
 }

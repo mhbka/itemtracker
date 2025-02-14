@@ -45,25 +45,31 @@ impl ScraperSchedulerModule {
     async fn process_msg(&mut self, msg: SchedulerMessage) {
         match msg {
             SchedulerMessage::NewGallery(msg) => {
-                let gallery = msg.get_msg();
-                let result = self.scheduler.add_gallery(gallery).await;
-                if msg.respond(result).is_err() {
-                    tracing::error!("Was unable to respond to a message for creating a gallery");
-                }
+                if msg.act_async(|gallery| async {
+                    self.scheduler.add_gallery(gallery).await
+                })
+                    .await
+                    .is_err() {
+                        tracing::error!("Was unable to respond to a message for creating a gallery");
+                    };
             },
             SchedulerMessage::DeleteGallery(msg) => {
-                let gallery_id = msg.get_msg().gallery_id;
-                    let result = self.scheduler.delete_gallery(gallery_id).await;
-                    if msg.respond(result).is_err() {
-                        tracing::error!("Was unable to respond to a message for deleting a gallery");
-                    }
+                if msg.act_async(|gallery_id| async {
+                    self.scheduler.delete_gallery(gallery_id).await
+                })
+                    .await
+                    .is_err() {
+                        tracing::error!("Was unable to respond to a message for creating a gallery");
+                    };
             },
-            SchedulerMessage::EditGallery(msg) => {
-                let gallery = msg.get_msg();
-                let result = self.scheduler.update_gallery(gallery).await;
-                if msg.respond(result).is_err() {
-                    tracing::error!("Was unable to respond to a message for editing a gallery");
-                }
+            SchedulerMessage::UpdateGallery(msg) => {
+                if msg.act_async(|gallery| async {
+                    self.scheduler.update_gallery(gallery).await
+                })
+                    .await
+                    .is_err() {
+                        tracing::error!("Was unable to respond to a message for creating a gallery");
+                    };
             },
         }
     }

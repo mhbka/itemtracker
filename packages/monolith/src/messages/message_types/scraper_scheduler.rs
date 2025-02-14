@@ -19,30 +19,14 @@ pub enum SchedulerError {
 pub enum SchedulerMessage {
     NewGallery(NewGalleryMessage),
     DeleteGallery(DeleteGalleryMessage),
-    EditGallery(EditGalleryMessage)
+    UpdateGallery(UpdateGalleryMessage)
 }
 
 /// Message for adding a new gallery to the scheduler.
-pub type NewGalleryMessage = ModuleMessageWithReturn<NewGallery, Result<(), SchedulerError>>;
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct NewGallery {
-    pub gallery: GalleryInitializationState
-}
+pub type NewGalleryMessage = ModuleMessageWithReturn<GalleryInitializationState, Result<(), SchedulerError>>;
 
 /// Message for deleting a gallery in the scheduler.
-pub type DeleteGalleryMessage = ModuleMessageWithReturn<DeleteGallery, Result<(), SchedulerError>>;
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct DeleteGallery {
-    pub gallery_id: GalleryId
-}
+pub type DeleteGalleryMessage = ModuleMessageWithReturn<GalleryId, Result<(), SchedulerError>>;
 
 /// Message for editing a gallery in the scheduler.
-pub type EditGalleryMessage = ModuleMessageWithReturn<EditGallery, Result<(), SchedulerError>>;
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct EditGallery {
-    pub gallery: GalleryInitializationState
-}
-
+pub type UpdateGalleryMessage = ModuleMessageWithReturn<GalleryInitializationState, Result<(), SchedulerError>>;
