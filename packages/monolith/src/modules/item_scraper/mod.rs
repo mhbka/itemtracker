@@ -33,9 +33,10 @@ impl ItemScraperModule {
     /// Handle each message variant.
     async fn process_msg(&mut self, msg: ItemScraperMessage) {
         match msg {
-            ItemScraperMessage::ScrapeItems { gallery } => {
+            ItemScraperMessage::ScrapeItems { gallery_id } => {
 
             },
+            ItemScraperMessage::ScrapeItemsNew { gallery } => todo!(),
         }
     }
 }

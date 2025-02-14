@@ -1,4 +1,4 @@
-use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStates, GallerySearchScrapingState}};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates, GallerySearchScrapingState}};
 use super::ModuleMessageWithReturn;
 
 /// The types of messages that the state tracker module can take.
@@ -10,6 +10,10 @@ pub enum StateTrackerMessage {
     AddGallery(AddGalleryMessage),
     /// Check if a gallery is in state.
     CheckGallery(CheckGalleryMessage),
+    /// Check the gallery's state.
+    /// 
+    /// Returns an `Err` if the gallery doesn't exist.
+    CheckGalleryState(CheckGalleryStateMessage),
     /// Take the gallery's state (leaving the stored state as `None`).
     /// 
     /// Returns an `Err` if the gallery doesn't exist, or its state has already been taken.
@@ -31,6 +35,9 @@ pub type AddGalleryMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipeline
 
 /// Message for checking a gallery's existence in the state.
 pub type CheckGalleryMessage = ModuleMessageWithReturn<GalleryId, bool>;
+
+/// Message for checking a gallery's state.
+pub type CheckGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStateTypes), Result<bool, ()>>;
 
 /// Message for taking a gallery's state, leaving it set as `None`.
 pub type TakeGalleryStateMessage = ModuleMessageWithReturn<GalleryId, Result<GalleryPipelineStates, ()>>;

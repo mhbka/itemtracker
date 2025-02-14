@@ -8,6 +8,36 @@ mod inner_state;
 /// This is useful since we can persist the state to a temporary store like Redis,
 /// and continue from the previous state in case of application restarts.
 /// 
+/// # API
+/// The module has the following API.
+/// 
+/// ## Add
+/// Add a gallery to the state. It can be added in any state.
+/// 
+/// Returns an `Err` if the gallery already exists.
+/// 
+/// ## Check
+/// Check if the gallery exists in state.
+/// 
+/// ## Check State
+/// Check the gallery's state type.
+/// 
+/// Returns an `Err` if it doesn't exist.
+/// 
+/// ## Take
+/// *Takes* a gallery's data, leaving it stored as `None`.
+/// 
+/// 
+/// 
+/// ## Put
+/// 
+/// ## Update
+/// Update a gallery by setting a new state for it.
+/// 
+/// ## Remove
+/// Remove the gallery from the state. It can be removed while in any state.
+/// 
+/// Returns an `Err` if the gallery doesn't exist.
 pub struct StateTrackerModule {
     config: StateTrackerConfig,
     state: InnerState,
@@ -39,6 +69,9 @@ impl StateTrackerModule {
             },
             StateTrackerMessage::CheckGallery(msg) => {
                 msg.act(|gallery_id| self.state.check_gallery(gallery_id));
+            },
+            StateTrackerMessage::CheckGalleryState(msg) => {
+                msg.act(|(gallery_id, state_type)| self.state.check_gallery_state(&gallery_id, &state_type));
             },
             StateTrackerMessage::TakeGalleryState(msg) => {
                 msg.act(|gallery_id| self.state.take_gallery_state(&gallery_id));

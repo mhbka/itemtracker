@@ -1,47 +1,18 @@
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
-use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryClassifierState, GalleryFinalState, GalleryItemAnalysisState, GalleryItemScrapingState, GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}};
+use std::{collections::HashMap, future::Future};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
 
-/// A mirror of the actual states, but allowing for takeability.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum TakeableGalleryStates {
-    Initialization(Option<GallerySchedulerState>),
-    SearchScraping(Option<GallerySearchScrapingState>),
-    ItemScraping(Option<GalleryItemScrapingState>),
-    ItemAnalysis(Option<GalleryItemAnalysisState>),
-    Classification(Option<GalleryClassifierState>),
-    Final(Option<GalleryFinalState>)
-}
-
-impl TakeableGalleryStates {
-    /// Map from `TakeableGalleryStates` to `Option<GalleryPipelineStates>`.
-    fn map_from(self) -> Option<GalleryPipelineStates> {
-        match self {
-            TakeableGalleryStates::Initialization(state) => if let Some(state) = state { return Some(GalleryPipelineStates::Initialization(state)); },
-            TakeableGalleryStates::SearchScraping(state) => if let Some(state) = state { return Some(GalleryPipelineStates::SearchScraping(state)); },
-            TakeableGalleryStates::ItemScraping(state) => if let Some(state) = state { return Some(GalleryPipelineStates::ItemScraping(state)); },
-            TakeableGalleryStates::ItemAnalysis(state) => if let Some(state) = state { return Some(GalleryPipelineStates::ItemAnalysis(state)); },
-            TakeableGalleryStates::Classification(state) => if let Some(state) = state { return Some(GalleryPipelineStates::Classification(state)); },
-            TakeableGalleryStates::Final(state) => if let Some(state) = state { return Some(GalleryPipelineStates::Final(state)); },
-        }
-        None
-    }
-
-    fn map_into(actual_state: GalleryPipelineStates) -> Self {
-        match actual_state {
-            GalleryPipelineStates::Initialization(state) => TakeableGalleryStates::Initialization(Some(state)),
-            GalleryPipelineStates::SearchScraping(state) => TakeableGalleryStates::SearchScraping(Some(state)),
-            GalleryPipelineStates::ItemScraping(state) => TakeableGalleryStates::ItemScraping(Some(state)),
-            GalleryPipelineStates::ItemAnalysis(state) => TakeableGalleryStates::ItemAnalysis(Some(state)),
-            GalleryPipelineStates::Classification(state) => TakeableGalleryStates::Classification(Some(state)),
-            GalleryPipelineStates::Final(state) => TakeableGalleryStates::Final(Some(state)),
-        }
-    }
-}
-
-/// Stores + manages the actual state of galleries.
+/// Stores + manages the state of galleries.
+/// 
+/// We use an `Option` for the actual state, to allow users to take and put back state data.
+/// This allows for more efficient state updating, since a lot of data is common between states
+/// and cloning it for updating would be inefficient.
+/// 
+/// However, this does necessitate that the user remember to put back state data, or update it with new state).
+/// 
+/// We keep the state's corresponding `GalleryPipelineStateTypes` 
+/// to track its state type whenever it is taken (ie, `None`).
 pub struct InnerState {
-    states: HashMap<GalleryId, TakeableGalleryStates>
+    states: HashMap<GalleryId, (GalleryPipelineStateTypes, Option<GalleryPipelineStates>)>
 }
 
 impl InnerState {
@@ -59,8 +30,8 @@ impl InnerState {
         if self.states.contains_key(&gallery_id) {
             return Err(());
         }
-        let new_state = TakeableGalleryStates::map_into(gallery_state);
-        self.states.insert(gallery_id, new_state);
+        let state_type = gallery_state.state_type();
+        self.states.insert(gallery_id, (state_type, Some(gallery_state)));
         Ok(())
     }
 
@@ -69,12 +40,22 @@ impl InnerState {
         self.states.contains_key(&gallery_id)
     }
 
+    /// Check if a gallery matches the given state type.
+    /// 
+    /// Returns an `Err` if the gallery doesn't exist.
+    pub fn check_gallery_state(&mut self, gallery_id: &GalleryId, gallery_state: &GalleryPipelineStateTypes) -> Result<bool, ()> {
+        match self.states.get(&gallery_id) {
+            Some((_, stored_state)) => Ok(matches!(stored_state, gallery_state)),
+            None => Err(())
+        }
+    }
+
     /// Take the gallery's state, leaving it set as `None`.
     /// 
     /// Returns an `Err` if the gallery doesn't exist or the state has already been taken.
     pub fn take_gallery_state(&mut self, gallery_id: &GalleryId) -> Result<GalleryPipelineStates, ()> {
-        match self.states.remove(gallery_id) {
-            Some(state) => state.map_from().ok_or(()),
+        match self.states.get_mut(gallery_id) {
+            Some((_, takeable_state)) => takeable_state.take().ok_or(()),
             None => Err(())
         }
     }
@@ -84,20 +65,11 @@ impl InnerState {
     /// Returns an `Err` if the gallery doesn't exist, the state isn't taken, or the state given is not the correct kind.
     pub fn put_gallery_state(&mut self, gallery_id: GalleryId, gallery_state: GalleryPipelineStates) -> Result<(), ()> {
         match self.states.get_mut(&gallery_id) {
-            Some(internal_state) => match (&*internal_state, gallery_state) {
-                (TakeableGalleryStates::Initialization(_), GalleryPipelineStates::Initialization(state)) => 
-                    *internal_state = TakeableGalleryStates::Initialization(Some(state)),
-                (TakeableGalleryStates::SearchScraping(_), GalleryPipelineStates::SearchScraping(state)) => 
-                    *internal_state = TakeableGalleryStates::SearchScraping(Some(state)),
-                (TakeableGalleryStates::ItemScraping(_), GalleryPipelineStates::ItemScraping(state)) => 
-                    *internal_state = TakeableGalleryStates::ItemScraping(Some(state)),
-                (TakeableGalleryStates::ItemAnalysis(_), GalleryPipelineStates::ItemAnalysis(state)) => 
-                    *internal_state = TakeableGalleryStates::ItemAnalysis(Some(state)),
-                (TakeableGalleryStates::Classification(_), GalleryPipelineStates::Classification(state)) => 
-                    *internal_state = TakeableGalleryStates::Classification(Some(state)),
-                (TakeableGalleryStates::Final(_), GalleryPipelineStates::Final(state)) => 
-                    *internal_state = TakeableGalleryStates::Final(Some(state)),
-                _ => return Err(()),
+            Some((state_type, internal_state)) => {
+                if internal_state.is_some() || !state_type.matches(&gallery_state) {
+                    return Err(());
+                };
+                *internal_state = Some(gallery_state);
             },
             None => return Err(())
         }

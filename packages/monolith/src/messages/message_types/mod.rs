@@ -33,8 +33,8 @@ use tokio::sync::oneshot;
 #[derive(Debug)]
 pub struct ModuleMessageWithReturn<Message, Return>
 where 
-    Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug, 
-    Return: Send + Sync + Serialize + DeserializeOwned + Clone + Debug
+    Message: Send + Sync + Clone + Debug, 
+    Return: Send + Sync + Clone + Debug
 {
     message: Message,
     respond_to: oneshot::Sender<Return>
@@ -42,8 +42,8 @@ where
 
 impl<Message, Return> ModuleMessageWithReturn<Message, Return>
 where 
-    Message: Send + Sync + Serialize + DeserializeOwned + Clone + Debug, 
-    Return: Send + Sync + Serialize + DeserializeOwned + Clone + Debug
+    Message: Send + Sync + Clone + Debug, 
+    Return: Send + Sync + Clone + Debug
 {   
     /// Initialize the message, return it as well as the oneshot channel receiver.
     pub fn new(message: Message) -> (Self, oneshot::Receiver<Return>) {

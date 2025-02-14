@@ -26,8 +26,6 @@ impl Handler {
     }
 
     /// Perform the scraping of a gallery in state.
-    /// 
-    /// Returns an `Err` if the gallery is not in state.
     pub async fn scrape_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), SearchScraperError> {
         let gallery = self.fetch_gallery_state(gallery_id).await?;
         self.scrape_gallery(gallery).await
@@ -77,7 +75,7 @@ impl Handler {
     /// 
     /// Returns an `Err` if:
     /// - the gallery is not in state, 
-    /// - not in the expected state, 
+    /// - the gallery is not in the expected state, 
     /// - the state has been taken,
     /// - the state tracker is not contactable
     async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GallerySearchScrapingState, SearchScraperError> {

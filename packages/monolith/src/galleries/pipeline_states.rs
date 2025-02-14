@@ -22,6 +22,53 @@ pub enum GalleryPipelineStates {
     Final(GalleryFinalState)
 }
 
+impl GalleryPipelineStates {
+    /// Returns if the state type matches the state.
+    pub fn matches(&self, state_type: &GalleryPipelineStateTypes) -> bool {
+        matches!(
+            (self, state_type),
+            (GalleryPipelineStates::Initialization(_), GalleryPipelineStateTypes::Initialization) |
+            (GalleryPipelineStates::SearchScraping(_), GalleryPipelineStateTypes::SearchScraping) |
+            (GalleryPipelineStates::ItemScraping(_), GalleryPipelineStateTypes::ItemScraping) |
+            (GalleryPipelineStates::ItemAnalysis(_), GalleryPipelineStateTypes::ItemAnalysis) |
+            (GalleryPipelineStates::Classification(_), GalleryPipelineStateTypes::Classification) |
+            (GalleryPipelineStates::Final(_), GalleryPipelineStateTypes::Final)
+        )
+    }
+
+    /// Returns the state's state type.
+    pub fn state_type(&self) -> GalleryPipelineStateTypes {
+        match self {
+            GalleryPipelineStates::Initialization(_) => GalleryPipelineStateTypes::Initialization,
+            GalleryPipelineStates::SearchScraping(_) => GalleryPipelineStateTypes::SearchScraping,
+            GalleryPipelineStates::ItemScraping(_) => GalleryPipelineStateTypes::ItemScraping,
+            GalleryPipelineStates::ItemAnalysis(_) => GalleryPipelineStateTypes::ItemAnalysis,
+            GalleryPipelineStates::Classification(_) => GalleryPipelineStateTypes::Classification,
+            GalleryPipelineStates::Final(_) => GalleryPipelineStateTypes::Final,
+        }
+    }
+}
+
+/// A stateless enum of the possible states in the pipeline.
+/// 
+/// Used for matching on the stateful version using its `matches` function.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum GalleryPipelineStateTypes {
+    Initialization, 
+    SearchScraping, 
+    ItemScraping,
+    ItemAnalysis,
+    Classification,
+    Final
+}
+
+impl GalleryPipelineStateTypes {
+    /// Returns if the state type matches the state.
+    pub fn matches(&self, state: &GalleryPipelineStates) -> bool {
+        state.matches(self)
+    }
+}
+
 /// This is the state of a gallery in the scheduler.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GallerySchedulerState {
