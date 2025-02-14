@@ -37,7 +37,8 @@ impl AnthropicRequester {
         GalleryClassifierState {
             gallery_id: gallery.gallery_id,
             items: analyzed_items,
-            evaluation_criteria: gallery.evaluation_criteria
+            failed_marketplace_reasons: gallery.failed_marketplace_reasons,
+            marketplace_updated_datetimes: gallery.marketplace_updated_datetimes
         }
     }
 

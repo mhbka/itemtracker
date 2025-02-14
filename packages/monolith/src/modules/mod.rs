@@ -1,10 +1,12 @@
 use image_classifier::ImageClassifierModule;
 use item_analysis::ItemAnalysisModule;
+use item_scraper::ItemScraperModule;
+use state_tracker::StateTrackerModule;
 use tokio::sync::mpsc;
 use search_scraper::SearchScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, SearchScraperReceiver, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
+use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemScraperReceiver, ItemScraperSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
 
 pub mod web_backend;
 pub mod state_tracker;
@@ -19,25 +21,37 @@ const MODULE_MESSAGE_BUFFER: usize = 1000;
 
 /// Struct for instantiating the app's modules.
 pub struct AppModules {
+    state_tracker_module: StateTrackerModule,
     scheduler_module: ScraperSchedulerModule,
     search_scraper_module: SearchScraperModule,
+    item_scraper_module: ItemScraperModule,
     analysis_module: ItemAnalysisModule,
     classifier_module: ImageClassifierModule
 }
 
 impl AppModules {
     /// Initialize the app's modules.
-    pub fn init(config: &AppConfig, connections: AppModuleConnections) -> Self {
+    pub fn init(config: AppConfig, connections: AppModuleConnections) -> Self {
+        let state_tracker_module = StateTrackerModule::init(
+            config.state_tracker_config, 
+            connections.state_tracker.1
+        );
         let scheduler_module = ScraperSchedulerModule::init(
-            config.scraper_scheduler_config.clone(),
+            config.scraper_scheduler_config,
             connections.scraper_scheduler.1, 
-            connections.scraper.0
+            connections.search_scraper.0,
+            connections.state_tracker.0.clone()
         );
         let search_scraper_module = SearchScraperModule::init(
-            config.scraper_config.clone(), 
-            connections.scraper.1, 
-            connections.state_tracker.0,
-            connections.marketplace_items_storage.0, 
+            config.search_scraper_config, 
+            connections.search_scraper.1, 
+            connections.state_tracker.0.clone(),
+            connections.item_scraper.0,
+        );
+        let item_scraper_module = ItemScraperModule::init(
+            config.item_scraper_config,
+            connections.item_scraper.1,
+            connections.state_tracker.0.clone(),
             connections.item_analysis.0
         );
         let analysis_module = ItemAnalysisModule::init(
@@ -50,8 +64,10 @@ impl AppModules {
             connections.image_classifier.1
         );
         AppModules {
+            state_tracker_module,
             scheduler_module,
             search_scraper_module,
+            item_scraper_module,
             analysis_module,
             classifier_module
         }
@@ -84,7 +100,8 @@ pub struct AppModulesRunningHandles {
 pub struct AppModuleConnections {
     pub state_tracker: (StateTrackerSender, StateTrackerReceiver),
     pub scraper_scheduler: (ScraperSchedulerSender, ScraperSchedulerReceiver),
-    pub scraper: (SearchScraperSender, SearchScraperReceiver),
+    pub search_scraper: (SearchScraperSender, SearchScraperReceiver),
+    pub item_scraper: (ItemScraperSender, ItemScraperReceiver),
     pub item_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
     pub image_classifier: (ImageClassifierSender, ImageClassifierReceiver),
     pub marketplace_items_storage: (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver)
@@ -96,7 +113,8 @@ impl AppModuleConnections {
         Self {
             state_tracker: Self::init_state_tracker_conn(),
             scraper_scheduler: Self::init_scheduler_conn(),
-            scraper: Self::init_scraper_conn(),
+            search_scraper: Self::init_search_scraper_conn(),
+            item_scraper: Self::init_item_scraper_conn(),
             item_analysis: Self::init_item_analysis_conn(),
             image_classifier: Self::init_image_classifier_conn(),
             marketplace_items_storage: Self::init_marketplace_items_storage_conn()
@@ -117,10 +135,17 @@ impl AppModuleConnections {
         (sender, receiver)
     }
 
-    fn init_scraper_conn() -> (SearchScraperSender, SearchScraperReceiver) {
+    fn init_search_scraper_conn() -> (SearchScraperSender, SearchScraperReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
         let sender = SearchScraperSender::new(sender);
         let receiver = SearchScraperReceiver::new(receiver);
+        (sender, receiver)
+    }
+
+    fn init_item_scraper_conn() -> (ItemScraperSender, ItemScraperReceiver) {
+        let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
+        let sender = ItemScraperSender::new(sender);
+        let receiver = ItemScraperReceiver::new(receiver);
         (sender, receiver)
     }
 

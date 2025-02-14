@@ -18,6 +18,9 @@ pub enum SearchScraperError {
 /// The types of messages that the scraper module can take.
 #[derive(Debug)]
 pub enum SearchScraperMessage {
-    /// This is the trigger for starting a new scraping job for a gallery.
-    ScrapeSearch { gallery: GallerySearchScrapingState }
+    /// This is for starting an item scrape, using the ID of a gallery in state.
+    /// If the gallery ID is not in state, an error is logged and nothing happens.
+    ScrapeSearch { gallery_id: GalleryId },
+    /// This is for starting a search scrape, using a search-scraped gallery's data.
+    ScrapeSearchNew { gallery: GallerySearchScrapingState }
 }

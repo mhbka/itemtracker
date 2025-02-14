@@ -1,16 +1,23 @@
-use crate::messages::{message_types::item_scraper::ItemScraperMessage, ItemScraperReceiver};
+use crate::{config::ItemScraperConfig, messages::{message_types::item_scraper::ItemScraperMessage, ItemAnalysisSender, ItemScraperReceiver, StateTrackerSender}};
 
 mod handler;
 mod scrapers;
 
 pub struct ItemScraperModule {
+    config: ItemScraperConfig,
     msg_receiver: ItemScraperReceiver
 }
 
 impl ItemScraperModule {
     /// Initialize the module.
-    pub fn init(msg_receiver: ItemScraperReceiver) -> Self {
+    pub fn init(
+        config: ItemScraperConfig, 
+        msg_receiver: ItemScraperReceiver,
+        state_tracker_sender: StateTrackerSender,
+        item_analysis_sender: ItemAnalysisSender
+    ) -> Self {
         Self {
+            config,
             msg_receiver
         }
     }

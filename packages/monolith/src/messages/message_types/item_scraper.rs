@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::galleries::{domain_types::GalleryId, pipeline_states::GallerySearchScrapingState};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::GalleryItemScrapingState};
 use thiserror::Error;
 
 /// Possible errors emitted from the scraper.
@@ -18,6 +18,9 @@ pub enum ItemScraperError {
 /// The types of messages that the scraper module can take.
 #[derive(Debug)]
 pub enum ItemScraperMessage {
-    /// This is the trigger for starting a new scraping job for a gallery.
-    ScrapeItems { gallery: GallerySearchScrapingState }
+    /// This is for starting an item scrape, using the ID of a gallery in state.
+    /// If the gallery ID is not in state, an error is logged and nothing happens.
+    ScrapeItems { gallery_id: GalleryId },
+    /// This is for starting an item scrape, using a search-scraped gallery's data.
+    ScrapeItemsNew { gallery: GalleryItemScrapingState }
 }

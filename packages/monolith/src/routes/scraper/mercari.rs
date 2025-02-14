@@ -8,7 +8,7 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
     let mut router = Router::new();
     
     // TODO: for testing only, remove later
-    let scraper_sender = module_connections.scraper.0.clone();
+    let scraper_sender = module_connections.search_scraper.0.clone();
     router = router.route("/start", post(
         move |body| start_scrape(body, scraper_sender)
     ));
@@ -16,7 +16,6 @@ pub(super) fn build_mercari_router(config: &AxumConfig, module_connections: &App
     router
 }
 
-#[tracing::instrument(skip(sender))]
 async fn start_scrape(
     Json(gallery): Json<GallerySearchScrapingState>,
     mut sender: SearchScraperSender

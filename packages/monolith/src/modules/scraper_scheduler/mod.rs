@@ -9,11 +9,11 @@ mod scheduler;
 /// 
 /// This module is fairly straightforward. Gallery creation/update/deletion is received through `msg_receiver`.
 /// 
-/// Whenever a gallery is scheduled to be scraped, it is sent through the `scraper_msg_sender`.
+/// Whenever a gallery is scheduled to be scraped, it is sent through the `search_scraper_sender`.
 pub struct ScraperSchedulerModule {
     scheduler: SchedulerHandler,
     msg_receiver: ScraperSchedulerReceiver,
-    scraper_msg_sender: SearchScraperSender
+    search_scraper_sender: SearchScraperSender
 }
 
 impl ScraperSchedulerModule {
@@ -21,14 +21,14 @@ impl ScraperSchedulerModule {
     pub fn init( 
         config: ScraperSchedulerConfig,
         msg_receiver: ScraperSchedulerReceiver,
-        scraper_msg_sender: SearchScraperSender,
+        search_scraper_sender: SearchScraperSender,
         state_tracker_sender: StateTrackerSender
     ) -> Self
     {
         ScraperSchedulerModule {
-            scheduler: SchedulerHandler::new(scraper_msg_sender.clone(), state_tracker_sender),
+            scheduler: SchedulerHandler::new(search_scraper_sender.clone(), state_tracker_sender),
             msg_receiver,
-            scraper_msg_sender
+            search_scraper_sender
         }
         
     }

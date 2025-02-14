@@ -1,6 +1,6 @@
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
-use crate::galleries::{domain_types::GalleryId, pipeline_states::GalleryInitializationState};
+use crate::galleries::{domain_types::GalleryId, pipeline_states::GallerySchedulerState};
 use super::ModuleMessageWithReturn;
 
 /// Possible errors emitted from the scraper scheduler.
@@ -23,10 +23,10 @@ pub enum SchedulerMessage {
 }
 
 /// Message for adding a new gallery to the scheduler.
-pub type NewGalleryMessage = ModuleMessageWithReturn<GalleryInitializationState, Result<(), SchedulerError>>;
+pub type NewGalleryMessage = ModuleMessageWithReturn<GallerySchedulerState, Result<(), SchedulerError>>;
 
 /// Message for deleting a gallery in the scheduler.
 pub type DeleteGalleryMessage = ModuleMessageWithReturn<GalleryId, Result<(), SchedulerError>>;
 
 /// Message for editing a gallery in the scheduler.
-pub type UpdateGalleryMessage = ModuleMessageWithReturn<GalleryInitializationState, Result<(), SchedulerError>>;
+pub type UpdateGalleryMessage = ModuleMessageWithReturn<GallerySchedulerState, Result<(), SchedulerError>>;

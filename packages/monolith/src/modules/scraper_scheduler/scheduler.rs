@@ -4,7 +4,7 @@ use tokio::task::JoinHandle;
 use crate::galleries::domain_types::GalleryId;
 use crate::messages::{SearchScraperSender, StateTrackerSender};
 use crate::{
-    galleries::pipeline_states::GalleryInitializationState, 
+    galleries::pipeline_states::GallerySchedulerState, 
     messages::message_types::scraper_scheduler::SchedulerError
 };
 
@@ -35,7 +35,7 @@ impl SchedulerHandler {
     }
 
     /// Add a new gallery to the scheduler.
-    pub async fn add_gallery(&self, new_gallery: GalleryInitializationState) -> Result<(), SchedulerError>
+    pub async fn add_gallery(&self, new_gallery: GallerySchedulerState) -> Result<(), SchedulerError>
     {
         let gallery_id = new_gallery.gallery_id.clone();
         let mut galleries = self.galleries.write().await;
@@ -62,7 +62,7 @@ impl SchedulerHandler {
     }
 
     /// Update a gallery in the scheduler.
-    pub async fn update_gallery(&self, updated_gallery: GalleryInitializationState) -> Result<(), SchedulerError>
+    pub async fn update_gallery(&self, updated_gallery: GallerySchedulerState) -> Result<(), SchedulerError>
     {   
         let mut galleries = self.galleries.write().await;
         if let Some(task) = galleries.get_mut(&updated_gallery.gallery_id) {
@@ -77,7 +77,7 @@ impl SchedulerHandler {
 
     /// Spawns a task to periodically trigger scraper requests for the input gallery,
     /// returning a handle to the task, and an Arc Mutex handle to the task struct.
-    async fn generate_gallery_task(&self, gallery: GalleryInitializationState) 
+    async fn generate_gallery_task(&self, gallery: GallerySchedulerState) 
     -> (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>) 
     {
         let task = ScheduledGalleryTask::new(

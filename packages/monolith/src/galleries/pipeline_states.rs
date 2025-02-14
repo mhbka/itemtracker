@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use super::{
-    domain_types::{GalleryId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::pipeline_items::{
+    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::pipeline_items::{
         AnalyzedItems, 
         ClassifiedItems, 
         ScrapedItems
@@ -14,7 +14,7 @@ use super::{
 /// The possible states of a gallery in the scraping pipeline.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum GalleryPipelineStates {
-    Initialization(GalleryInitializationState),
+    Initialization(GallerySchedulerState),
     SearchScraping(GallerySearchScrapingState),
     ItemScraping(GalleryItemScrapingState),
     ItemAnalysis(GalleryItemAnalysisState),
@@ -22,9 +22,9 @@ pub enum GalleryPipelineStates {
     Final(GalleryFinalState)
 }
 
-/// This is the initial state that a gallery starts in.
+/// This is the state of a gallery in the scheduler.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GalleryInitializationState {
+pub struct GallerySchedulerState {
     pub gallery_id: GalleryId,
     pub scraping_periodicity: ValidCronString,
     pub search_criteria: GallerySearchCriteria,
@@ -32,7 +32,7 @@ pub struct GalleryInitializationState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-impl GalleryInitializationState {
+impl GallerySchedulerState {
     /// Convenience fn for mapping to the next state.
     pub fn to_next_stage(self) -> GallerySearchScrapingState {
         GallerySearchScrapingState {
@@ -65,7 +65,7 @@ impl GallerySearchScrapingState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryItemScrapingState {
     pub gallery_id: GalleryId,
-    pub search_criteria: GallerySearchCriteria,
+    pub item_ids: HashMap<Marketplace, Vec<ItemId>>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub failed_marketplace_reasons: HashMap<Marketplace, String>,
     pub evaluation_criteria: EvaluationCriteria,

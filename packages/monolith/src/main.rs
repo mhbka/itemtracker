@@ -17,13 +17,14 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let app_config = AppConfig::load().unwrap();
+    let axum_config = app_config.axum_config.clone();
     let module_connections = AppModuleConnections::new();
     let router = routes::build_router(&app_config.axum_config, &module_connections);
-    let app_modules = AppModules::init(&app_config, module_connections).run();
+    let app_modules = AppModules::init(app_config, module_connections).run();
 
     tracing::info!("App started");
 
-    start_app(router, &app_config.axum_config).await;
+    start_app(router, &axum_config).await;
 }
 
 async fn start_app(router: Router, axum_config: &AxumConfig) {

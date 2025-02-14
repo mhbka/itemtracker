@@ -1,7 +1,7 @@
-use components::inner_state::InnerState;
+use inner_state::InnerState;
 use crate::{config::state_tracker::StateTrackerConfig, messages::{message_types::state_tracker::StateTrackerMessage, StateTrackerReceiver}};
 
-mod components;
+mod inner_state;
 
 /// This module tracks (and sometimes manages) the state of galleries in the pipeline.
 /// 
@@ -34,17 +34,20 @@ impl StateTrackerModule {
     /// Handle each message variant.
     async fn process_msg(&mut self, msg: StateTrackerMessage) {
         match msg {
-            StateTrackerMessage::AddNewGallery(msg) => {
-
+            StateTrackerMessage::AddGallery(msg) => {
+                msg.act(|(gallery_id, gallery)| self.state.add_gallery(gallery_id, gallery));
+            },
+            StateTrackerMessage::CheckGallery(msg) => {
+                msg.act(|gallery_id| self.state.check_gallery(gallery_id));
             },
             StateTrackerMessage::TakeGalleryState(msg) => {
-
+                msg.act(|gallery_id| self.state.take_gallery_state(&gallery_id));
             },
             StateTrackerMessage::PutGalleryState(msg) => {
-
+                msg.act(|(gallery_id, updated_state)| self.state.put_gallery_state(gallery_id, updated_state));
             },
             StateTrackerMessage::RemoveGallery(msg) => {
-
+                msg.act(|gallery_id| self.state.remove_gallery(&gallery_id));
             },
         }
     }

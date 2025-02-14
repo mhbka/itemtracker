@@ -1,9 +1,9 @@
 use chrono::Utc;
-use crate::{galleries::pipeline_states::GalleryInitializationState, messages::{message_types::{search_scraper::SearchScraperMessage, state_tracker::{AddNewGalleryMessage, StateTrackerMessage}}, SearchScraperSender, StateTrackerSender}};
+use crate::{galleries::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_buses::MessageError, message_types::state_tracker::{AddGalleryMessage, StateTrackerMessage}, SearchScraperSender, StateTrackerSender}};
 
 /// A wrapper representing the actual running scheduler task for a gallery, which starts on `run()`.
 pub struct ScheduledGalleryTask {
-    gallery: GalleryInitializationState,
+    gallery: GallerySchedulerState,
     state_tracker_sender: StateTrackerSender,
     search_scraper_sender: SearchScraperSender
 }
@@ -11,7 +11,7 @@ pub struct ScheduledGalleryTask {
 impl ScheduledGalleryTask {
     /// Initialize a `ScheduledGalleryTask`.
     pub fn new(
-        gallery: GalleryInitializationState,
+        gallery: GallerySchedulerState,
         state_tracker_sender: StateTrackerSender,
         search_scraper_sender: SearchScraperSender
     ) -> Self
@@ -32,35 +32,58 @@ impl ScheduledGalleryTask {
     /// - the Cron schedule is unable to return the next occurrence
     pub async fn run(&mut self) -> Result<(), ()>  {   
         loop {
-            let (state_msg, receiver) = AddNewGalleryMessage::new(self.gallery.gallery_id.clone());
-            if let Err(err) = self.state_tracker_sender
-                .send(StateTrackerMessage::AddNewGallery(state_msg))
-                .await {
-                    tracing::error!("Unable to send a message to the state tracker: {err}");
-                    return Err(());
-                }
-            match receiver.await
-                .map_err(|err| {
-                    tracing::error!("Unable to receive response from state tracker: {err}");
-                    ()
-                })? {
-                    Err(err) => tracing::error!("Gallery {} is already in state", self.gallery.gallery_id),
-                    Ok(ok) => {
-                        let gallery = self.gallery
-                            .clone()
-                            .to_next_stage();
-                        if let Err(err) =  self.search_scraper_sender
-                            .send(SearchScraperMessage::ScrapeSearch { gallery })
-                            .await {
-                                tracing::error!(
-                                    "Error attempting to send a message to the scraper to start scraping (gallery {}): {}",
-                                    &self.gallery.gallery_id,
-                                    err
-                                );
-                            }               
+            match self.add_gallery_to_state().await {
+                Ok(res) => {
+                    if let Err(err) = res {
+                        tracing::warn!("Could not add gallery {} to state; it already exists", self.gallery.gallery_id);
                     }
-                };
-            let cur_time = Utc::now();
+                },
+                Err(err) => {
+                    tracing::error!("Error adding new gallery to state: {err}");
+                    return Err(());
+                } 
+            }
+            self.sleep_to_next_time().await?;
+        }
+    }
+
+    /// Update the gallery that will be sent to the scraper.
+    pub fn update_gallery(&mut self, gallery: GallerySchedulerState) {
+        self.gallery = gallery;
+    }
+
+    /// Adds a gallery to state.
+    /// 
+    /// Returns a `MessageError` if unable to contact the state tracker.
+    /// Inside, returns an `Err` if the gallery already exists in state.
+    async fn add_gallery_to_state(&mut self) -> Result<Result<(), ()>, MessageError> {
+        let gallery = self.gallery.clone();
+        let new_gallery_state = GallerySearchScrapingState {
+            gallery_id: gallery.gallery_id,
+            search_criteria: gallery.search_criteria,
+            marketplace_previous_scraped_datetimes: gallery.marketplace_previous_scraped_datetimes,
+            evaluation_criteria: gallery.evaluation_criteria
+        };
+        let (state_msg, receiver) = AddGalleryMessage::new(
+            (
+                new_gallery_state.gallery_id.clone(),
+                GalleryPipelineStates::SearchScraping(new_gallery_state)
+            )
+        );
+            self.state_tracker_sender
+                .send(StateTrackerMessage::AddGallery(state_msg))
+                .await?;
+            Ok(
+                receiver.await
+                    .map_err(|err| MessageError::RecvError { message: format!("{err}") })?
+            )
+    }
+
+    /// Sleeps till the next scheduled time.
+    ///
+    /// Returns an `Err` if the Cron cannot get the next scheduled time (should never happen).
+    async fn sleep_to_next_time(&mut self) -> Result<(), ()> {
+        let cur_time = Utc::now();
             match self.gallery.scraping_periodicity
                 .get_cron()
                 .find_next_occurrence(&cur_time, false) {
@@ -69,6 +92,7 @@ impl ScheduledGalleryTask {
                         .to_std()
                         .expect("Should never fail, as this time should logically always be greater than 0");
                     tokio::time::sleep(time_to_next_schedule).await;
+                    Ok(())
                 },
                 Err(err) => {
                     // TODO: pretty critical error, should have some way to persist this info
@@ -80,11 +104,5 @@ impl ScheduledGalleryTask {
                     return Err(());
                 },
             }
-        }
-    }
-
-    /// Update the gallery that will be sent to the scraper.
-    pub fn update_gallery(&mut self, gallery: GalleryInitializationState) {
-        self.gallery = gallery;
     }
 }
