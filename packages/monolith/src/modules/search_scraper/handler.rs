@@ -1,5 +1,18 @@
 use std::collections::HashMap;
-use crate::{config::SearchScraperConfig, galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::item_data::MarketplaceItemData, pipeline_states::{GalleryItemScrapingState, GalleryPipelineStates, GallerySearchScrapingState}}, messages::{message_types::{item_scraper::ItemScraperMessage, search_scraper::SearchScraperError, state_tracker::{AddGalleryMessage, CheckGalleryMessage, PutGalleryStateMessage, RemoveGalleryMessage, StateTrackerMessage, TakeGalleryStateMessage}}, ItemAnalysisSender, ItemScraperSender, MarketplaceItemsStorageSender, StateTrackerSender}};
+use crate::{
+    config::SearchScraperConfig, 
+    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, 
+    pipeline_states::{GalleryItemScrapingState, GalleryPipelineStateTypes, GalleryPipelineStates, GallerySearchScrapingState}}, 
+    messages::{
+        message_types::{item_scraper::ItemScraperMessage, search_scraper::SearchScraperError, 
+            state_tracker::{
+                CheckGalleryMessage, RemoveGalleryMessage, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage
+            }
+        }, 
+        ItemScraperSender, 
+        StateTrackerSender
+    }
+};
 
 use super::scrapers::SearchScraper;
 
@@ -33,7 +46,7 @@ impl Handler {
 
     /// Perform the entire scraping of a new gallery.
     pub async fn scrape_new_gallery(&mut self, gallery: GallerySearchScrapingState) -> Result<(), SearchScraperError> {
-        match self.is_gallery_in_state(gallery.gallery_id.clone()).await? {
+        match self.check_gallery_in_state(gallery.gallery_id.clone()).await? {
             true => Err(
                 SearchScraperError::GalleryAlreadyExists { gallery_id: gallery.gallery_id }
             ),
@@ -46,20 +59,21 @@ impl Handler {
         let scraped_search_result = self.search_scraper
             .scrape_search(&gallery)
             .await;
-        self.update_search_scraped_gallery_state(
-            gallery.gallery_id.clone(), 
+        let gallery_id = gallery.gallery_id.clone();
+        self.update_gallery_state(
+            gallery,
             scraped_search_result.clone()
         ).await?;
         self.item_scraper_sender
-            .send(ItemScraperMessage::ScrapeItems { gallery_id: gallery.gallery_id })
+            .send(ItemScraperMessage::ScrapeItems { gallery_id })
             .await;
             Ok(())
     }
-
-    /// Checks if a gallery exists in state.
+    
+    /// Checks if the gallery is in any state.
     /// 
     /// Returns an `Err` if the state tracker is not contactable.
-    async fn is_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<bool, SearchScraperError> {
+    async fn check_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<bool, SearchScraperError> {
         let (state_msg, receiver) = CheckGalleryMessage::new(gallery_id.clone());
         self.state_tracker_sender
             .send(StateTrackerMessage::CheckGallery(state_msg))
@@ -74,12 +88,15 @@ impl Handler {
     /// Fetches a gallery from state.
     /// 
     /// Returns an `Err` if:
-    /// - the gallery is not in state, 
-    /// - the gallery is not in the expected state, 
-    /// - the state has been taken,
+    /// - the gallery is not in state/is in the wrong state/has already been taken 
     /// - the state tracker is not contactable
     async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GallerySearchScrapingState, SearchScraperError> {
-        let (state_msg, receiver) = TakeGalleryStateMessage::new(gallery_id.clone());
+        let (state_msg, receiver) = TakeGalleryStateMessage::new(
+            (
+                gallery_id.clone(),
+                GalleryPipelineStateTypes::SearchScraping
+            )
+        );
         self.state_tracker_sender
             .send(StateTrackerMessage::TakeGalleryState(state_msg))
             .await;
@@ -88,7 +105,7 @@ impl Handler {
                 SearchScraperError::Other { gallery_id: gallery_id.clone(), message: format!("Could not receive response from state tracker: {err}") }
             )?
             .map_err(|_| 
-                SearchScraperError::Other { gallery_id: gallery_id.clone(), message: "Gallery's state doesn't exist, or was already taken (this should not happen)".into() }
+                SearchScraperError::Other { gallery_id: gallery_id.clone(), message: "Gallery's state doesn't exist, doesn't match requested state type, or was already taken".into() }
             )?;
         match state {
             GalleryPipelineStates::SearchScraping(gallery_state) => Ok(gallery_state),
@@ -101,54 +118,47 @@ impl Handler {
     /// Updates the state for a search-scraped gallery.
     /// 
     /// Returns an `Err` if:
-    /// - all marketplaces failed to scrape (also removing the gallery from state)
-    /// - the gallery's state is wrong/doesn't exist/was already taken
+    /// - all marketplaces failed to scrape (also removing the gallery from state),
+    /// - the gallery is not in state/is in the wrong state/has already been taken,
     /// - the state tracker module couldn't be contacted.
-    async fn update_search_scraped_gallery_state(
+    async fn update_gallery_state(
         &mut self, 
-        gallery_id: GalleryId, 
+        cur_state: GallerySearchScrapingState, 
         scraped_search_result: HashMap<Marketplace, Result<Vec<ItemId>, String>>
     ) -> Result<(), SearchScraperError> {
-        let (state_msg, receiver) = TakeGalleryStateMessage::new(gallery_id.clone());
-        self.state_tracker_sender
-            .send(StateTrackerMessage::TakeGalleryState(state_msg))
-            .await;
-        let state = receiver.await
-            .map_err(|err| 
-                SearchScraperError::Other { gallery_id: gallery_id.clone(), message: format!("Could not receive response from state tracker: {err}") }
-            )?
-            .map_err(|_| 
-                SearchScraperError::Other { gallery_id: gallery_id.clone(), message: "Gallery's state doesn't exist, or was already taken (this should not happen)".into() }
-            )?;
-        match state {
-            GalleryPipelineStates::SearchScraping(gallery_state) => {
-                match scraped_search_result
-                    .iter()
-                    .all(|(_, result)| result.is_err())
-                    {
-                        true => { // if all marketplaces returned an Err, remove gallery from state and return an Err
-                            let (state_msg, _) = RemoveGalleryMessage::new(gallery_id.clone());
-                            self.state_tracker_sender
-                                .send(StateTrackerMessage::RemoveGallery(state_msg))
-                                .await;
-                            return Err(SearchScraperError::TotalSearchScrapeFailure { gallery_id });
-                        },
-                        false => {
-                            let new_state = self.process_to_next_state(scraped_search_result, gallery_state);
-                            let (state_msg, receiver) = PutGalleryStateMessage::new((gallery_id, GalleryPipelineStates::ItemScraping(new_state)));
-                            self.state_tracker_sender
-                                .send(StateTrackerMessage::PutGalleryState(state_msg))
-                                .await;
-                            Ok(())
-                        }
-                    }
-            },
-            _ => { 
-                return Err(
-                    SearchScraperError::Other { gallery_id, message: "Gallery's state is not SearchScraping".into() }
-                );
-            },
-        }
+        let gallery_id = cur_state.gallery_id.clone();
+        match scraped_search_result
+            .iter()
+            .all(|(_, result)| result.is_err())
+            {
+                true => { // if all marketplaces returned an Err, remove gallery from state and return an Err
+                    let (state_msg, _) = RemoveGalleryMessage::new(gallery_id.clone());
+                    self.state_tracker_sender
+                        .send(StateTrackerMessage::RemoveGallery(state_msg))
+                        .await;
+                    Err(SearchScraperError::TotalScrapeFailure { gallery_id })
+                },
+                false => {
+                    let new_state = self.process_to_next_state(scraped_search_result, cur_state);
+                    let (state_msg, receiver) = UpdateGalleryStateMessage::new(
+                        (
+                            gallery_id.clone(), 
+                            GalleryPipelineStates::ItemScraping(new_state)
+                        )
+                    );
+                    self.state_tracker_sender
+                        .send(StateTrackerMessage::UpdateGalleryState(state_msg))
+                        .await;
+                    let x = receiver.await
+                        .map_err(|err| 
+                            SearchScraperError::Other { gallery_id: gallery_id.clone(), message: format!("Could not receive response from state tracker: {err}") }
+                        )
+                        .map_err(|err| 
+                            SearchScraperError::Other { gallery_id, message: "Could not update gallery state".into() }
+                        )?;
+                    Ok(())
+                }
+            }
     }
 
     /// Process the gallery's state into the next state.

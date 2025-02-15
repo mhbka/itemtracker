@@ -5,7 +5,7 @@ use futures::future::join_all;
 use image::ImageFormat;
 use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{AnthropicImageMessageContent, AnthropicMessage, AnthropicMessageContent, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems, ScrapedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}};
 
 pub(super) mod types;
 
@@ -25,7 +25,7 @@ impl AnthropicRequester {
 
     /// Perform analysis of a gallery's items.
     pub async fn analyze_gallery(&mut self, mut gallery: GalleryItemAnalysisState) -> GalleryClassifierState {
-        let items = gallery.items.marketplace_items;
+        let items = gallery.items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
         let gallery_requests = self
             .build_requests(items, eval_criteria_string)
@@ -69,7 +69,7 @@ impl AnthropicRequester {
         &self, 
         eval_criteria: &mut EvaluationCriteria,
         gallery_requests: HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>
-    ) -> AnalyzedItems {
+    ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
         let mut gallery_items = HashMap::new();
         for (marketplace, items_and_requests) in gallery_requests {
             let (items, item_requests): (Vec<_>, Vec<_>) = items_and_requests
@@ -85,7 +85,7 @@ impl AnthropicRequester {
                 .await;
             gallery_items.insert(marketplace, marketplace_items);
         }
-        AnalyzedItems { items: gallery_items }
+        gallery_items
     }
 
     /// Process the raw LLM output for all items in a gallery's marketplace.

@@ -1,6 +1,4 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
 use crate::galleries::domain_types::{ItemId, UnixUtcDateTime};
 
 /// This is the data for each item, common across all marketplaces.

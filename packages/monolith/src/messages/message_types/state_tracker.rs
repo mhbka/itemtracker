@@ -16,14 +16,12 @@ pub enum StateTrackerMessage {
     CheckGalleryState(CheckGalleryStateMessage),
     /// Take the gallery's state (leaving the stored state as `None`).
     /// 
-    /// Returns an `Err` if the gallery doesn't exist, or its state has already been taken.
-    /// 
-    /// **NOTE**: The onus is on the user to put back the state after they have taken it.
+    /// Returns an `Err` if the gallery doesn't exist, its state has already been taken, or the requested state type doesn't match the stored state.
     TakeGalleryState(TakeGalleryStateMessage),
-    /// Put back the gallery's state, after one has taken it.
+    /// Update a gallery's state, overwriting its old state.
     /// 
-    /// Returns an `Err` if the gallery doesn't exist, or state hasn't been taken.
-    PutGalleryState(PutGalleryStateMessage),
+    /// Returns an `Err` if the gallery doesn't exist, or its state has not been taken.
+    UpdateGalleryState(UpdateGalleryStateMessage),
     /// Remove a gallery from the state.
     /// 
     /// Returns an `Err` if the gallery doesn't exist.
@@ -40,13 +38,10 @@ pub type CheckGalleryMessage = ModuleMessageWithReturn<GalleryId, bool>;
 pub type CheckGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStateTypes), Result<bool, ()>>;
 
 /// Message for taking a gallery's state, leaving it set as `None`.
-pub type TakeGalleryStateMessage = ModuleMessageWithReturn<GalleryId, Result<GalleryPipelineStates, ()>>;
+pub type TakeGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStateTypes), Result<GalleryPipelineStates, ()>>;
 
-/// Message for putting back a gallery's state after it has been taken.
-pub type PutGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStates), Result<(), ()>>;
-
-/// Message for updating and overwriting a gallery's state.
-pub type UpdateGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStates), ()>;
+/// Message for updating and overwriting a gallery's state. 
+pub type UpdateGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStates), Result<(), ()>>;
 
 /// Message for removing a gallery from the state.
 pub type RemoveGalleryMessage = ModuleMessageWithReturn<GalleryId, Result<(), ()>>;

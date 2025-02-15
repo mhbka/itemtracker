@@ -3,26 +3,12 @@ use serde::{Serialize, Deserialize};
 use crate::galleries::{domain_types::Marketplace, eval_criteria::{CriterionAnswer, EvaluationCriteria}};
 use super::item_data::MarketplaceItemData;
 
-/// Items that have been freshly scraped in the scraper module.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ScrapedItems {
-    pub marketplace_items: HashMap<Marketplace, Vec<MarketplaceItemData>>
-}
-
-/// Items that have been analyzed in the item analysis module.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AnalyzedItems {
-    pub items: HashMap<Marketplace, MarketplaceAnalyzedItems>
-}
-
 /// Items that have been classified in the image classifier module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClassifiedItems {
     pub items: HashMap<Marketplace, Vec<ClassifiedMarketplaceItem>>,
     pub error_items: HashMap<Marketplace, Vec<MarketplaceItemData>> 
 }
-
-///// Subtypes
 
 /// All analyzed items under a marketplace.
 #[derive(Clone, Debug, Serialize, Deserialize)]

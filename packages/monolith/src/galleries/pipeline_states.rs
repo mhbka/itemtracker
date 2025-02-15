@@ -4,11 +4,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use super::{
-    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::pipeline_items::{
-        AnalyzedItems, 
-        ClassifiedItems, 
-        ScrapedItems
-    }, search_criteria::GallerySearchCriteria
+    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::MarketplaceAnalyzedItems}, search_criteria::GallerySearchCriteria
 };
 
 /// The possible states of a gallery in the scraping pipeline.
@@ -80,7 +76,7 @@ pub struct GallerySchedulerState {
 }
 
 impl GallerySchedulerState {
-    /// Convenience fn for mapping to the next state.
+    /// Convenience function for mapping to the next state.
     pub fn to_next_stage(self) -> GallerySearchScrapingState {
         GallerySearchScrapingState {
             gallery_id: self.gallery_id,
@@ -119,7 +115,16 @@ pub struct GalleryItemScrapingState {
 }
 
 impl GalleryItemScrapingState {
-
+    /// Convenience function for mapping to the next state.
+    pub fn to_next_stage(self, items: HashMap<Marketplace, Vec<MarketplaceItemData>>) -> GalleryItemAnalysisState {
+        GalleryItemAnalysisState {
+            gallery_id: self.gallery_id,
+            items,
+            marketplace_updated_datetimes: self.marketplace_updated_datetimes,
+            failed_marketplace_reasons: self.failed_marketplace_reasons,
+            evaluation_criteria: self.evaluation_criteria,
+        }
+    }
 }
 
 /// This is the state of a scraping job after the items are scraped.
@@ -128,14 +133,22 @@ impl GalleryItemScrapingState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryItemAnalysisState {
     pub gallery_id: GalleryId,
-    pub items: ScrapedItems,
+    pub items: HashMap<Marketplace, Vec<MarketplaceItemData>>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub failed_marketplace_reasons: HashMap<Marketplace, String>,
     pub evaluation_criteria: EvaluationCriteria,
 }
 
 impl GalleryItemAnalysisState {
-
+    /// Convenience function for mapping to the next state.
+    pub fn to_next_stage(self, items: HashMap<Marketplace, MarketplaceAnalyzedItems>) -> GalleryClassifierState {
+        GalleryClassifierState {
+            gallery_id: self.gallery_id,
+            items,
+            marketplace_updated_datetimes: self.marketplace_updated_datetimes,
+            failed_marketplace_reasons: self.failed_marketplace_reasons,
+        }
+    }
 }
 
 /// This is the state of a scraping State after its items are analyzed.
@@ -144,7 +157,7 @@ impl GalleryItemAnalysisState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryClassifierState {
     pub gallery_id: GalleryId,
-    pub items: AnalyzedItems,
+    pub items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub failed_marketplace_reasons: HashMap<Marketplace, String>,
 }

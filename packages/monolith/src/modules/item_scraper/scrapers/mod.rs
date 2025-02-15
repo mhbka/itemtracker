@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use futures::future::join_all;
 use mercari::MercariItemScraper;
-use crate::{config::ItemScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, items::item_data::MarketplaceItemData}};
+use crate::{config::ItemScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, items::item_data::MarketplaceItemData, pipeline_states::GalleryItemScrapingState}};
 
 mod mercari;
 
@@ -27,10 +27,11 @@ impl ItemScraper {
     /// Returns the list with a single `Err` if the *dpop* key generation was unsuccessful (should never happen).
     pub async fn scrape_items(
         &self, 
-        valid_scraped_search_ids: HashMap<Marketplace, Vec<ItemId>>
+        gallery: &GalleryItemScrapingState
     ) -> HashMap<Marketplace, Vec<Result<MarketplaceItemData, String>>> {
         let results = join_all(
-            valid_scraped_search_ids
+            gallery.item_ids
+                .clone()
                 .into_iter()
                 .map(|(marketplace, item_ids)| async {
                     let item_results = match marketplace {

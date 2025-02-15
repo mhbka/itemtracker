@@ -71,16 +71,16 @@ impl StateTrackerModule {
                 msg.act(|gallery_id| self.state.check_gallery(gallery_id));
             },
             StateTrackerMessage::CheckGalleryState(msg) => {
-                msg.act(|(gallery_id, state_type)| self.state.check_gallery_state(&gallery_id, &state_type));
+                msg.act(|(gallery_id, state_type)| self.state.check_gallery_state(gallery_id, state_type));
             },
             StateTrackerMessage::TakeGalleryState(msg) => {
-                msg.act(|gallery_id| self.state.take_gallery_state(&gallery_id));
+                msg.act(|(gallery_id, requested_state_type)| self.state.take_gallery_state(gallery_id, requested_state_type));
             },
-            StateTrackerMessage::PutGalleryState(msg) => {
-                msg.act(|(gallery_id, updated_state)| self.state.put_gallery_state(gallery_id, updated_state));
+            StateTrackerMessage::UpdateGalleryState(msg) => {
+                msg.act(|(gallery_id, updated_state)| self.state.update_gallery_state(gallery_id, updated_state));
             },
             StateTrackerMessage::RemoveGallery(msg) => {
-                msg.act(|gallery_id| self.state.remove_gallery(&gallery_id));
+                msg.act(|gallery_id| self.state.remove_gallery(gallery_id));
             },
         }
     }

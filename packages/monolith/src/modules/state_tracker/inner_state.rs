@@ -43,7 +43,7 @@ impl InnerState {
     /// Check if a gallery matches the given state type.
     /// 
     /// Returns an `Err` if the gallery doesn't exist.
-    pub fn check_gallery_state(&mut self, gallery_id: &GalleryId, gallery_state: &GalleryPipelineStateTypes) -> Result<bool, ()> {
+    pub fn check_gallery_state(&mut self, gallery_id: GalleryId, gallery_state: GalleryPipelineStateTypes) -> Result<bool, ()> {
         match self.states.get(&gallery_id) {
             Some((_, stored_state)) => Ok(matches!(stored_state, gallery_state)),
             None => Err(())
@@ -52,24 +52,30 @@ impl InnerState {
 
     /// Take the gallery's state, leaving it set as `None`.
     /// 
-    /// Returns an `Err` if the gallery doesn't exist or the state has already been taken.
-    pub fn take_gallery_state(&mut self, gallery_id: &GalleryId) -> Result<GalleryPipelineStates, ()> {
-        match self.states.get_mut(gallery_id) {
-            Some((_, takeable_state)) => takeable_state.take().ok_or(()),
+    /// Returns an `Err` if the gallery doesn't exist, the state has already been taken or the state doesn't match the requested type.
+    pub fn take_gallery_state(&mut self, gallery_id: GalleryId, requested_state_type: GalleryPipelineStateTypes) -> Result<GalleryPipelineStates, ()> {
+        match self.states.get_mut(&gallery_id) {
+            Some((state_type, takeable_state)) => {
+                if matches!(state_type, requested_state_type) {
+                    return takeable_state.take().ok_or(());
+                }
+                Err(())
+            },
             None => Err(())
         }
     }
 
-    /// Put back the gallery's state after taking it.
+    /// Update a gallery's state.
     /// 
-    /// Returns an `Err` if the gallery doesn't exist, the state isn't taken, or the state given is not the correct kind.
-    pub fn put_gallery_state(&mut self, gallery_id: GalleryId, gallery_state: GalleryPipelineStates) -> Result<(), ()> {
+    /// Returns an `Err` if the gallery doesn't exist, or the state isn't taken.
+    pub fn update_gallery_state(&mut self, gallery_id: GalleryId, updated_state: GalleryPipelineStates) -> Result<(), ()> {
         match self.states.get_mut(&gallery_id) {
             Some((state_type, internal_state)) => {
-                if internal_state.is_some() || !state_type.matches(&gallery_state) {
+                if internal_state.is_some() {
                     return Err(());
                 };
-                *internal_state = Some(gallery_state);
+                *state_type = updated_state.state_type();
+                *internal_state = Some(updated_state);
             },
             None => return Err(())
         }
@@ -79,8 +85,8 @@ impl InnerState {
     /// Remove a gallery from the state.
     /// 
     /// Returns an `Err` if the gallery doesn't exist.
-    pub fn remove_gallery(&mut self, gallery_id: &GalleryId) -> Result<(), ()> {
-        match self.states.remove(gallery_id) {
+    pub fn remove_gallery(&mut self, gallery_id: GalleryId) -> Result<(), ()> {
+        match self.states.remove(&gallery_id) {
             Some(_) => Ok(()),
             None => Err(())
         }
