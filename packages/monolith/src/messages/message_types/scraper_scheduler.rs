@@ -1,17 +1,20 @@
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
 use crate::galleries::{domain_types::GalleryId, pipeline_states::GallerySchedulerState};
-use super::ModuleMessageWithReturn;
+use super::{state_tracker::StateTrackerError, ModuleMessageWithReturn};
 
 /// Possible errors emitted from the scraper scheduler.
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
 pub enum SchedulerError {
-    /// Emitted when a deleted gallery's ID doesn't exist.
-    #[error("Gallery ID '{gallery_id}' not found and cannot be deleted")]
+    #[error("Gallery {gallery_id} not found and cannot be deleted")]
     GalleryNotFound { gallery_id: GalleryId },
-    /// Emitted when a new gallery's ID already exists.
-    #[error("Gallery ID '{gallery_id}' already exists and cannot be added again")]
+    #[error("Gallery {gallery_id} already exists and cannot be added again")]
     GalleryAlreadyExists { gallery_id: GalleryId },
+    #[error("Error from state tracker for gallery {gallery_id}: {err}")]
+    StateErr { gallery_id: GalleryId, err: StateTrackerError },
+    #[error("Encountered a different error for gallery {gallery_id}: {message}")]
+    Other { gallery_id: GalleryId, message: String },
+    
 }
 
 /// The types of messages that scheduler module can take.

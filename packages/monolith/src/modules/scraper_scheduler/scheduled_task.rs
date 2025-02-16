@@ -1,5 +1,5 @@
 use chrono::Utc;
-use crate::{galleries::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_buses::MessageError, message_types::state_tracker::{AddGalleryMessage, StateTrackerMessage}, SearchScraperSender, StateTrackerSender}};
+use crate::{galleries::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_types::{scraper_scheduler::SchedulerError, state_tracker::{AddGalleryMessage, StateTrackerError, StateTrackerMessage}}, SearchScraperSender, StateTrackerSender}};
 
 /// A wrapper representing the actual running scheduler task for a gallery, which starts on `run()`.
 pub struct ScheduledGalleryTask {
@@ -54,9 +54,9 @@ impl ScheduledGalleryTask {
 
     /// Adds a gallery to state.
     /// 
-    /// Returns a `MessageError` if unable to contact the state tracker.
+    /// Returns an Err if unable to contact the state tracker.
     /// Inside, returns an `Err` if the gallery already exists in state.
-    async fn add_gallery_to_state(&mut self) -> Result<Result<(), ()>, MessageError> {
+    async fn add_gallery_to_state(&mut self) -> Result<Result<(), StateTrackerError>, SchedulerError> {
         let gallery = self.gallery.clone();
         let new_gallery_state = GallerySearchScrapingState {
             gallery_id: gallery.gallery_id,
@@ -72,10 +72,18 @@ impl ScheduledGalleryTask {
         );
             self.state_tracker_sender
                 .send(StateTrackerMessage::AddGallery(state_msg))
-                .await?;
+                .await
+                .map_err(|err| SchedulerError::Other { 
+                    gallery_id: self.gallery.gallery_id.clone(),
+                    message: format!("Unable to send message to state tracker: {err}") 
+                })?;
             Ok(
                 receiver.await
-                    .map_err(|err| MessageError::RecvError { message: format!("{err}") })?
+                    .map_err(|err| SchedulerError::Other { 
+                        gallery_id: self.gallery.gallery_id.clone(),
+                        message: format!("Unable to receive message from state tracker: {err}") 
+                    }
+                )?
             )
     }
 
@@ -84,25 +92,26 @@ impl ScheduledGalleryTask {
     /// Returns an `Err` if the Cron cannot get the next scheduled time (should never happen).
     async fn sleep_to_next_time(&mut self) -> Result<(), ()> {
         let cur_time = Utc::now();
-            match self.gallery.scraping_periodicity
-                .get_cron()
-                .find_next_occurrence(&cur_time, false) {
-                Ok(next_time) => {
-                    let time_to_next_schedule = (next_time - cur_time)
-                        .to_std()
-                        .expect("Should never fail, as this time should logically always be greater than 0");
-                    tokio::time::sleep(time_to_next_schedule).await;
-                    Ok(())
-                },
-                Err(err) => {
-                    // TODO: pretty critical error, should have some way to persist this info
-                    tracing::error!(
-                        "Error trying to schedule the next scrape for gallery {}; this gallery will now stop: {}",
-                        &self.gallery.gallery_id,
-                        err
-                    );
-                    return Err(());
-                },
-            }
+        let next_time = self.gallery.scraping_periodicity
+            .get_cron()
+            .find_next_occurrence(&cur_time, false);
+        match next_time {
+            Ok(next_time) => {
+                let time_to_next_schedule = (next_time - cur_time)
+                    .to_std()
+                    .expect("Should never fail, as this time should logically always be greater than 0");
+                tokio::time::sleep(time_to_next_schedule).await;
+                Ok(())
+            },
+            Err(err) => {
+                // TODO: pretty critical error, should have some way to persist this info
+                tracing::error!(
+                    "Error trying to schedule the next scrape for gallery {}; this gallery will now stop: {}",
+                    &self.gallery.gallery_id,
+                    err
+                );
+                return Err(());
+            },
+        }
     }
 }

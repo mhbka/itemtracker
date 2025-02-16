@@ -1,7 +1,7 @@
 use components::request_orchestrator::RequestOrchestrator;
 use crate::{config::ItemAnalysisConfig, galleries::domain_types::GalleryId, messages::{message_types::item_analysis::ItemAnalysisMessage, ImageClassifierSender, ItemAnalysisReceiver}};
 
-mod msg_handler;
+mod handler;
 mod components;
 
 /// Module in charge of orchestrating analysis of scraped items.
@@ -45,9 +45,12 @@ impl ItemAnalysisModule {
     /// Handle each message variant.
     async fn process_msg(&mut self, msg: ItemAnalysisMessage) {
         match msg {
-            ItemAnalysisMessage::AnalyzeGallery { gallery} => {
+            ItemAnalysisMessage::AnalyzeGallery { gallery_id } => {
                 msg_handler::handle_start_analysis_msg(gallery, self).await;
             },
+            ItemAnalysisMessage::AnalyzeGalleryNew { gallery } => {
+
+            }
         }
     }
 }

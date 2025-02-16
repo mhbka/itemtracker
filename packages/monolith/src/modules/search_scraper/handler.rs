@@ -6,7 +6,7 @@ use crate::{
     messages::{
         message_types::{item_scraper::ItemScraperMessage, search_scraper::SearchScraperError, 
             state_tracker::{
-                CheckGalleryMessage, RemoveGalleryMessage, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage
+                CheckGalleryDoesntExistMessage, RemoveGalleryMessage, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage
             }
         }, 
         ItemScraperSender, 
@@ -46,12 +46,8 @@ impl Handler {
 
     /// Perform the entire scraping of a new gallery.
     pub async fn scrape_new_gallery(&mut self, gallery: GallerySearchScrapingState) -> Result<(), SearchScraperError> {
-        match self.check_gallery_in_state(gallery.gallery_id.clone()).await? {
-            true => Err(
-                SearchScraperError::GalleryAlreadyExists { gallery_id: gallery.gallery_id }
-            ),
-            false => self.scrape_gallery(gallery).await,
-        }
+        self.check_gallery_doesnt_exist(gallery.gallery_id.clone()).await?;
+        self.scrape_gallery(gallery).await
     }
 
     /// Scrapes the search for a gallery and sends it to the item scraper.
@@ -70,19 +66,23 @@ impl Handler {
             Ok(())
     }
     
-    /// Checks if the gallery is in any state.
+    /// Ensure the gallery doesn't exist.
     /// 
-    /// Returns an `Err` if the state tracker is not contactable.
-    async fn check_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<bool, SearchScraperError> {
-        let (state_msg, receiver) = CheckGalleryMessage::new(gallery_id.clone());
+    /// Returns an `Err` if it exists, or the state tracker is not contactable.
+    async fn check_gallery_doesnt_exist(&mut self, gallery_id: GalleryId) -> Result<(), SearchScraperError> {
+        let (state_msg, receiver) = CheckGalleryDoesntExistMessage::new(gallery_id.clone());
         self.state_tracker_sender
-            .send(StateTrackerMessage::CheckGallery(state_msg))
+            .send(StateTrackerMessage::CheckGalleryDoesntExist(state_msg))
             .await;
-        let in_state = receiver.await
-            .map_err(|err| 
-                SearchScraperError::Other { gallery_id: gallery_id.clone(), message: format!("Could not receive response from state tracker: {err}") }
-            )?;
-        Ok(in_state)
+        receiver.await
+            .map_err(|err| SearchScraperError::Other { 
+                gallery_id: gallery_id.clone(), 
+                message: format!("Could not receive response from state tracker: {err}") 
+            })?
+            .map_err(|err| SearchScraperError::StateErr { 
+                gallery_id, 
+                err 
+            })
     }
 
     /// Fetches a gallery from state.

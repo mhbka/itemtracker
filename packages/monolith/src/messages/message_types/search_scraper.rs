@@ -2,15 +2,15 @@ use serde::{Serialize, Deserialize};
 use crate::galleries::{domain_types::GalleryId, pipeline_states::GallerySearchScrapingState};
 use thiserror::Error;
 
+use super::state_tracker::StateTrackerError;
+
 /// Possible errors emitted from the scraper.
 #[derive(Error, Debug, Serialize, Deserialize, Clone)]
 pub enum SearchScraperError {
-    #[error("Gallery {gallery_id} is already in state")]
-    GalleryAlreadyExists { gallery_id: GalleryId },
-    #[error("Gallery {gallery_id} was not found in state")]
-    GalleryDoesntExists { gallery_id: GalleryId },
     #[error("All marketplaces for gallery {gallery_id} failed to scrape")]
     TotalScrapeFailure { gallery_id: GalleryId },
+    #[error("Error from state tracker for gallery {gallery_id}: {err}")]
+    StateErr { gallery_id: GalleryId, err: StateTrackerError },
     #[error("Encountered a different error for gallery {gallery_id}: {message}")]
     Other { gallery_id: GalleryId, message: String }
 }

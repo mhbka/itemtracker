@@ -9,7 +9,7 @@ mod scrapers;
 /// In charge of scraping the search of marketplaces under a gallery, for item IDs.
 pub struct SearchScraperModule {
     msg_receiver: SearchScraperReceiver,
-    state_manager: Handler,
+    handler: Handler,
 }
 
 impl SearchScraperModule {
@@ -21,14 +21,14 @@ impl SearchScraperModule {
         item_scraper_msg_sender: ItemScraperSender
     ) -> Self
     {   
-        let state_manager = Handler::new(
+        let handler = Handler::new(
             &config, 
             state_tracker_msg_sender,
             item_scraper_msg_sender
         );
         Self { 
             msg_receiver, 
-            state_manager
+            handler
         }
     }
     
@@ -45,7 +45,7 @@ impl SearchScraperModule {
         match msg {
             SearchScraperMessage::ScrapeSearchNew{ gallery } => {
                 tracing::trace!("Received message to start search-scraping new gallery {}", gallery.gallery_id);
-                let schedule_result = self.state_manager
+                let schedule_result = self.handler
                     .scrape_new_gallery(gallery)
                     .await;
                 if let Err(err) = schedule_result {
@@ -54,7 +54,7 @@ impl SearchScraperModule {
             },
             SearchScraperMessage::ScrapeSearch{ gallery_id } => {
                 tracing::trace!("Received message to start scraping gallery {}", gallery_id);
-                let schedule_result = self.state_manager
+                let schedule_result = self.handler
                     .scrape_gallery_in_state(gallery_id)
                     .await;
                 if let Err(err) = schedule_result {

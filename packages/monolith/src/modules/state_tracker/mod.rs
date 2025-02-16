@@ -67,8 +67,8 @@ impl StateTrackerModule {
             StateTrackerMessage::AddGallery(msg) => {
                 msg.act(|(gallery_id, gallery)| self.state.add_gallery(gallery_id, gallery));
             },
-            StateTrackerMessage::CheckGallery(msg) => {
-                msg.act(|gallery_id| self.state.check_gallery(gallery_id));
+            StateTrackerMessage::CheckGalleryDoesntExist(msg) => {
+                msg.act(|gallery_id| self.state.check_gallery_doesnt_exist(gallery_id));
             },
             StateTrackerMessage::CheckGalleryState(msg) => {
                 msg.act(|(gallery_id, state_type)| self.state.check_gallery_state(gallery_id, state_type));
