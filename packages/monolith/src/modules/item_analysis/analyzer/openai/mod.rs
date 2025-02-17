@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter::zip};
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{OpenAIImageURLMessage, OpenAIMessage, OpenAIMessageContent, OpenAIRequestForm, OpenAIResponse};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedItems, AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}, modules::item_analysis::components::anthropic::types::EvaluationAnswers};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}, modules::item_analysis::analyzer::anthropic::types::EvaluationAnswers};
 
 mod types;
 
@@ -14,16 +14,16 @@ pub(super) struct OpenAIRequester {
 
 impl OpenAIRequester {
     /// Instantiate the requester.
-    pub fn new(config: &ItemAnalysisConfig) -> Self {
+    pub fn new(config: ItemAnalysisConfig) -> Self {
         Self {
-            config: config.clone(),
+            config: config,
             request_client: Client::new()
         }
     }
 
     /// Perform analysis of a gallery's items.
     pub async fn analyze_gallery(&mut self, mut gallery: GalleryItemAnalysisState) -> GalleryClassifierState {
-        let items = gallery.items.marketplace_items;
+        let items = gallery.items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
         let gallery_requests = self.build_requests(items, eval_criteria_string);
         let analyzed_items = self.execute_and_handle_requests(
@@ -43,7 +43,7 @@ impl OpenAIRequester {
         &self, 
         eval_criteria: &mut EvaluationCriteria,
         gallery_requests: HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>
-    ) -> AnalyzedItems {
+    ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
         let mut gallery_items = HashMap::new();
         for (marketplace, items_and_requests) in gallery_requests {
             let (items, item_requests): (Vec<_>, Vec<_>) = items_and_requests
@@ -59,7 +59,7 @@ impl OpenAIRequester {
                 .await;
             gallery_items.insert(marketplace, marketplace_items);
         }
-        AnalyzedItems { items: gallery_items }
+        gallery_items
     }
 
     /// Process the raw LLM output for all items in a gallery's marketplace.

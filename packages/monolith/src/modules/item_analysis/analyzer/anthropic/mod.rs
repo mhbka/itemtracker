@@ -24,22 +24,16 @@ impl AnthropicRequester {
     }
 
     /// Perform analysis of a gallery's items.
-    pub async fn analyze_gallery(&mut self, mut gallery: GalleryItemAnalysisState) -> GalleryClassifierState {
-        let items = gallery.items;
-        let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
+    pub async fn analyze_gallery(
+        &mut self,
+        items: HashMap<Marketplace, Vec<MarketplaceItemData>>,
+        eval_criteria: &EvaluationCriteria
+    ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
+        let eval_criteria_string = eval_criteria.describe_criteria();
         let gallery_requests = self
             .build_requests(items, eval_criteria_string)
             .await;
-        let analyzed_items = self.execute_and_handle_requests(
-            &mut gallery.evaluation_criteria, 
-            gallery_requests
-        ).await;
-        GalleryClassifierState {
-            gallery_id: gallery.gallery_id,
-            items: analyzed_items,
-            failed_marketplace_reasons: gallery.failed_marketplace_reasons,
-            marketplace_updated_datetimes: gallery.marketplace_updated_datetimes
-        }
+        self.execute_and_handle_requests(eval_criteria, gallery_requests).await
     }
 
     /// Build the requests for all the gallery's items.
@@ -67,7 +61,7 @@ impl AnthropicRequester {
     /// Executes and handles the requests for a gallery.
     async fn execute_and_handle_requests(
         &self, 
-        eval_criteria: &mut EvaluationCriteria,
+        eval_criteria: &EvaluationCriteria,
         gallery_requests: HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>
     ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
         let mut gallery_items = HashMap::new();
@@ -91,7 +85,7 @@ impl AnthropicRequester {
     /// Process the raw LLM output for all items in a gallery's marketplace.
     async fn process_marketplace_results(
         &self,
-        eval_criteria: &mut EvaluationCriteria,
+        eval_criteria: &EvaluationCriteria,
         results: Vec<(MarketplaceItemData, Result<reqwest::Response, reqwest::Error>)>,
     ) -> MarketplaceAnalyzedItems {
         let mut relevant_items = vec![];

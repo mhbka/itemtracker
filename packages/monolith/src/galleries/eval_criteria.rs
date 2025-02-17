@@ -51,7 +51,7 @@ impl EvaluationCriteria {
     /// This is just a combination of the `parse_answers` and `satisfies_hard_criteria` methods, for convenience.
     /// 
     /// Check them for details on return values/error cases.
-    pub fn parse_answers_and_check_hard_criteria(&mut self, answers: Vec<String>) -> Result<(Vec<CriterionAnswer>, bool), String> {
+    pub fn parse_answers_and_check_hard_criteria(&self, answers: Vec<String>) -> Result<(Vec<CriterionAnswer>, bool), String> {
         let parsed_answers = self.parse_answers(answers)?;
         let satisfies_hard_criteria = self.satisfies_hard_criteria(&parsed_answers)?;
         Ok((parsed_answers, satisfies_hard_criteria))
@@ -63,11 +63,11 @@ impl EvaluationCriteria {
     /// 
     /// Returns an `Err` if `answers` is not the same length as the criteria,
     /// or an answer is not in the expected format for its criterion.
-    pub fn parse_answers(&mut self, answers: Vec<String>) -> Result<Vec<CriterionAnswer>, String> {
+    pub fn parse_answers(&self, answers: Vec<String>) -> Result<Vec<CriterionAnswer>, String> {
         if answers.len() != self.criteria.len() {
             return Err(format!("Expected {} answers, got {}", self.criteria.len(), answers.len()));
         }
-        let result: Result<Vec<_>, _> = zip(&mut self.criteria, answers)
+        let result: Result<Vec<_>, _> = zip(&self.criteria, answers)
             .map(|(criterion, answer)| criterion.parse_answer(answer))
             .collect();
         result
@@ -79,8 +79,8 @@ impl EvaluationCriteria {
     /// 
     /// Returns an `Err` if any answer type doesn't match the corresponding criterion type.
     /// If you directly pass the successful output from `parse_answers`, this will never occur.
-    pub fn satisfies_hard_criteria(&mut self, answers: &Vec<CriterionAnswer>) -> Result<bool, String> {
-        zip(&mut self.criteria, answers)
+    pub fn satisfies_hard_criteria(&self, answers: &Vec<CriterionAnswer>) -> Result<bool, String> {
+        zip(&self.criteria, answers)
             .try_fold(true, |prev, (criterion, answer)| {
                 match criterion.satisfies_hard_criterion(&answer) {
                     Ok(val) => Ok(val && prev),
@@ -113,7 +113,7 @@ impl Criterion {
     /// Parses an answer string and returns the corresponding `CriterionAnswer`.
     /// 
     /// Returns an `Err` if the answer cannot be parsed into the criterion.
-    fn parse_answer(&mut self, answer: String) -> Result<CriterionAnswer, String> {
+    fn parse_answer(&self, answer: String) -> Result<CriterionAnswer, String> {
         Ok(
             match self.criterion_type {
                 CriterionType::YesNo => {
