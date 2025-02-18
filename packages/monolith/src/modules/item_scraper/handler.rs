@@ -28,16 +28,17 @@ impl Handler {
             item_scraper
         }
     }
+    
+    /// Perform the entire scraping of a new gallery.
+    pub async fn scrape_new_gallery(&mut self, gallery: GalleryItemScrapingState) -> Result<(), ItemScraperError> {
+        let gallery_id = gallery.gallery_id.clone();
+        self.add_gallery_to_state(gallery_id.clone(), gallery).await?;
+        self.scrape_gallery_in_state(gallery_id).await
+    }
 
     /// Perform the scraping of a gallery in state.
     pub async fn scrape_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), ItemScraperError> {
         let gallery = self.fetch_gallery_state(gallery_id).await?;
-        self.scrape_gallery(gallery).await
-    }
-
-    /// Perform the entire scraping of a new gallery.
-    pub async fn scrape_new_gallery(&mut self, gallery: GalleryItemScrapingState) -> Result<(), ItemScraperError> {
-        self.check_gallery_doesnt_exist(gallery.gallery_id.clone()).await?;
         self.scrape_gallery(gallery).await
     }
 
@@ -57,12 +58,16 @@ impl Handler {
             Ok(())
     }
     
-    /// Ensure the gallery doesn't exist.
+    /// Add a new gallery to the state.
     /// 
-    /// Returns an `Err` if it exists, or the state tracker is not contactable.
-    async fn check_gallery_doesnt_exist(&mut self, gallery_id: GalleryId) -> Result<(), ItemScraperError> {
+    /// Returns an `Err` if it already exists.
+    async fn add_gallery_to_state(
+        &mut self, 
+        gallery_id: GalleryId, 
+        gallery: GalleryItemScrapingState
+    ) -> Result<(), ItemScraperError> {
         self.state_tracker_sender
-            .check_gallery_doesnt_exist(gallery_id.clone())
+            .add_gallery(gallery_id.clone(), GalleryPipelineStates::ItemScraping(gallery))
             .await
             .map_err(|err| ItemScraperError::Other { 
                 gallery_id: gallery_id.clone(), 

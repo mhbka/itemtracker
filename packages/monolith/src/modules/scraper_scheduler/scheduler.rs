@@ -40,7 +40,6 @@ impl SchedulerHandler {
         let gallery_id = new_gallery.gallery_id.clone();
         let mut galleries = self.galleries.write().await;
         if galleries.contains_key(&gallery_id) {
-            tracing::error!("Gallery with ID {} already exists", gallery_id);
             return Err(SchedulerError::GalleryAlreadyExists{ gallery_id });
         }
         let handle = self.generate_gallery_task(new_gallery).await;
@@ -55,8 +54,8 @@ impl SchedulerHandler {
         if let Some(task) = galleries.remove(&gallery_id) {
             task.1.abort();
             Ok(())
-        } else {
-            tracing::error!("Gallery with ID {} not found", gallery_id);
+        } 
+        else {
             Err(SchedulerError::GalleryNotFound{ gallery_id })
         }
     }
@@ -67,10 +66,10 @@ impl SchedulerHandler {
         let mut galleries = self.galleries.write().await;
         if let Some(task) = galleries.get_mut(&updated_gallery.gallery_id) {
             let mut scheduled_gallery = task.0.lock().await;
-            scheduled_gallery.update_gallery(updated_gallery);
+            scheduled_gallery.update_gallery(updated_gallery)?;
             Ok(())
-        } else {
-            tracing::error!("Gallery with ID {} not found", updated_gallery.gallery_id);
+        } 
+        else {
             Err(SchedulerError::GalleryNotFound{ gallery_id: updated_gallery.gallery_id})
         }
     }

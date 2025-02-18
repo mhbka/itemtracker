@@ -10,6 +10,8 @@ pub enum SchedulerError {
     GalleryNotFound { gallery_id: GalleryId },
     #[error("Gallery {gallery_id} already exists and cannot be added again")]
     GalleryAlreadyExists { gallery_id: GalleryId },
+    #[error("Update for gallery {gallery_id} has the wrong gallery ID")]
+    GalleryUpdateHasWrongId { gallery_id: GalleryId },
     #[error("Error from state tracker for gallery {gallery_id}: {err}")]
     StateErr { gallery_id: GalleryId, err: StateTrackerError },
     #[error("Encountered a different error for gallery {gallery_id}: {message}")]

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use crate::{galleries::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_types::{scraper_scheduler::SchedulerError, state_tracker::{AddGalleryMessage, StateTrackerError, StateTrackerMessage}}, SearchScraperSender, StateTrackerSender}};
+use crate::{galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}}, messages::{message_types::{scraper_scheduler::SchedulerError, state_tracker::{AddGalleryMessage, StateTrackerError, StateTrackerMessage}}, SearchScraperSender, StateTrackerSender}};
 
 /// A wrapper representing the actual running scheduler task for a gallery, which starts on `run()`.
 pub struct ScheduledGalleryTask {
@@ -48,8 +48,12 @@ impl ScheduledGalleryTask {
     }
 
     /// Update the gallery that will be sent to the scraper.
-    pub fn update_gallery(&mut self, gallery: GallerySchedulerState) {
-        self.gallery = gallery;
+    pub fn update_gallery(&mut self, updated_gallery: GallerySchedulerState) -> Result<(), SchedulerError> {
+        if updated_gallery.gallery_id != self.gallery.gallery_id {
+            return Err(SchedulerError::GalleryUpdateHasWrongId { gallery_id: self.gallery.gallery_id.clone() })
+        }
+        self.gallery = updated_gallery;
+        Ok(())
     }
 
     /// Adds a gallery to state.

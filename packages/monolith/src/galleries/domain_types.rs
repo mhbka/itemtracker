@@ -156,7 +156,10 @@ impl<'de> Deserialize<'de> for UnixUtcDateTime {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where D: Deserializer<'de>,
     {
-        let timestamp = i64::deserialize(deserializer)?;
+        let string_timestamp = String::deserialize(deserializer)?;
+        let timestamp = string_timestamp
+            .parse::<i64>()
+            .map_err(|err| serde::de::Error::custom("Could not parse string to i64"))?;
         let datetime = chrono::Utc.timestamp_opt(timestamp, 0)
             .single()
             .ok_or_else(|| serde::de::Error::custom("Invalid timestamp"))?;

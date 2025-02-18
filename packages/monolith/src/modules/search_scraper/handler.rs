@@ -4,11 +4,7 @@ use crate::{
     galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, 
     pipeline_states::{GalleryItemScrapingState, GalleryPipelineStateTypes, GalleryPipelineStates, GallerySearchScrapingState}}, 
     messages::{
-        message_types::{item_scraper::ItemScraperMessage, search_scraper::SearchScraperError, 
-            state_tracker::{
-                CheckGalleryDoesntExistMessage, RemoveGalleryMessage, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage
-            }
-        }, 
+        message_types::{item_scraper::ItemScraperMessage, search_scraper::SearchScraperError}, 
         ItemScraperSender, 
         StateTrackerSender
     }
@@ -38,15 +34,16 @@ impl Handler {
         }
     }
 
+    /// Perform the entire scraping of a new gallery.
+    pub async fn scrape_new_gallery(&mut self, gallery: GallerySearchScrapingState) -> Result<(), SearchScraperError> {
+        let gallery_id = gallery.gallery_id.clone();
+        self.add_gallery_to_state(gallery_id.clone(), gallery).await?;
+        self.scrape_gallery_in_state(gallery_id).await
+    }
+
     /// Perform the scraping of a gallery in state.
     pub async fn scrape_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), SearchScraperError> {
         let gallery = self.fetch_gallery_state(gallery_id).await?;
-        self.scrape_gallery(gallery).await
-    }
-
-    /// Perform the entire scraping of a new gallery.
-    pub async fn scrape_new_gallery(&mut self, gallery: GallerySearchScrapingState) -> Result<(), SearchScraperError> {
-        self.check_gallery_doesnt_exist(gallery.gallery_id.clone()).await?;
         self.scrape_gallery(gallery).await
     }
 
@@ -61,9 +58,34 @@ impl Handler {
             scraped_search_result.clone()
         ).await?;
         self.item_scraper_sender
-            .send(ItemScraperMessage::ScrapeItems { gallery_id })
-            .await;
-            Ok(())
+            .send(ItemScraperMessage::ScrapeItems { gallery_id: gallery_id.clone() })
+            .await
+            .map_err(|err| SearchScraperError::Other {
+                gallery_id,
+                message: format!("Unable to send gallery to next stage: {err}")
+            })?;
+        Ok(())
+    }
+
+    /// Add a new gallery to the state.
+    /// 
+    /// Returns an `Err` if it already exists.
+    async fn add_gallery_to_state(
+        &mut self, 
+        gallery_id: GalleryId, 
+        gallery: GallerySearchScrapingState
+    ) -> Result<(), SearchScraperError> {
+        self.state_tracker_sender
+            .add_gallery(gallery_id.clone(), GalleryPipelineStates::SearchScraping(gallery))
+            .await
+            .map_err(|err| SearchScraperError::Other { 
+                gallery_id: gallery_id.clone(), 
+                message: format!("Could not receive response from state tracker: {err}") 
+            })?
+            .map_err(|err| SearchScraperError::StateErr { 
+                gallery_id, 
+                err 
+            })
     }
     
     /// Ensure the gallery doesn't exist.
@@ -127,7 +149,11 @@ impl Handler {
             .iter()
             .all(|(_, result)| result.is_err())
             {
-                true => { // if all marketplaces returned an Err, remove gallery from state and return an Err
+                true => { // if all marketplaces only have errors, or we got 0 items for all marketplaces, remove gallery from state and return an Err
+                    tracing::warn!("All marketplaces only have errors for gallery {} (marketplaces: {:?})",
+                        gallery_id,
+                        scraped_search_result.keys()
+                    );
                     self.state_tracker_sender
                         .remove_gallery(gallery_id.clone())
                         .await
@@ -142,7 +168,11 @@ impl Handler {
                     Err(SearchScraperError::TotalScrapeFailure { gallery_id })
                 },
                 false => {
-                    let new_state = self.process_to_next_state(scraped_search_result, cur_state);
+                    let new_state = self.process_to_next_state(
+                        &gallery_id, 
+                        scraped_search_result, 
+                        cur_state
+                    );
                     self.state_tracker_sender
                         .update_gallery_state(gallery_id.clone(), GalleryPipelineStates::ItemScraping(new_state))
                         .await
@@ -162,6 +192,7 @@ impl Handler {
     /// Process the gallery's state into the next state.
     fn process_to_next_state(
         &self,
+        gallery_id: &GalleryId,
         scraped_search_result: HashMap<Marketplace, Result<Vec<ItemId>, String>>,
         gallery_state: GallerySearchScrapingState,
     ) -> GalleryItemScrapingState {
@@ -180,6 +211,11 @@ impl Handler {
             .into_iter()
             .filter_map(|(marketplace, result)| result.ok().map(|ids| (marketplace, ids)))
             .collect();
+        tracing::info!("Gallery {} collected the following:\n Item IDs: {:#?}\n Errors: {:#?}",
+            gallery_id,
+            valid_scraped_search_ids,
+            failed_marketplace_reasons
+        );
         GalleryItemScrapingState {
             gallery_id: gallery_state.gallery_id,
             item_ids: valid_scraped_search_ids,

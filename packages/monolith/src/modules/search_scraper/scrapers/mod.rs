@@ -25,17 +25,22 @@ impl SearchScraper {
     /// 
     /// Returns an `Err` for whichever marketplaces had errors while scraping.
     pub async fn scrape_search(&mut self, gallery: &GallerySearchScrapingState) -> HashMap<Marketplace, Result<Vec<ItemId>, String>> {
+        tracing::debug!("Starting scrape search for gallery {}", gallery.gallery_id);
         let results = join_all(
             gallery.marketplace_previous_scraped_datetimes
                 .clone()
                 .into_iter()
                 .map(|(marketplace, previous_scraped_item_datetime)| async {
-                    let item_ids = match marketplace {
+                    let result = match marketplace {
                         Marketplace::Mercari => self.mercari_scraper
                             .request(&gallery.search_criteria, previous_scraped_item_datetime)
                             .await
                     };
-                    (marketplace, item_ids)
+                    match &result {
+                        Ok(ids) => tracing::debug!("Gallery {}, marketplace {}: scraped {} item IDs", gallery.gallery_id, marketplace, ids.len()),
+                        Err(err) => tracing::debug!("Gallery {}, marketplace {} encountered error: {}", gallery.gallery_id, marketplace, err)
+                    };
+                    (marketplace, result)
                 })
             ).await;
         results

@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -26,9 +28,15 @@ impl MercariSearchScraper {
         search_criteria: &GallerySearchCriteria,
         previous_scraped_item_datetime: UnixUtcDateTime
     ) -> Result<Vec<ItemId>, String> {
-        let dpop_key = match generate_dpop(&REQ_URL, "get") {
-            Ok(key) => key,
-            Err(err) => return Err(err)
+        let dpop_key = match generate_dpop(&REQ_URL, "POST") {
+            Ok(key) => {
+                tracing::trace!("Generated dpop key: {key}");
+                key
+            },
+            Err(err) => {
+                tracing::warn!("Failed to generate dpop key (this should not happen)");
+                return Err(err);
+            }
         };
         let mut item_ids = vec![];
         let mut next_page_token = "".to_string();
@@ -91,10 +99,10 @@ impl MercariSearchScraper {
                                     }
                                 }
                             },
-                            Err(err) => Err(format!("Error deserializing scraped search data: {err}")),
+                            Err(err) => Err(format!("Error deserializing scraped search data:\n {err}\n (source: {:?})", err.source())),
                         }
                     },
-                    Err(err) => Err(format!("Error code while scraping search: {err}"))
+                    Err(err) => Err(format!("Error code while scraping search:\n {err}"))
                 }
             },
             Err(err) => Err(format!("Error scraping search: {err}"))

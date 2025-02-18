@@ -31,16 +31,17 @@ impl Handler {
             analyzer
         }
     }
+    
+    /// Perform the entire scraping of a new gallery.
+    pub async fn analyze_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
+        let gallery_id = gallery.gallery_id.clone();
+        self.add_gallery_to_state(gallery_id.clone(), gallery).await?;
+        self.analyze_gallery_in_state(gallery_id).await
+    }
 
     /// Perform the scraping of a gallery in state.
     pub async fn analyze_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), ItemAnalysisError> {
         let gallery = self.fetch_gallery_state(gallery_id).await?;
-        self.analyze_gallery(gallery).await
-    }
-
-    /// Perform the entire scraping of a new gallery.
-    pub async fn analyze_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
-        self.check_gallery_doesnt_exist(gallery.gallery_id.clone()).await?;
         self.analyze_gallery(gallery).await
     }
 
@@ -62,12 +63,16 @@ impl Handler {
             Ok(())
     }
     
-    /// Ensure the gallery doesn't exist.
+    /// Add a new gallery to the state.
     /// 
-    /// Returns an `Err` if it exists, or the state tracker is not contactable.
-    async fn check_gallery_doesnt_exist(&mut self, gallery_id: GalleryId) -> Result<(), ItemAnalysisError> {
+    /// Returns an `Err` if it already exists.
+    async fn add_gallery_to_state(
+        &mut self, 
+        gallery_id: GalleryId, 
+        gallery: GalleryItemAnalysisState
+    ) -> Result<(), ItemAnalysisError> {
         self.state_tracker_sender
-            .check_gallery_doesnt_exist(gallery_id.clone())
+            .add_gallery(gallery_id.clone(), GalleryPipelineStates::ItemAnalysis(gallery))
             .await
             .map_err(|err| ItemAnalysisError::Other { 
                 gallery_id: gallery_id.clone(), 
@@ -78,7 +83,6 @@ impl Handler {
                 err 
             })
     }
-
     /// Fetches a gallery from state.
     /// 
     /// Returns an `Err` if:

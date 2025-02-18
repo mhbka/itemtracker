@@ -29,6 +29,8 @@ pub fn generate_dpop(
     accessed_url: &str,
     http_method: &str,
 ) -> Result<String, String> {
+    tracing::trace!("Generating dpop key");
+
     let private_key = SigningKey::random(&mut OsRng);
     let public_key = private_key.verifying_key();
     let public_key_bytes = public_key.to_encoded_point(false);

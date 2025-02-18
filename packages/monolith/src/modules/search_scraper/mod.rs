@@ -44,21 +44,21 @@ impl SearchScraperModule {
     async fn process_msg(&mut self, msg: SearchScraperMessage) {
         match msg {
             SearchScraperMessage::ScrapeSearchNew{ gallery } => {
-                tracing::trace!("Received message to start search-scraping new gallery {}", gallery.gallery_id);
+                tracing::info!("Received message to start search-scraping new gallery {}", gallery.gallery_id);
                 let schedule_result = self.handler
                     .scrape_new_gallery(gallery)
                     .await;
                 if let Err(err) = schedule_result {
-                    tracing::error!("Error(s) scheduling scraping tasks ({err:#?})");
+                    tracing::error!("Error while search scraping: {err}");
                 };
             },
             SearchScraperMessage::ScrapeSearch{ gallery_id } => {
-                tracing::trace!("Received message to start scraping gallery {}", gallery_id);
+                tracing::info!("Received message to start scraping gallery {}", gallery_id);
                 let schedule_result = self.handler
                     .scrape_gallery_in_state(gallery_id)
                     .await;
                 if let Err(err) = schedule_result {
-                    tracing::error!("Error(s) scheduling scraping tasks ({err:#?})");
+                    tracing::error!("Error while search scraping: {err}");
                 };
             }
         }
