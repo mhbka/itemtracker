@@ -122,18 +122,21 @@ impl Handler {
         match scraped_items
             .iter()
             .all(|(_, result)| {
-                result
-                    .iter()
-                    .all(|res| res.is_err())
+                result.len() > 0 && // we allow empty results, as long as they aren't all errors
+                result.iter().all(|res| res.is_err())
             })
             {
-                true => { // if all items are Err, remove gallery from state and return an Err
+                true => { // if all items are errors, remove gallery from state and return an Err
                     self.state_tracker_sender
                         .remove_gallery(gallery_id.clone())
                         .await
                         .map_err(|err| ItemScraperError::Other { 
                             gallery_id: gallery_id.clone(), 
                             message: format!("Could not receive response from state tracker: {err}") 
+                        })?
+                        .map_err(|err| ItemScraperError::StateErr { 
+                            gallery_id: gallery_id.clone(), 
+                            err
                         })?;
                     Err(ItemScraperError::TotalScrapeFailure { gallery_id })
                 },
