@@ -45,7 +45,7 @@ impl ItemScraperModule {
                     .scrape_gallery_in_state(gallery_id)
                     .await;
                 if let Err(err) = schedule_result {
-                    tracing::error!("Error(s) scheduling scraping tasks ({err:#?})");
+                    tracing::error!("Error(s) performing item scrape ({err:#?})");
                 };
             },
             ItemScraperMessage::ScrapeItemsNew { gallery } => {
@@ -54,7 +54,7 @@ impl ItemScraperModule {
                     .scrape_new_gallery(gallery)
                     .await;
                 if let Err(err) = schedule_result {
-                    tracing::error!("Error(s) scheduling scraping tasks ({err:#?})");
+                    tracing::error!("Error(s) performing item scrape ({err:#?})");
                 };
             },
         }

@@ -15,6 +15,7 @@ pub enum ImgClassifierError {
 
 /// The types of messages the image classifer module can take.
 #[derive(Debug)]
-pub enum ImgClassifierMessage {
-    StartClassification { gallery: GalleryClassifierState }
+pub enum ImageClassifierMessage {
+    Classify { gallery_id: GalleryId },
+    ClassifyNew { gallery: GalleryClassifierState }
 }

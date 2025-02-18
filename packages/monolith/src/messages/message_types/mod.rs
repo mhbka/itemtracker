@@ -52,18 +52,6 @@ where
         (message, receiver)
     }
 
-    /* 
-    /// Obtain a clone of the message.
-    fn get_msg(&self) -> Message {
-        self.message.clone()
-    }
-
-    /// Attempt to send the response.
-    fn respond(self, response: Return) -> Result<(), Return> {
-        self.respond_to.send(response)
-    }
-    */
-
     /// Act upon the message and provide a response to it.
     /// 
     /// Returns an `Err` with the response value if it couldn't be successfully delivered.

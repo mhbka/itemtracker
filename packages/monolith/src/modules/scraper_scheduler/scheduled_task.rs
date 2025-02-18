@@ -64,27 +64,16 @@ impl ScheduledGalleryTask {
             marketplace_previous_scraped_datetimes: gallery.marketplace_previous_scraped_datetimes,
             evaluation_criteria: gallery.evaluation_criteria
         };
-        let (state_msg, receiver) = AddGalleryMessage::new(
-            (
-                new_gallery_state.gallery_id.clone(),
+        self.state_tracker_sender
+            .add_gallery(
+                new_gallery_state.gallery_id.clone(), 
                 GalleryPipelineStates::SearchScraping(new_gallery_state)
             )
-        );
-            self.state_tracker_sender
-                .send(StateTrackerMessage::AddGallery(state_msg))
-                .await
-                .map_err(|err| SchedulerError::Other { 
-                    gallery_id: self.gallery.gallery_id.clone(),
-                    message: format!("Unable to send message to state tracker: {err}") 
-                })?;
-            Ok(
-                receiver.await
-                    .map_err(|err| SchedulerError::Other { 
-                        gallery_id: self.gallery.gallery_id.clone(),
-                        message: format!("Unable to receive message from state tracker: {err}") 
-                    }
-                )?
-            )
+            .await
+            .map_err(|err| SchedulerError::Other { 
+                gallery_id: self.gallery.gallery_id.clone(),
+                message: format!("Unable to send message to state tracker: {err}") 
+            })
     }
 
     /// Sleeps till the next scheduled time.

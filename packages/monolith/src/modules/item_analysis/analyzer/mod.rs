@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anthropic::AnthropicRequester;
 use openai::OpenAIRequester;
 
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::GalleryItemAnalysisState}, messages::{message_types::{img_classifier::ImgClassifierMessage, item_analysis::ItemAnalysisError}, ImageClassifierSender}};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::MarketplaceAnalyzedItems}, pipeline_states::GalleryItemAnalysisState}, messages::{message_types::{img_classifier::ImageClassifierMessage, item_analysis::ItemAnalysisError}, ImageClassifierSender}};
 
 mod anthropic;
 mod openai;
@@ -30,10 +30,11 @@ impl Analyzer {
     /// Request analysis of a gallery's items, and sends the items to the next stage.
     pub async fn analyze_gallery(
         &mut self, 
-        gallery: GalleryItemAnalysisState,
+        items: HashMap<Marketplace, Vec<MarketplaceItemData>>,
+        eval_criteria: &EvaluationCriteria
     ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
         self.anthropic_requester
-            .analyze_gallery(gallery.items, &gallery.evaluation_criteria)
+            .analyze_gallery(items, eval_criteria)
             .await
     }
 }

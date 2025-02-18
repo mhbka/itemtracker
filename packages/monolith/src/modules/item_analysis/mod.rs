@@ -1,9 +1,8 @@
-use components::request_orchestrator::RequestOrchestrator;
-use crate::{config::ItemAnalysisConfig, galleries::domain_types::GalleryId, messages::{message_types::item_analysis::ItemAnalysisMessage, ImageClassifierSender, ItemAnalysisReceiver}};
+use handler::Handler;
+use crate::{config::ItemAnalysisConfig, messages::{message_types::item_analysis::ItemAnalysisMessage, ImageClassifierSender, ItemAnalysisReceiver, StateTrackerSender}};
 
 mod handler;
 mod analyzer;
-mod components;
 
 /// Module in charge of orchestrating analysis of scraped items.
 /// 
@@ -11,9 +10,8 @@ mod components;
 /// the rest is just error handling/data parsing/other administration.
 pub struct ItemAnalysisModule {
     config: ItemAnalysisConfig,
-    llm_requester: RequestOrchestrator,
-    galleries_in_progress: Vec<GalleryId>,
-    msg_receiver: ItemAnalysisReceiver
+    msg_receiver: ItemAnalysisReceiver,
+    handler: Handler
 }
 
 impl ItemAnalysisModule {
@@ -21,17 +19,18 @@ impl ItemAnalysisModule {
     pub fn init(
         config: ItemAnalysisConfig, 
         msg_receiver: ItemAnalysisReceiver,
-        img_classifier_msg_sender: ImageClassifierSender
+        state_tracker_sender: StateTrackerSender,
+        image_classifier_sender: ImageClassifierSender
     ) -> Self {
-        let llm_requester = RequestOrchestrator::new(
-            config.clone(),
-            img_classifier_msg_sender
+        let handler = Handler::new(
+            &config, 
+            state_tracker_sender, 
+            image_classifier_sender
         );
         Self { 
-            config, 
-            galleries_in_progress: vec![],
-            llm_requester,
-            msg_receiver
+            config,
+            msg_receiver,
+            handler
         }
     }
 
@@ -47,10 +46,22 @@ impl ItemAnalysisModule {
     async fn process_msg(&mut self, msg: ItemAnalysisMessage) {
         match msg {
             ItemAnalysisMessage::AnalyzeGallery { gallery_id } => {
-
+                tracing::trace!("Received message to start analyzing gallery {gallery_id} in state");
+                let schedule_result = self.handler
+                    .analyze_gallery_in_state(gallery_id)
+                    .await;
+                if let Err(err) = schedule_result {
+                    tracing::error!("Error(s) performing analysis ({err:#?})");
+                };
             },
             ItemAnalysisMessage::AnalyzeGalleryNew { gallery } => {
-
+                tracing::trace!("Received message to start analyzing new gallery {}", gallery.gallery_id);
+                let schedule_result = self.handler
+                    .analyze_new_gallery(gallery)
+                    .await;
+                if let Err(err) = schedule_result {
+                    tracing::error!("Error(s) performing analysis ({err:#?})");
+                };
             }
         }
     }
