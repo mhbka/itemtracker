@@ -6,9 +6,9 @@ use thiserror::Error;
 /// The errors that may arise from failure to send/receive a message.
 #[derive(Error, Debug, Clone)]
 pub enum MessageError {
-    #[error("{}", self)]
+    #[error("{0}")]
     SendError(String),
-    #[error("{}", self)]
+    #[error("{0}")]
     RecvError(#[from] RecvError)
 }
 

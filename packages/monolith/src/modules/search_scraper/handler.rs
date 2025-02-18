@@ -134,6 +134,10 @@ impl Handler {
                         .map_err(|err| SearchScraperError::Other { 
                             gallery_id: gallery_id.clone(), 
                             message: format!("Could not receive response from state tracker: {err}") 
+                        })?
+                        .map_err(|err| SearchScraperError::StateErr { 
+                            gallery_id: gallery_id.clone(),
+                            err 
                         })?;
                     Err(SearchScraperError::TotalScrapeFailure { gallery_id })
                 },

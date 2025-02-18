@@ -1,3 +1,4 @@
+use futures::future::Join;
 use image_classifier::ImageClassifierModule;
 use item_analysis::ItemAnalysisModule;
 use item_scraper::ItemScraperModule;
@@ -6,7 +7,7 @@ use tokio::sync::mpsc;
 use search_scraper::SearchScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemScraperReceiver, ItemScraperSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
+use crate::{config::AppConfig, messages::{message_buses::MessageSender, ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemScraperReceiver, ItemScraperSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
 
 pub mod web_backend;
 pub mod state_tracker;
@@ -57,6 +58,7 @@ impl AppModules {
         let analysis_module = ItemAnalysisModule::init(
             config.item_analysis_config.clone(),
             connections.item_analysis.1,
+            connections.state_tracker.0.clone(),
             connections.image_classifier.0
         );
         let classifier_module = ImageClassifierModule::init(
@@ -75,13 +77,17 @@ impl AppModules {
 
     /// Start running all of the app's modules.
     pub fn run(mut self) -> AppModulesRunningHandles {
+        let state_tracker_task = tokio::spawn(async move { self.state_tracker_module.run().await; });
         let scheduler_task = tokio::spawn(async move { self.scheduler_module.run().await; });
-        let scraper_task = tokio::spawn(async move { self.search_scraper_module.run().await; });
+        let search_scraper_task = tokio::spawn(async move { self.search_scraper_module.run().await; });
+        let item_scraper_task = tokio::spawn(async move { self.item_scraper_module.run().await; });
         let analysis_task = tokio::spawn(async move { self.analysis_module.run().await; });
         let classifier_task = tokio::spawn(async move { self.classifier_module.run().await; });
         AppModulesRunningHandles {
+            state_tracker_task,
             scheduler_task,
-            scraper_task,
+            search_scraper_task,
+            item_scraper_task,
             analysis_task,
             classifier_task
         }
@@ -90,8 +96,10 @@ impl AppModules {
 
 /// Holds task handles for each module's running tasks.
 pub struct AppModulesRunningHandles {
+    state_tracker_task: JoinHandle<()>,
     scheduler_task: JoinHandle<()>,
-    scraper_task: JoinHandle<()>,
+    search_scraper_task: JoinHandle<()>,
+    item_scraper_task: JoinHandle<()>,
     analysis_task: JoinHandle<()>,
     classifier_task: JoinHandle<()>,
 }
@@ -123,7 +131,8 @@ impl AppModuleConnections {
 
     fn init_state_tracker_conn() -> (StateTrackerSender, StateTrackerReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
-        let sender = StateTrackerSender::new(sender);
+        let raw_sender = MessageSender::new(sender);
+        let sender = StateTrackerSender::new(raw_sender);
         let receiver = StateTrackerReceiver::new(receiver);
         (sender, receiver)
     }

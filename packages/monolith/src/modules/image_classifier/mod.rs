@@ -32,7 +32,10 @@ impl ImageClassifierModule {
     /// Handle each message variant.
     async fn process_msg(&mut self, msg: ImageClassifierMessage) {
         match msg {
-            ImageClassifierMessage::StartClassification { gallery} => {
+            ImageClassifierMessage::Classify { gallery_id } => {
+                todo!();
+            },
+            ImageClassifierMessage::ClassifyNew { gallery } => {
                 todo!();
             },
         }
