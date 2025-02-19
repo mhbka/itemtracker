@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter::zip};
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{OpenAIImageURLMessage, OpenAIMessage, OpenAIMessageContent, OpenAIRequestForm, OpenAIResponse};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}, modules::item_analysis::analyzer::anthropic::types::EvaluationAnswers};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryItemEmbedderState, GalleryItemAnalysisState}}, modules::item_analysis::analyzer::anthropic::types::EvaluationAnswers};
 
 mod types;
 
@@ -22,7 +22,7 @@ impl OpenAIRequester {
     }
 
     /// Perform analysis of a gallery's items.
-    pub async fn analyze_gallery(&mut self, mut gallery: GalleryItemAnalysisState) -> GalleryClassifierState {
+    pub async fn analyze_gallery(&mut self, mut gallery: GalleryItemAnalysisState) -> GalleryItemEmbedderState {
         let items = gallery.items;
         let eval_criteria_string = gallery.evaluation_criteria.describe_criteria();
         let gallery_requests = self.build_requests(items, eval_criteria_string);
@@ -30,7 +30,7 @@ impl OpenAIRequester {
             &mut gallery.evaluation_criteria, 
             gallery_requests
         ).await;
-        GalleryClassifierState {
+        GalleryItemEmbedderState {
             gallery_id: gallery.gallery_id,
             items: analyzed_items,
             failed_marketplace_reasons: gallery.failed_marketplace_reasons,
@@ -204,13 +204,13 @@ impl OpenAIRequester {
             Output your answers in JSON format, with a key 'answers' containing the list of answers in asked order.
             If there are no questions, return the list empty.
 
-            Here are the questions you must answer: \n {eval_criteria_string}
+            Here are the questions you must answer:\n {eval_criteria_string}
         ");
         let system_message = OpenAIMessage {
-            role: "developer".into(),
+            role: "developer".to_string(),
             content: vec![
                 OpenAIMessageContent {
-                    content_type: "text".into(),
+                    content_type: "text".to_string(),
                     text: Some(system_prompt),
                     image_url: None
                 }
@@ -238,7 +238,7 @@ impl OpenAIRequester {
             .flatten()
             .collect();
         let item_string = serde_json::to_string_pretty(&item)
-            .expect("Serializing MarketplaceItemData should have no reason to fail"); // TODO: Find out in which cases this could fail and ensure it cannot happen
+            .expect("Serializing MarketplaceItemData should have no reason to fail"); // TODO: not 100% sure here; find out in which cases this could fail
         message_contents.push(
             OpenAIMessageContent {
                 content_type: "text".into(),

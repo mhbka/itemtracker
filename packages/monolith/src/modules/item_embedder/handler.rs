@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use crate::{
-    config::{ItemEmbedderConfig, ItemAnalysisConfig}, 
-    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    config::ItemEmbedderConfig, 
+    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, pipeline_states::{GalleryItemEmbedderState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
-        message_types::{item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisError, item_scraper::ItemScraperMessage
+        message_types::item_embedder::{ItemEmbedderError, ItemEmbedderMessage
         }, ItemEmbedderSender, StateTrackerSender
     }
 };
@@ -50,21 +50,21 @@ impl Handler {
         }
     }
     
-    /// Perform the entire scraping of a new gallery.
-    pub async fn embed_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
+    /// Embed a new gallery.
+    pub async fn embed_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemEmbedderError> {
         let gallery_id = gallery.gallery_id.clone();
         self.add_gallery_to_state(gallery_id.clone(), gallery).await?;
         self.embed_gallery_in_state(gallery_id).await
     }
 
-    /// Perform the scraping of a gallery in state.
-    pub async fn embed_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), ItemAnalysisError> {
+    /// Embed items of a gallery in state.
+    pub async fn embed_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), ItemEmbedderError> {
         let gallery = self.fetch_gallery_state(gallery_id).await?;
         self.embed_gallery(gallery).await
     }
 
-    /// Scrapes the search for a gallery and sends it to the item scraper.
-    async fn embed_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
+    /// Embed a gallery's items' descriptions + images and send it to the next stage.
+    async fn embed_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemEmbedderError> {
         let embedd_items = self.embedder
             .embed_gallery(gallery.items, &gallery.evaluation_criteria)
             .await;
@@ -88,15 +88,15 @@ impl Handler {
         &mut self, 
         gallery_id: GalleryId, 
         gallery: GalleryItemAnalysisState
-    ) -> Result<(), ItemAnalysisError> {
+    ) -> Result<(), ItemEmbedderError> {
         self.state_tracker_sender
             .add_gallery(gallery_id.clone(), GalleryPipelineStates::ItemAnalysis(gallery))
             .await
-            .map_err(|err| ItemAnalysisError::Other { 
+            .map_err(|err| ItemEmbedderError::Other { 
                 gallery_id: gallery_id.clone(), 
                 message: format!("Could not receive response from state tracker: {err}") 
             })?
-            .map_err(|err| ItemAnalysisError::StateErr { 
+            .map_err(|err| ItemEmbedderError::StateErr { 
                 gallery_id, 
                 err 
             })
@@ -106,22 +106,22 @@ impl Handler {
     /// Returns an `Err` if:
     /// - the gallery is not in state/is in the wrong state/has already been taken 
     /// - the state tracker is not contactable
-    async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemAnalysisState, ItemAnalysisError> {
+    async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemAnalysisState, ItemEmbedderError> {
         let state = self.state_tracker_sender
             .take_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
             .await
-            .map_err(|err| ItemAnalysisError::Other { 
+            .map_err(|err| ItemEmbedderError::Other { 
                 gallery_id: gallery_id.clone(),
                 message: format!("Could not receive response from state tracker: {err}") 
             })?
-            .map_err(|err| ItemAnalysisError::StateErr { 
+            .map_err(|err| ItemEmbedderError::StateErr { 
                 gallery_id: gallery_id.clone(), 
                 err
             })?;
         match state {
             GalleryPipelineStates::ItemAnalysis(gallery_state) => Ok(gallery_state),
             _ => Err(
-                    ItemAnalysisError::Other { 
+                    ItemEmbedderError::Other { 
                         gallery_id: gallery_id.clone(), 
                         message: "Gallery is not in expected state".into()
                     }
@@ -138,10 +138,10 @@ impl Handler {
     async fn update_gallery_state(
         &mut self, 
         gallery_id: GalleryId,
-        embedd_items: HashMap<Marketplace, MarketplaceembeddItems>,
+        embedded_items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
-    ) -> Result<(), ItemAnalysisError> {
+    ) -> Result<(), ItemEmbedderError> {
         let new_state = self.process_to_next_state(
             gallery_id.clone(), 
             embedd_items, 
@@ -154,11 +154,11 @@ impl Handler {
                 GalleryPipelineStates::Classification(new_state)
             )
             .await
-            .map_err(|err| ItemAnalysisError::Other { 
+            .map_err(|err| ItemEmbedderError::Other { 
                 gallery_id: gallery_id.clone(), 
                 message: format!("Got an error messaging the state tracker: {err}")
             })?
-            .map_err(|err| ItemAnalysisError::StateErr { 
+            .map_err(|err| ItemEmbedderError::StateErr { 
                 gallery_id, 
                 err 
             })
@@ -171,8 +171,8 @@ impl Handler {
         embedd_items: HashMap<Marketplace, MarketplaceembeddItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
-    ) -> GalleryClassifierState {
-        GalleryClassifierState {
+    ) -> GalleryItemEmbedderState {
+        GalleryItemEmbedderState {
             gallery_id,
             items: embedd_items,
             marketplace_updated_datetimes,

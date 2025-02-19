@@ -14,7 +14,7 @@ pub enum GalleryPipelineStates {
     SearchScraping(GallerySearchScrapingState),
     ItemScraping(GalleryItemScrapingState),
     ItemAnalysis(GalleryItemAnalysisState),
-    Classification(GalleryClassifierState),
+    Classification(GalleryItemEmbedderState),
     Final(GalleryFinalState)
 }
 
@@ -141,8 +141,8 @@ pub struct GalleryItemAnalysisState {
 
 impl GalleryItemAnalysisState {
     /// Convenience function for mapping to the next state.
-    pub fn to_next_stage(self, items: HashMap<Marketplace, MarketplaceAnalyzedItems>) -> GalleryClassifierState {
-        GalleryClassifierState {
+    pub fn to_next_stage(self, items: HashMap<Marketplace, MarketplaceAnalyzedItems>) -> GalleryItemEmbedderState {
+        GalleryItemEmbedderState {
             gallery_id: self.gallery_id,
             items,
             marketplace_updated_datetimes: self.marketplace_updated_datetimes,
@@ -151,22 +151,22 @@ impl GalleryItemAnalysisState {
     }
 }
 
-/// This is the state of a scraping State after its items are analyzed.
+/// This is the state of a gallery after its items are embedded.
 /// 
 /// Initialized in the item analysis module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GalleryClassifierState {
+pub struct GalleryItemEmbedderState {
     pub gallery_id: GalleryId,
     pub items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub failed_marketplace_reasons: HashMap<Marketplace, String>,
 }
 
-impl GalleryClassifierState {
+impl GalleryItemEmbedderState {
 
 }
 
-/// This is the state of a scraping State after its items are classified into groups within the gallery.
+/// This is the state of a gallery after its items are classified into groups within the gallery.
 /// 
 /// Initialized in the image classifier module.
 #[derive(Clone, Debug, Serialize, Deserialize)]

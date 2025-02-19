@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemAnalysisConfig, 
-    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemEmbedderState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
         message_types::{item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisError, item_scraper::ItemScraperMessage
         }, ItemEmbedderSender, StateTrackerSender
@@ -153,8 +153,8 @@ impl Handler {
         analyzed_items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
-    ) -> GalleryClassifierState {
-        GalleryClassifierState {
+    ) -> GalleryItemEmbedderState {
+        GalleryItemEmbedderState {
             gallery_id,
             items: analyzed_items,
             marketplace_updated_datetimes,

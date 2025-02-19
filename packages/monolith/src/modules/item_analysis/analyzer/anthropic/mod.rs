@@ -5,7 +5,7 @@ use futures::future::join_all;
 use image::ImageFormat;
 use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{AnthropicImageMessageContent, AnthropicMessage, AnthropicMessageContent, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState}}};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}, pipeline_states::{GalleryItemEmbedderState, GalleryItemAnalysisState}}};
 
 pub(super) mod types;
 
@@ -30,21 +30,32 @@ impl AnthropicRequester {
         eval_criteria: &EvaluationCriteria
     ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
         let eval_criteria_string = eval_criteria.describe_criteria();
-        let gallery_requests = self
+        let (gallery_requests, failed_image_items) = self
             .build_requests(items, eval_criteria_string)
             .await;
-        self.execute_and_handle_requests(eval_criteria, gallery_requests).await
+        self.execute_and_handle_requests(
+            eval_criteria, 
+            gallery_requests,
+            failed_image_items
+        ).await
     }
 
     /// Build the requests for all the gallery's items.
+    /// 
+    /// Returns the requests alongside items whose images could not be fetched.
     async fn build_requests(
         &self, 
         items: HashMap<Marketplace, Vec<MarketplaceItemData>>,
         eval_criteria_string: String
-    ) -> HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>> {
+    ) -> (
+        HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>,
+        HashMap<Marketplace, Vec<ErrorAnalyzedMarketplaceItem>>
+    ) {
         let mut marketplace_requests = HashMap::new();
+        let mut marketplace_failed_image_items = HashMap::new();
         for (marketplace, items) in items {
-            let items_and_requests = items
+            let mut failed_image_items = Vec::new();
+            let item_requests = items
                     .into_iter()
                     .map(|item| async {
                         let item_request = self
@@ -52,21 +63,34 @@ impl AnthropicRequester {
                             .await;
                         (item, item_request)
                     });
-            let items_and_requests = join_all(items_and_requests).await;
-            marketplace_requests.insert(marketplace, items_and_requests);
+            let item_requests = join_all(item_requests).await;
+            let item_requests = item_requests
+                .into_iter()
+                .filter_map(|(item, request)| match request {
+                    Ok(req) => Some((item, req)),
+                    Err(err) => {
+                        let err_item = ErrorAnalyzedMarketplaceItem { item, error: "Could not fetch any items".to_string() };
+                        failed_image_items.push(err_item);
+                        None
+                    }
+                })
+                .collect();
+            marketplace_requests.insert(marketplace.clone(), item_requests);
+            marketplace_failed_image_items.insert(marketplace, failed_image_items);
         }
-        marketplace_requests
+        (marketplace_requests, marketplace_failed_image_items)
     }
 
     /// Executes and handles the requests for a gallery.
     async fn execute_and_handle_requests(
         &self, 
         eval_criteria: &EvaluationCriteria,
-        gallery_requests: HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>
+        gallery_requests: HashMap<Marketplace, Vec<(MarketplaceItemData, RequestBuilder)>>,
+        mut failed_image_items: HashMap<Marketplace, Vec<ErrorAnalyzedMarketplaceItem>>
     ) -> HashMap<Marketplace, MarketplaceAnalyzedItems> {
         let mut gallery_items = HashMap::new();
-        for (marketplace, items_and_requests) in gallery_requests {
-            let (items, item_requests): (Vec<_>, Vec<_>) = items_and_requests
+        for (marketplace, item_requests) in gallery_requests {
+            let (items, item_requests): (Vec<_>, Vec<_>) = item_requests
                 .into_iter()
                 .unzip();
             let request_futures = item_requests
@@ -74,9 +98,12 @@ impl AnthropicRequester {
                 .map(|request| request.send());
             let results = join_all(request_futures).await;
             let items_and_results = zip(items, results).collect();
-            let marketplace_items = self
+            let mut marketplace_items = self
                 .process_marketplace_results(eval_criteria, items_and_results)
                 .await;
+            if let Some(failed_items) = failed_image_items.get_mut(&marketplace) {
+                marketplace_items.error_items.append(failed_items);
+            }
             gallery_items.insert(marketplace, marketplace_items);
         }
         gallery_items
@@ -162,16 +189,20 @@ impl AnthropicRequester {
     }
 
     /// Builds the request for a single item.
-    /// 
     /// Follows the request format specified here: https://docs.anthropic.com/en/api/messages
+    /// 
+    /// Returns an `Err` if no images could be successfully fetched for the item.
     async fn build_item_request(
         &self, 
         item: &MarketplaceItemData,
         eval_criteria_string: &String
-    ) -> RequestBuilder {
+    ) -> Result<RequestBuilder, ()> {
         let item_image_strings = self
             .fetch_item_images(&item.thumbnails)
             .await;
+        if item_image_strings.len() == 0 {
+            return Err(());
+        }
         let req_form = self
             .build_request_form(
                 item, 
@@ -179,11 +210,12 @@ impl AnthropicRequester {
                 eval_criteria_string
             )
             .await;
-        self.request_client
+        let req = self.request_client
             .post(&self.config.anthropic_api_endpoint)
             .header("x-api-key", &self.config.anthropic_api_key)
             .header("anthropic-version", &self.config.anthropic_version)
-            .json(&req_form)
+            .json(&req_form);
+        Ok(req)
     }
 
     /// Builds the entire request form for an item.

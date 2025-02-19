@@ -1,4 +1,4 @@
-use crate::galleries::pipeline_states::GalleryClassifierState;
+use crate::galleries::pipeline_states::GalleryItemEmbedderState;
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::galleries::domain_types::GalleryId;
@@ -19,5 +19,5 @@ pub enum ItemEmbedderError {
 #[derive(Debug)]
 pub enum ItemEmbedderMessage {
     Classify { gallery_id: GalleryId },
-    ClassifyNew { gallery: GalleryClassifierState }
+    ClassifyNew { gallery: GalleryItemEmbedderState }
 }
