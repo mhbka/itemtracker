@@ -22,7 +22,9 @@ pub struct MarketplaceAnalyzedItems {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedMarketplaceItem {
     pub item: MarketplaceItemData,
-    pub evaluation_answers: Vec<CriterionAnswer>
+    pub evaluation_answers: Vec<CriterionAnswer>,
+    pub item_description: String,
+    pub best_fit_image: usize
 }
 
 /// Analyzed items under a marketplace.

@@ -61,5 +61,7 @@ pub struct AnthropicUsage {
 /// The format that the answers should be parsed into.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct EvaluationAnswers {
-    pub answers: Vec<String>
+    pub answers: Vec<String>,
+    pub item_description: String,
+    pub best_fit_image: usize
 }

@@ -1,5 +1,5 @@
 use futures::future::Join;
-use image_classifier::ImageClassifierModule;
+use item_embedder::ItemEmbedderModule;
 use item_analysis::ItemAnalysisModule;
 use item_scraper::ItemScraperModule;
 use state_tracker::StateTrackerModule;
@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 use search_scraper::SearchScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{message_buses::MessageSender, ImageClassifierReceiver, ImageClassifierSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemScraperReceiver, ItemScraperSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
+use crate::{config::AppConfig, messages::{message_buses::MessageSender, ItemEmbedderReceiver, ItemEmbedderSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemScraperReceiver, ItemScraperSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
 
 pub mod web_backend;
 pub mod state_tracker;
@@ -15,7 +15,7 @@ pub mod scraper_scheduler;
 pub mod search_scraper;
 pub mod item_scraper;
 pub mod item_analysis;
-pub mod image_classifier;
+pub mod item_embedder;
 pub mod storage;
 
 const MODULE_MESSAGE_BUFFER: usize = 1000;
@@ -27,7 +27,7 @@ pub struct AppModules {
     search_scraper_module: SearchScraperModule,
     item_scraper_module: ItemScraperModule,
     analysis_module: ItemAnalysisModule,
-    classifier_module: ImageClassifierModule
+    classifier_module: ItemEmbedderModule
 }
 
 impl AppModules {
@@ -61,7 +61,7 @@ impl AppModules {
             connections.state_tracker.0.clone(),
             connections.image_classifier.0
         );
-        let classifier_module = ImageClassifierModule::init(
+        let classifier_module = ItemEmbedderModule::init(
             config.img_classifier_config.clone(),
             connections.image_classifier.1
         );
@@ -111,7 +111,7 @@ pub struct AppModuleConnections {
     pub search_scraper: (SearchScraperSender, SearchScraperReceiver),
     pub item_scraper: (ItemScraperSender, ItemScraperReceiver),
     pub item_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
-    pub image_classifier: (ImageClassifierSender, ImageClassifierReceiver),
+    pub image_classifier: (ItemEmbedderSender, ItemEmbedderReceiver),
     pub marketplace_items_storage: (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver)
 }
 
@@ -165,10 +165,10 @@ impl AppModuleConnections {
         (sender, receiver)
     }
 
-    fn init_image_classifier_conn() -> (ImageClassifierSender, ImageClassifierReceiver) {
+    fn init_image_classifier_conn() -> (ItemEmbedderSender, ItemEmbedderReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
-        let sender = ImageClassifierSender::new(sender);
-        let receiver = ImageClassifierReceiver::new(receiver);
+        let sender = ItemEmbedderSender::new(sender);
+        let receiver = ItemEmbedderReceiver::new(receiver);
         (sender, receiver)
     }
 

@@ -4,7 +4,7 @@ pub mod scraper_scheduler;
 pub mod search_scraper;
 pub mod item_scraper;
 pub mod item_analysis;
-pub mod img_classifier;
+pub mod item_embedder;
 pub mod storage;
 
 use std::{fmt::Debug, future::Future};

@@ -1,59 +1,77 @@
 use std::collections::HashMap;
 use crate::{
-    config::ItemAnalysisConfig, 
-    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    config::{ItemEmbedderConfig, ItemAnalysisConfig}, 
+    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, pipeline_states::{GalleryClassifierState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
         message_types::{item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisError, item_scraper::ItemScraperMessage
         }, ItemEmbedderSender, StateTrackerSender
     }
 };
 
-use super::analyzer::Analyzer;
+use super::embedder::Embedder;
+
+/*
+TODO:
+- Add to analysis:
+    - "Briefly and accurately describe this item"
+    - "Pick the image which best describes this item/shows the most recognizable feature of this item" (make sure only uint)
+- Download chosen image of each item
+- Create POST request with descriptions + image data, in order
+- POST to the endpoint in the config
+- Parse the embeddings back to corresponding items
+- Pass to next module
+
+Might be better to change the name to "image embedder". Then we pass embeddings out 
+and have the actual classification done elsewhere, where there's more explicit access
+to the gallery's past data.
+
+^Note: Classification done on some mix of cosine similarity for description + image
+*/
 
 /// Coordinates the internal workings of the module.
 pub(super) struct Handler {
     state_tracker_sender: StateTrackerSender,
     image_classifier_sender: ItemEmbedderSender,
-    analyzer: Analyzer
+    embedder: Embedder
 }
 
 impl Handler {
     /// Instantiate the state.
     pub fn new(
-        config: &ItemAnalysisConfig,
+        config: &ItemEmbedderConfig,
         state_tracker_sender: StateTrackerSender,
         image_classifier_sender: ItemEmbedderSender
     ) -> Self {
-        let analyzer = Analyzer::new(config.clone());
+        let embedder = Embedder::new(config.clone());
         Self {
             state_tracker_sender,
             image_classifier_sender,
-            analyzer
+            embedder
         }
     }
     
     /// Perform the entire scraping of a new gallery.
-    pub async fn analyze_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
+    pub async fn embed_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
         let gallery_id = gallery.gallery_id.clone();
         self.add_gallery_to_state(gallery_id.clone(), gallery).await?;
-        self.analyze_gallery_in_state(gallery_id).await
+        self.embed_gallery_in_state(gallery_id).await
     }
 
     /// Perform the scraping of a gallery in state.
-    pub async fn analyze_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), ItemAnalysisError> {
+    pub async fn embed_gallery_in_state(&mut self, gallery_id: GalleryId) -> Result<(), ItemAnalysisError> {
         let gallery = self.fetch_gallery_state(gallery_id).await?;
-        self.analyze_gallery(gallery).await
+        self.embed_gallery(gallery).await
     }
 
     /// Scrapes the search for a gallery and sends it to the item scraper.
-    async fn analyze_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
-        let analyzed_items = self.analyzer
-            .analyze_gallery(gallery.items, &gallery.evaluation_criteria)
+    async fn embed_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemAnalysisError> {
+        let embedd_items = self.embedder
+            .embed_gallery(gallery.items, &gallery.evaluation_criteria)
             .await;
         let gallery_id = gallery.gallery_id.clone();
         self.update_gallery_state(
             gallery.gallery_id,
-            analyzed_items,
+            embedd_items,
             gallery.marketplace_updated_datetimes,
             gallery.failed_marketplace_reasons,
         ).await?;
@@ -120,13 +138,13 @@ impl Handler {
     async fn update_gallery_state(
         &mut self, 
         gallery_id: GalleryId,
-        analyzed_items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
+        embedd_items: HashMap<Marketplace, MarketplaceembeddItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
     ) -> Result<(), ItemAnalysisError> {
         let new_state = self.process_to_next_state(
             gallery_id.clone(), 
-            analyzed_items, 
+            embedd_items, 
             marketplace_updated_datetimes, 
             failed_marketplace_reasons
         );
@@ -150,13 +168,13 @@ impl Handler {
     fn process_to_next_state(
         &self,
         gallery_id: GalleryId,
-        analyzed_items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
+        embedd_items: HashMap<Marketplace, MarketplaceembeddItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
     ) -> GalleryClassifierState {
         GalleryClassifierState {
             gallery_id,
-            items: analyzed_items,
+            items: embedd_items,
             marketplace_updated_datetimes,
             failed_marketplace_reasons,
         }

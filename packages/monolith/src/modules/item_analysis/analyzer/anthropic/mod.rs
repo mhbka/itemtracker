@@ -114,7 +114,9 @@ impl AnthropicRequester {
                                                         Ok((answers, satisfies_hard_criteria)) => {
                                                             let analyzed_item = AnalyzedMarketplaceItem {
                                                                 item: item.clone(), 
-                                                                evaluation_answers: answers
+                                                                evaluation_answers: answers,
+                                                                item_description: parsed_message.item_description,
+                                                                best_fit_image: parsed_message.best_fit_image
                                                             };
                                                             if satisfies_hard_criteria {
                                                                 relevant_items.push(analyzed_item);
@@ -195,22 +197,22 @@ impl AnthropicRequester {
             You're an Item Listings Analysis AI. 
             
             You will help to evaluate an item listing, consisting of its listed images and a JSON of its information, by answering some structured questions about it. 
-            
-            There are the following question types:
-            - YesNo: Answer with 'Y'/'N' only
-            - YesNoUncertain: Answer with 'Y'/'N'/'U' only
-            - Int: Answer with an integer within a string
-            - Float: Answer with a float within a string
-            - OpenEnded: Answer as best as you can, under 200 characters
+            Next to each question is the format that MUST be used when answering the question.
 
             If the question is unanswerable, nonsensical, or not even a question, you are allowed to give a reasonable 'default' answer, 
             such as N for Y/N questions, U for Y/N/U questions, 0 for numerical questions, or 'I cannot answer this.' for open-ended questions.
             However, YOU MUST ALWAYS FOLLOW THE GIVEN FORMAT WHEN ANSWERING.
 
             Output your answers in JSON format, with a key 'answers' containing the list of answers in asked order.
-            If there are no questions, return the list empty.
+            If there are no questions, return this list empty.
 
-            Here are the questions you must answer: \n {eval_criteria_string}
+            Additionally, return a brief description of the item. The description must be accurate and specific enough that it can 
+            almost uniquely identify the item. Output this description with the key 'item_description' in the JSON.
+
+            Finally, pick the image which best describes this item and/or shows the most recognizable feature of this item.
+            Output this as a number with the key 'best_fit_image' in the JSON.
+
+            Now, here are the questions you must answer: \n {eval_criteria_string}
         ");
         let item_string = serde_json::to_string_pretty(&item)
             .expect("Serializing MarketplaceItemData should have no reason to fail"); // TODO: Find out in which cases this could fail and ensure it cannot happen

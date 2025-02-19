@@ -2,7 +2,7 @@ use std::env::{self, VarError};
 use serde::{Deserialize, Serialize};
 
 pub use item_analysis::ItemAnalysisConfig;
-pub use image_classifier::ImageClassifierConfig;
+pub use image_classifier::ItemEmbedderConfig;
 pub use search_scraper::SearchScraperConfig;
 pub use item_scraper::ItemScraperConfig;
 pub use scraper_scheduler::ScraperSchedulerConfig;
@@ -26,7 +26,7 @@ pub struct AppConfig {
     pub search_scraper_config: SearchScraperConfig,
     pub item_scraper_config: ItemScraperConfig,
     pub item_analysis_config: ItemAnalysisConfig,
-    pub img_classifier_config: ImageClassifierConfig,
+    pub img_classifier_config: ItemEmbedderConfig,
     pub storage_config: StorageConfig
 }
 
@@ -41,7 +41,7 @@ impl AppConfig {
                 search_scraper_config: SearchScraperConfig::load()?,
                 item_scraper_config: ItemScraperConfig::load()?,
                 item_analysis_config: ItemAnalysisConfig::load()?,
-                img_classifier_config: ImageClassifierConfig::load()?,
+                img_classifier_config: ItemEmbedderConfig::load()?,
                 storage_config: StorageConfig::load()?,
             }
         )

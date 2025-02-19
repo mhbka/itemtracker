@@ -79,12 +79,12 @@ impl OpenAIRequester {
                         StatusCode::OK => {
                             match res.json::<OpenAIResponse>().await {
                                 Ok(response) => {
-                                    tracing::info!("Successful response: {response:#?}"); // TODO: delete this later on
+                                    tracing::trace!("Successful response: {response:#?}"); // TODO: delete this later on
                                     if response.choices.len() == 0 {
                                         err_str = Some("Expected 1 message in Anthropic response but found none".into());
                                     }
                                     else if response.choices.len() > 1 {
-                                        tracing::warn!("Unexpectedly received >1 message in Anthropic response; using the first...");
+                                        tracing::warn!("Unexpectedly received >1 messages in Anthropic response; using the first...");
                                     }
                                     match &response.choices[0].text {
                                         Some(text) => {
@@ -94,7 +94,9 @@ impl OpenAIRequester {
                                                         Ok((answers, satisfies_hard_criteria)) => {
                                                             let analyzed_item = AnalyzedMarketplaceItem {
                                                                 item: item.clone(), 
-                                                                evaluation_answers: answers
+                                                                evaluation_answers: answers,
+                                                                item_description: parsed_message.item_description,
+                                                                best_fit_image: parsed_message.best_fit_image
                                                             };
                                                             if satisfies_hard_criteria {
                                                                 relevant_items.push(analyzed_item);
@@ -116,21 +118,23 @@ impl OpenAIRequester {
                         },
                         other => {
                             let res = res.text().await;
-                            err_str = Some(format!("Received unexpected status code ({other}) from Anthropic API; response: {res:#?}"));
+                            err_str = Some(format!("Received unexpected status code {other} from Anthropic API; response: {res:#?}"));
                         }
                     }
                 },
                 Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
             }
             if let Some(error) = err_str {
-                tracing::warn!("Item {} had an error during item analysis: {}", item.id, error);
+                tracing::trace!("Item {} had an error during item analysis: {}", item.id, error);
                 let err_item = ErrorAnalyzedMarketplaceItem { item, error };
                 error_items.push(err_item);
             }
         }
-        tracing::info!(
+        tracing::debug!(
             "Item analysis results: {} relevant items, {} irrelevant items, and {} error items",
-            relevant_items.len(), irrelevant_items.len(), error_items.len()
+            relevant_items.len(), 
+            irrelevant_items.len(), 
+            error_items.len()
         );
         MarketplaceAnalyzedItems {
             relevant_items,

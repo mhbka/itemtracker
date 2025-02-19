@@ -1,8 +1,7 @@
 use message_buses::{MessageError, MessageReceiver, MessageSender};
 use message_types::{
-    img_classifier::ImageClassifierMessage, item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage}, storage::marketplace_items::MarketplaceItemsStorageMessage, web_backend::WebBackendMessage
+    item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage}, storage::marketplace_items::MarketplaceItemsStorageMessage, web_backend::WebBackendMessage
 };
-use tokio::sync::mpsc::Sender;
 
 use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
 
@@ -35,9 +34,9 @@ pub type ItemAnalysisSender = MessageSender<ItemAnalysisMessage>;
 pub type ItemAnalysisReceiver = MessageReceiver<ItemAnalysisMessage>;
 
 /// Handle for sending the image classifier module messages.
-pub type ImageClassifierSender = MessageSender<ImageClassifierMessage>;
+pub type ItemEmbedderSender = MessageSender<ItemEmbedderMessage>;
 /// Handle for the image classifier module to receive messages.
-pub type ImageClassifierReceiver = MessageReceiver<ImageClassifierMessage>;
+pub type ItemEmbedderReceiver = MessageReceiver<ItemEmbedderMessage>;
 
 /// Handle for sending the marketplace items storage module messages.
 pub type MarketplaceItemsStorageSender = MessageSender<MarketplaceItemsStorageMessage>;

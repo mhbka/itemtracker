@@ -1,5 +1,5 @@
 use handler::Handler;
-use crate::{config::ItemAnalysisConfig, messages::{message_types::item_analysis::ItemAnalysisMessage, ImageClassifierSender, ItemAnalysisReceiver, StateTrackerSender}};
+use crate::{config::ItemAnalysisConfig, messages::{message_types::item_analysis::ItemAnalysisMessage, ItemEmbedderSender, ItemAnalysisReceiver, StateTrackerSender}};
 
 mod handler;
 mod analyzer;
@@ -20,7 +20,7 @@ impl ItemAnalysisModule {
         config: ItemAnalysisConfig, 
         msg_receiver: ItemAnalysisReceiver,
         state_tracker_sender: StateTrackerSender,
-        image_classifier_sender: ImageClassifierSender
+        image_classifier_sender: ItemEmbedderSender
     ) -> Self {
         let handler = Handler::new(
             &config, 
