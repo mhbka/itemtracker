@@ -1,11 +1,11 @@
-use std::env::VarError;
+use std::env::{self, VarError};
 
 use serde::{Deserialize, Serialize};
 
 /// Config for the image classifier module.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ItemEmbedderConfig {
-
+    pub embedder_endpoint: String
 }
 
 impl ItemEmbedderConfig {
@@ -13,7 +13,7 @@ impl ItemEmbedderConfig {
     pub(super) fn load() -> Result<Self, VarError> {
         Ok(
             ItemEmbedderConfig {
-
+                embedder_endpoint: env::var("EMBEDDER_ENDPOINT")?,
             }
         )
     }

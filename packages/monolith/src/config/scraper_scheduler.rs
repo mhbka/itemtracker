@@ -1,5 +1,4 @@
 use std::env::VarError;
-
 use serde::{Deserialize, Serialize};
 
 /// Config for the scraper scheduler module.

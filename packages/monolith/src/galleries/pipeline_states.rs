@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use super::{
-    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::MarketplaceAnalyzedItems}, search_criteria::GallerySearchCriteria
+    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}, search_criteria::GallerySearchCriteria
 };
 
 /// The possible states of a gallery in the scraping pipeline.
@@ -14,7 +14,7 @@ pub enum GalleryPipelineStates {
     SearchScraping(GallerySearchScrapingState),
     ItemScraping(GalleryItemScrapingState),
     ItemAnalysis(GalleryItemAnalysisState),
-    Classification(GalleryItemEmbedderState),
+    ItemEmbedding(GalleryItemEmbedderState),
     Final(GalleryFinalState)
 }
 
@@ -27,7 +27,7 @@ impl GalleryPipelineStates {
             (GalleryPipelineStates::SearchScraping(_), GalleryPipelineStateTypes::SearchScraping) |
             (GalleryPipelineStates::ItemScraping(_), GalleryPipelineStateTypes::ItemScraping) |
             (GalleryPipelineStates::ItemAnalysis(_), GalleryPipelineStateTypes::ItemAnalysis) |
-            (GalleryPipelineStates::Classification(_), GalleryPipelineStateTypes::Classification) |
+            (GalleryPipelineStates::ItemEmbedding(_), GalleryPipelineStateTypes::ItemEmbedding) |
             (GalleryPipelineStates::Final(_), GalleryPipelineStateTypes::Final)
         )
     }
@@ -39,7 +39,7 @@ impl GalleryPipelineStates {
             GalleryPipelineStates::SearchScraping(_) => GalleryPipelineStateTypes::SearchScraping,
             GalleryPipelineStates::ItemScraping(_) => GalleryPipelineStateTypes::ItemScraping,
             GalleryPipelineStates::ItemAnalysis(_) => GalleryPipelineStateTypes::ItemAnalysis,
-            GalleryPipelineStates::Classification(_) => GalleryPipelineStateTypes::Classification,
+            GalleryPipelineStates::ItemEmbedding(_) => GalleryPipelineStateTypes::ItemEmbedding,
             GalleryPipelineStates::Final(_) => GalleryPipelineStateTypes::Final,
         }
     }
@@ -54,7 +54,7 @@ pub enum GalleryPipelineStateTypes {
     SearchScraping, 
     ItemScraping,
     ItemAnalysis,
-    Classification,
+    ItemEmbedding,
     Final
 }
 
@@ -172,6 +172,10 @@ impl GalleryItemEmbedderState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryFinalState {
     // TODO: figure out the state here
+    pub gallery_id: GalleryId,
+    pub items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
+    pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
+    pub failed_marketplace_reasons: HashMap<Marketplace, String>,
 }
 
 impl GalleryFinalState {

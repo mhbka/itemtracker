@@ -133,7 +133,7 @@ impl Handler {
         self.state_tracker_sender
             .update_gallery_state(
                 gallery_id.clone(), 
-                GalleryPipelineStates::Classification(new_state)
+                GalleryPipelineStates::ItemEmbedding(new_state)
             )
             .await
             .map_err(|err| ItemAnalysisError::Other { 

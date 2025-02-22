@@ -42,7 +42,7 @@ impl AnthropicRequester {
 
     /// Build the requests for all the gallery's items.
     /// 
-    /// Returns the requests alongside items whose images could not be fetched.
+    /// Returns the requests, as well as items whose images could not be fetched (as `ErrorAnalyzedMarketplaceItem`).
     async fn build_requests(
         &self, 
         items: HashMap<Marketplace, Vec<MarketplaceItemData>>,
@@ -68,8 +68,8 @@ impl AnthropicRequester {
                 .into_iter()
                 .filter_map(|(item, request)| match request {
                     Ok(req) => Some((item, req)),
-                    Err(err) => {
-                        let err_item = ErrorAnalyzedMarketplaceItem { item, error: "Could not fetch any items".to_string() };
+                    Err(error) => {
+                        let err_item = ErrorAnalyzedMarketplaceItem { item, error };
                         failed_image_items.push(err_item);
                         None
                     }
@@ -196,12 +196,12 @@ impl AnthropicRequester {
         &self, 
         item: &MarketplaceItemData,
         eval_criteria_string: &String
-    ) -> Result<RequestBuilder, ()> {
+    ) -> Result<RequestBuilder, String> {
         let item_image_strings = self
             .fetch_item_images(&item.thumbnails)
             .await;
         if item_image_strings.len() == 0 {
-            return Err(());
+            return Err("No images fetched; either all requests to fetch them failed, or errors occurred during parsing".to_string());
         }
         let req_form = self
             .build_request_form(

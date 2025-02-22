@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemEmbedderConfig, 
-    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, pipeline_states::{GalleryItemEmbedderState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
         message_types::item_embedder::{ItemEmbedderError, ItemEmbedderMessage
         }, ItemEmbedderSender, StateTrackerSender
@@ -64,14 +64,14 @@ impl Handler {
     }
 
     /// Embed a gallery's items' descriptions + images and send it to the next stage.
-    async fn embed_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemEmbedderError> {
-        let embedd_items = self.embedder
-            .embed_gallery(gallery.items, &gallery.evaluation_criteria)
+    async fn embed_gallery(&mut self, gallery: GalleryItemEmbedderState) -> Result<(), ItemEmbedderError> {
+        let embedded_items = self.embedder
+            .embed_gallery(gallery.items)
             .await;
         let gallery_id = gallery.gallery_id.clone();
         self.update_gallery_state(
             gallery.gallery_id,
-            embedd_items,
+            embedded_items,
             gallery.marketplace_updated_datetimes,
             gallery.failed_marketplace_reasons,
         ).await?;
@@ -106,7 +106,7 @@ impl Handler {
     /// Returns an `Err` if:
     /// - the gallery is not in state/is in the wrong state/has already been taken 
     /// - the state tracker is not contactable
-    async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemAnalysisState, ItemEmbedderError> {
+    async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemEmbedderState, ItemEmbedderError> {
         let state = self.state_tracker_sender
             .take_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
             .await
@@ -119,7 +119,7 @@ impl Handler {
                 err
             })?;
         match state {
-            GalleryPipelineStates::ItemAnalysis(gallery_state) => Ok(gallery_state),
+            GalleryPipelineStates::ItemEmbedding(gallery_state) => Ok(gallery_state),
             _ => Err(
                     ItemEmbedderError::Other { 
                         gallery_id: gallery_id.clone(), 
@@ -138,21 +138,18 @@ impl Handler {
     async fn update_gallery_state(
         &mut self, 
         gallery_id: GalleryId,
-        embedded_items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
+        embedded_items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
     ) -> Result<(), ItemEmbedderError> {
         let new_state = self.process_to_next_state(
             gallery_id.clone(), 
-            embedd_items, 
+            embedded_items, 
             marketplace_updated_datetimes, 
             failed_marketplace_reasons
         );
         self.state_tracker_sender
-            .update_gallery_state(
-                gallery_id.clone(), 
-                GalleryPipelineStates::Classification(new_state)
-            )
+            .update_gallery_state(gallery_id.clone(), GalleryPipelineStates::Final(new_state))
             .await
             .map_err(|err| ItemEmbedderError::Other { 
                 gallery_id: gallery_id.clone(), 
@@ -168,13 +165,13 @@ impl Handler {
     fn process_to_next_state(
         &self,
         gallery_id: GalleryId,
-        embedd_items: HashMap<Marketplace, MarketplaceembeddItems>,
+        embedded_items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
-    ) -> GalleryItemEmbedderState {
-        GalleryItemEmbedderState {
+    ) -> GalleryFinalState {
+        GalleryFinalState {
             gallery_id,
-            items: embedd_items,
+            items: embedded_items,
             marketplace_updated_datetimes,
             failed_marketplace_reasons,
         }

@@ -24,7 +24,8 @@ pub struct MarketplaceAnalyzedItems {
 pub struct MarketplaceEmbeddedAndAnalyzedItems {
     pub embedded_items: Vec<EmbeddedMarketplaceItem>,
     pub irrelevant_analyzed_items: Vec<AnalyzedMarketplaceItem>,
-    pub error_analyzed_items: Vec<ErrorAnalyzedMarketplaceItem>
+    pub error_analyzed_items: Vec<ErrorAnalyzedMarketplaceItem>,
+    pub error_embedded_items: Vec<ErrorEmbeddedMarketplaceItem>
 }
 
 /// An item under a marketplace, whose description and image has been embedded.
@@ -46,10 +47,17 @@ pub struct AnalyzedMarketplaceItem {
     pub best_fit_image: usize
 }
 
-/// Analyzed items under a marketplace.
+/// An item which encountered an error during analysis.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ErrorAnalyzedMarketplaceItem {
     pub item: MarketplaceItemData,
+    pub error: String
+}
+
+/// An item which encountered an error during embedding.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ErrorEmbeddedMarketplaceItem {
+    pub item: AnalyzedMarketplaceItem,
     pub error: String
 }
 
