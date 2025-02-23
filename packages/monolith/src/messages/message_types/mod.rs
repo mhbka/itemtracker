@@ -1,4 +1,3 @@
-pub mod web_backend;
 pub mod state_tracker;
 pub mod scraper_scheduler;
 pub mod search_scraper;
@@ -8,7 +7,6 @@ pub mod item_embedder;
 pub mod storage;
 
 use std::{fmt::Debug, future::Future};
-use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::oneshot;
 
 /// Generic struct for a message to a module that requires a response.

@@ -1,15 +1,14 @@
-use futures::future::Join;
 use item_embedder::ItemEmbedderModule;
 use item_analysis::ItemAnalysisModule;
 use item_scraper::ItemScraperModule;
 use state_tracker::StateTrackerModule;
+use storage::StorageModule;
 use tokio::sync::mpsc;
 use search_scraper::SearchScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{message_buses::MessageSender, ItemEmbedderReceiver, ItemEmbedderSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemScraperReceiver, ItemScraperSender, MarketplaceItemsStorageReceiver, MarketplaceItemsStorageSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender}};
+use crate::{config::AppConfig, messages::{message_buses::MessageSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemEmbedderReceiver, ItemEmbedderSender, ItemScraperReceiver, ItemScraperSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender, StorageReceiver, StorageSender}};
 
-pub mod web_backend;
 pub mod state_tracker;
 pub mod scraper_scheduler;
 pub mod search_scraper;
@@ -27,7 +26,8 @@ pub struct AppModules {
     search_scraper_module: SearchScraperModule,
     item_scraper_module: ItemScraperModule,
     analysis_module: ItemAnalysisModule,
-    classifier_module: ItemEmbedderModule
+    classifier_module: ItemEmbedderModule,
+    storage_module: StorageModule
 }
 
 impl AppModules {
@@ -65,13 +65,19 @@ impl AppModules {
             config.img_classifier_config.clone(),
             connections.image_classifier.1
         );
+        let storage_module = StorageModule::init(
+            config.storage_config,
+            connections.storage.1,
+            connections.state_tracker.0.clone()
+        );
         AppModules {
             state_tracker_module,
             scheduler_module,
             search_scraper_module,
             item_scraper_module,
             analysis_module,
-            classifier_module
+            classifier_module,
+            storage_module
         }
     }
 
@@ -83,13 +89,15 @@ impl AppModules {
         let item_scraper_task = tokio::spawn(async move { self.item_scraper_module.run().await; });
         let analysis_task = tokio::spawn(async move { self.analysis_module.run().await; });
         let classifier_task = tokio::spawn(async move { self.classifier_module.run().await; });
+        let storage_task = tokio::spawn(async move { self.storage_module.run().await; });
         AppModulesRunningHandles {
             state_tracker_task,
             scheduler_task,
             search_scraper_task,
             item_scraper_task,
             analysis_task,
-            classifier_task
+            classifier_task,
+            storage_task
         }
     }
 }
@@ -102,6 +110,7 @@ pub struct AppModulesRunningHandles {
     item_scraper_task: JoinHandle<()>,
     analysis_task: JoinHandle<()>,
     classifier_task: JoinHandle<()>,
+    storage_task: JoinHandle<()>,
 }
 
 /// Struct for initializing inter-module connections.
@@ -112,7 +121,7 @@ pub struct AppModuleConnections {
     pub item_scraper: (ItemScraperSender, ItemScraperReceiver),
     pub item_analysis: (ItemAnalysisSender, ItemAnalysisReceiver),
     pub image_classifier: (ItemEmbedderSender, ItemEmbedderReceiver),
-    pub marketplace_items_storage: (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver)
+    pub storage: (StorageSender, StorageReceiver)
 }
 
 impl AppModuleConnections {
@@ -125,7 +134,7 @@ impl AppModuleConnections {
             item_scraper: Self::init_item_scraper_conn(),
             item_analysis: Self::init_item_analysis_conn(),
             image_classifier: Self::init_image_classifier_conn(),
-            marketplace_items_storage: Self::init_marketplace_items_storage_conn()
+            storage: Self::storage_conn()
         }
     }
 
@@ -172,10 +181,10 @@ impl AppModuleConnections {
         (sender, receiver)
     }
 
-    fn init_marketplace_items_storage_conn() -> (MarketplaceItemsStorageSender, MarketplaceItemsStorageReceiver) {
+    fn storage_conn() -> (StorageSender, StorageReceiver) {
         let (sender, receiver) = mpsc::channel(MODULE_MESSAGE_BUFFER);
-        let sender = MarketplaceItemsStorageSender::new(sender);
-        let receiver = MarketplaceItemsStorageReceiver::new(receiver);
+        let sender = StorageSender::new(sender);
+        let receiver = StorageReceiver::new(receiver);
         (sender, receiver)
     }
 }

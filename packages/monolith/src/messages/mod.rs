@@ -1,17 +1,12 @@
 use message_buses::{MessageError, MessageReceiver, MessageSender};
 use message_types::{
-    item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage}, storage::marketplace_items::MarketplaceItemsStorageMessage, web_backend::WebBackendMessage
+    item_analysis::ItemAnalysisMessage, item_embedder::ItemEmbedderMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage}, storage::StorageMessage
 };
 
 use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
 
 pub mod message_buses;
 pub mod message_types;
-
-/// Handle for sending the web backend messages.
-pub type WebBackendSender = MessageSender<WebBackendMessage>;
-/// Handle for the web backend to receive messages.
-pub type WebBackendReceiver = MessageReceiver<WebBackendMessage>;
 
 /// Handle for sending the scraper scheduler messages.
 pub type ScraperSchedulerSender = MessageSender<SchedulerMessage>;
@@ -39,9 +34,9 @@ pub type ItemEmbedderSender = MessageSender<ItemEmbedderMessage>;
 pub type ItemEmbedderReceiver = MessageReceiver<ItemEmbedderMessage>;
 
 /// Handle for sending the marketplace items storage module messages.
-pub type MarketplaceItemsStorageSender = MessageSender<MarketplaceItemsStorageMessage>;
+pub type StorageSender = MessageSender<StorageMessage>;
 /// Handle for the marketplace items storage storage module to receive messages.
-pub type MarketplaceItemsStorageReceiver = MessageReceiver<MarketplaceItemsStorageMessage>;
+pub type StorageReceiver = MessageReceiver<StorageMessage>;
 
 /// Handle for the scraper scheduler to receive messages.
 pub type StateTrackerReceiver = MessageReceiver<StateTrackerMessage>;
