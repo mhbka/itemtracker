@@ -1,20 +1,27 @@
 //! This module contains message buses, which are effectively just mpsc sender/receiver wrappers.
+use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc::{error::SendError, Receiver, Sender}, oneshot::error::RecvError};
 use std::fmt::Debug;
 use thiserror::Error;
 
 /// The errors that may arise from failure to send/receive a message.
-#[derive(Error, Debug, Clone)]
+#[derive(Serialize, Deserialize, Error, Debug, Clone)]
 pub enum MessageError {
     #[error("{0}")]
     SendError(String),
     #[error("{0}")]
-    RecvError(#[from] RecvError)
+    RecvError(String)
 }
 
 impl<T> From<SendError<T>> for MessageError {
     fn from(error: SendError<T>) -> Self {
         MessageError::SendError(error.to_string())
+    }
+}
+
+impl From<RecvError> for MessageError {
+    fn from(error: RecvError) -> Self {
+        MessageError::RecvError(error.to_string())
     }
 }
 

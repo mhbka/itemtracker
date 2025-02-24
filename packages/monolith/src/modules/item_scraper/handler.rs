@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::{
     config::ItemScraperConfig, 
     galleries::{domain_types::{GalleryId, Marketplace}, items::item_data::MarketplaceItemData, pipeline_states::{GalleryItemAnalysisState, GalleryItemScrapingState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
-    messages::{message_types::{item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperError}, ItemAnalysisSender, StateTrackerSender}
+    messages::{message_types::{item_analysis::{ItemAnalysisError, ItemAnalysisMessage}, item_scraper::ItemScraperError}, ItemAnalysisSender, StateTrackerSender}
     };
 
 use super::scrapers::ItemScraper;
@@ -53,8 +53,9 @@ impl Handler {
             scraped_items.clone()
         ).await?;
         self.item_analysis_sender
-            .send(ItemAnalysisMessage::AnalyzeGallery { gallery_id })
-            .await;
+            .send(ItemAnalysisMessage::AnalyzeGallery { gallery_id: gallery_id.clone() })
+            .await
+            .map_err(|err| ItemScraperError::MessageErr { gallery_id, err })?;
             Ok(())
     }
     

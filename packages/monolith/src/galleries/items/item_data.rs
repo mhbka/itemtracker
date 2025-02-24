@@ -8,8 +8,8 @@ pub struct MarketplaceItemData {
     pub name: String,
     pub price: f32,  
     pub description: String,
-    pub status: ItemStatus,
-    pub seller: Seller,
+    pub status: String,
+    pub seller: MarketplaceSeller,
     pub category: String,
     pub thumbnails: Vec<String>, 
     pub item_condition: String,
@@ -19,16 +19,7 @@ pub struct MarketplaceItemData {
 
 /// Data for the item's seller.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Seller {
-    pub id: String,
+pub struct MarketplaceSeller {
+    pub id: String, 
     pub name: String,
-}
-
-/// Possible item statuses.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ItemStatus {
-    #[serde(alias = "on_sale")]
-    OnSale,
-    #[serde(alias = "sold_out")]
-    SoldOut
 }

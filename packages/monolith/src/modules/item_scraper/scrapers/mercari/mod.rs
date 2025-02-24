@@ -1,8 +1,14 @@
+use std::error::Error;
+
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder};
-use crate::{galleries::{domain_types::ItemId, items::item_data::MarketplaceItemData}, utils::generate_dpop::generate_dpop};
+use serde::{Deserialize, Serialize};
+use types::{MercariItemData, MercariItemResponse};
+use crate::{galleries::{domain_types::ItemId, items::item_data::{MarketplaceItemData, MarketplaceSeller}}, utils::generate_dpop::generate_dpop};
 
 const REQ_URL: &str = "https://api.mercari.jp/items/get"; // TODO: move to config
+
+mod types;
 
 /// This struct is in charge of scraping items from Mercari.
 pub(super) struct MercariItemScraper {
@@ -18,10 +24,11 @@ impl MercariItemScraper {
 
     /// Performs the item scraping for Mercari.
     pub async fn request(&self, item_ids: Vec<ItemId>) -> Vec<Result<MarketplaceItemData, String>> {
-        let dpop_key = match generate_dpop(&REQ_URL, "get") {
+        let dpop_key = match generate_dpop(&REQ_URL, "GET") {
             Ok(key) => key,
             Err(err) => return vec![Err(err)]
         };
+        tracing::debug!("Generated dpop key: {dpop_key}");
         let request_futures = item_ids
             .into_iter()
             .map(|id| {
@@ -43,8 +50,8 @@ impl MercariItemScraper {
         self.client
             .get(format!("{REQ_URL}?id={item_id}"))
             .header("dpop", dpop_key)
-            .header("x-platform", "web") // TODO: see if these 2 are actually necessary
-            .header("content-type", "application/json")
+            .header("x-platform", "web") 
+            .header("accept", "application/json")
     }    
 
     /// Handle the raw responses from the item scrape. 
@@ -55,9 +62,12 @@ impl MercariItemScraper {
                     Ok(res) => {
                         match res.error_for_status() {
                             Ok(res) => {
-                                match res.json::<MarketplaceItemData>().await {
-                                    Ok(data) => Ok(data),
-                                    Err(err) => Err(format!("Error deserializing item data: {err}")), // TODO: print out the actual data here?
+                                match res.json::<MercariItemResponse>().await {
+                                    Ok(data) => {
+                                        let item = self.map_to_marketplace_item(data.data);
+                                        Ok(item)
+                                    },
+                                    Err(err) => Err(format!("Error deserializing item data: {err} (source: {:?})", err.source())),
                                 }
                             },
                             Err(err) => Err(format!("Error code while requesting for item {id}: {err}")),
@@ -67,5 +77,26 @@ impl MercariItemScraper {
                 }   
             });
         join_all(parsed_response_futures).await
+    }
+
+    /// Map from Mercari's raw data to the internal type.
+    fn map_to_marketplace_item(&self, data: MercariItemData) -> MarketplaceItemData {
+        let seller = MarketplaceSeller {
+            id: data.seller.id.to_string(),
+            name: data.seller.name
+        };
+        MarketplaceItemData {
+            id: data.id.into(),
+            name: data.name,
+            price: data.price.into(),
+            description: data.description,
+            status: data.status.into(),
+            created: data.created.into(),
+            seller,
+            category: data.item_category.name,
+            thumbnails: data.thumbnails,
+            item_condition: data.item_condition.name,
+            updated: data.updated.into()
+        }
     }
 }

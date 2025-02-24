@@ -238,13 +238,17 @@ impl AnthropicRequester {
             Output your answers in JSON format, with a key 'answers' containing the list of answers in asked order.
             If there are no questions, return this list empty.
 
-            Additionally, return a brief description of the item. The description must be accurate and specific enough that it can 
-            almost uniquely identify the item. Output this description with the key 'item_description' in the JSON.
+            Additionally, return a detailed description of the item in as few words as possible. 
+            Only include information useful in distinguishing this item from other items; information specific to the item (such as size, condition etc) must be omitted. 
+            Output this description with the key 'item_description' in the JSON.
 
-            Finally, pick the image which best describes this item and/or shows the most recognizable feature of this item.
+            Finally, pick the image (from index 0) which best describes this item and/or shows the most recognizable feature of this item.
+            If there is only 1 image, just return 0.
             Output this as a number with the key 'best_fit_image' in the JSON.
 
-            Now, here are the questions you must answer: \n {eval_criteria_string}
+            Do NOT output anything outside of the above JSON format.
+
+            Here are the questions you must answer: \n {eval_criteria_string}
         ");
         let item_string = serde_json::to_string_pretty(&item)
             .expect("Serializing MarketplaceItemData should have no reason to fail"); // TODO: Find out in which cases this could fail and ensure it cannot happen

@@ -40,6 +40,7 @@ impl ItemScraper {
                     (marketplace, item_results)
                 })
             ).await;
+        tracing::trace!("Item scrape results: {results:#?}");
         results
             .into_iter()
             .collect()

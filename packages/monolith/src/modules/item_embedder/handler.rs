@@ -3,8 +3,8 @@ use crate::{
     config::ItemEmbedderConfig, 
     galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
-        message_types::item_embedder::{ItemEmbedderError, ItemEmbedderMessage
-        }, ItemEmbedderSender, StateTrackerSender
+        message_types::{item_embedder::{ItemEmbedderError, ItemEmbedderMessage
+        }, storage::StorageMessage}, StateTrackerSender, StorageSender
     }
 };
 
@@ -31,7 +31,7 @@ to the gallery's past data.
 /// Coordinates the internal workings of the module.
 pub(super) struct Handler {
     state_tracker_sender: StateTrackerSender,
-    image_classifier_sender: ItemEmbedderSender,
+    storage_sender: StorageSender,
     embedder: Embedder
 }
 
@@ -40,18 +40,18 @@ impl Handler {
     pub fn new(
         config: &ItemEmbedderConfig,
         state_tracker_sender: StateTrackerSender,
-        image_classifier_sender: ItemEmbedderSender
+        storage_sender: StorageSender
     ) -> Self {
         let embedder = Embedder::new(config.clone());
         Self {
             state_tracker_sender,
-            image_classifier_sender,
+            storage_sender,
             embedder
         }
     }
     
     /// Embed a new gallery.
-    pub async fn embed_new_gallery(&mut self, gallery: GalleryItemAnalysisState) -> Result<(), ItemEmbedderError> {
+    pub async fn embed_new_gallery(&mut self, gallery: GalleryItemEmbedderState) -> Result<(), ItemEmbedderError> {
         let gallery_id = gallery.gallery_id.clone();
         self.add_gallery_to_state(gallery_id.clone(), gallery).await?;
         self.embed_gallery_in_state(gallery_id).await
@@ -75,9 +75,10 @@ impl Handler {
             gallery.marketplace_updated_datetimes,
             gallery.failed_marketplace_reasons,
         ).await?;
-        self.image_classifier_sender
-            .send(ItemEmbedderMessage::Classify { gallery_id })
-            .await;
+        self.storage_sender
+            .send(StorageMessage::StoreGallery { gallery_id: gallery_id.clone() })
+            .await
+            .map_err(|err| ItemEmbedderError::MessageErr { gallery_id, err })?;
             Ok(())
     }
     
@@ -87,10 +88,10 @@ impl Handler {
     async fn add_gallery_to_state(
         &mut self, 
         gallery_id: GalleryId, 
-        gallery: GalleryItemAnalysisState
+        gallery: GalleryItemEmbedderState
     ) -> Result<(), ItemEmbedderError> {
         self.state_tracker_sender
-            .add_gallery(gallery_id.clone(), GalleryPipelineStates::ItemAnalysis(gallery))
+            .add_gallery(gallery_id.clone(), GalleryPipelineStates::ItemEmbedding(gallery))
             .await
             .map_err(|err| ItemEmbedderError::Other { 
                 gallery_id: gallery_id.clone(), 

@@ -49,6 +49,7 @@ impl MercariSearchScraper {
             let response = request.send().await;
             match self.handle_response(&previous_scraped_item_datetime, response).await {
                 Ok((scraped_item_ids, scraped_next_page_token)) => {
+                    tracing::trace!("got following: {scraped_item_ids:?}, {scraped_next_page_token:?}");
                     item_ids.extend_from_slice(&scraped_item_ids);
                     match scraped_next_page_token {
                         Some(token) => next_page_token = token,
@@ -78,10 +79,13 @@ impl MercariSearchScraper {
                     Ok(res) => {
                         match res.json::<MercariSearchData>().await {
                             Ok(res) => {
-                                let mut items = res.items.into_iter();
-                                match items.all(|item| &item.updated > previous_scraped_item_datetime) {
-                                    true => {
-                                        let item_ids = items
+                                match res.items
+                                    .iter()
+                                    .all(|item| &item.updated > previous_scraped_item_datetime) 
+                                {
+                                    true => { // if all items are after our previous scraped datetime, go to the next page if possible
+                                        let item_ids = res.items
+                                            .into_iter()
                                             .map(|item| item.id.into())
                                             .collect();
                                         let next_page_token = match res.meta.next_page_token.as_ref() {
@@ -90,8 +94,9 @@ impl MercariSearchScraper {
                                         };
                                         return Ok((item_ids, next_page_token));
                                     },
-                                    false => {
-                                        let item_ids = items
+                                    false => { // else, just return all items after this datetime
+                                        let item_ids = res.items
+                                            .into_iter()
                                             .filter(|item| &item.updated > previous_scraped_item_datetime)
                                             .map(|item| item.id.into())
                                             .collect();
@@ -178,7 +183,7 @@ impl MercariSearchScraper {
 /// The data returned from a search scrape.
 /// 
 /// Note: Other values are returned than what is here, but we only deserialize whatever we need.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct MercariSearchData {
     pub items: Vec<MercariSearchItemData>,
     pub meta: MercariSearchMetadata
@@ -187,7 +192,7 @@ struct MercariSearchData {
 /// Represents a single item's data from the search scrape.
 /// 
 /// Note: Other values are returned than what is here, but we only deserialize whatever we need.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct MercariSearchItemData {
     pub id: String,
     pub updated: UnixUtcDateTime
@@ -196,7 +201,7 @@ struct MercariSearchItemData {
 /// Metadata returned in a search scrape.
 ///
 /// Note: Other values are returned than what is here, but we only deserialize whatever we need.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct MercariSearchMetadata {
     #[serde(rename(deserialize = "nextPageToken"))]
     pub next_page_token: String

@@ -63,7 +63,9 @@ impl AppModules {
         );
         let classifier_module = ItemEmbedderModule::init(
             config.img_classifier_config.clone(),
-            connections.image_classifier.1
+            connections.image_classifier.1,
+            connections.state_tracker.0.clone(),
+            connections.storage.0.clone()
         );
         let storage_module = StorageModule::init(
             config.storage_config,

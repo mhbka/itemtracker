@@ -66,37 +66,37 @@ impl StateTrackerModule {
         match msg {
             StateTrackerMessage::AddGallery(msg) => {
                 msg.act(|(gallery_id, gallery)| {
-                    tracing::info!("Got message to add gallery {gallery_id} to state"); 
+                    tracing::trace!("Got message to add gallery {gallery_id} to state"); 
                     self.state.add_gallery(gallery_id, gallery)
             }   );
             },
             StateTrackerMessage::CheckGalleryDoesntExist(msg) => {
                 msg.act(|gallery_id| {
-                    tracing::info!("Got message to check (non-)existence of gallery {gallery_id} state"); 
+                    tracing::trace!("Got message to check (non-)existence of gallery {gallery_id} state"); 
                     self.state.check_gallery_doesnt_exist(gallery_id)
                 });
             },
             StateTrackerMessage::CheckGalleryState(msg) => {
                     msg.act(|(gallery_id, state_type)| {
-                    tracing::info!("Got message to check gallery {gallery_id} state"); 
+                    tracing::trace!("Got message to check gallery {gallery_id} state"); 
                     self.state.check_gallery_state(gallery_id, state_type)
                 });
             },
             StateTrackerMessage::TakeGalleryState(msg) => {
                 msg.act(|(gallery_id, requested_state_type)| {
-                    tracing::info!("Got message to remove take {gallery_id} state"); 
+                    tracing::trace!("Got message to take gallery {gallery_id} state"); 
                     self.state.take_gallery_state(gallery_id, requested_state_type)
                 });
             },
             StateTrackerMessage::UpdateGalleryState(msg) => {
                 msg.act(|(gallery_id, updated_state)| {
-                    tracing::info!("Got message to update gallery {gallery_id} from state"); 
+                    tracing::trace!("Got message to update gallery {gallery_id} from state"); 
                     self.state.update_gallery_state(gallery_id, updated_state)
                 });
             },
             StateTrackerMessage::RemoveGallery(msg) => {
                 msg.act(|gallery_id| {
-                    tracing::info!("Got message to remove gallery {gallery_id} from state"); 
+                    tracing::trace!("Got message to remove gallery {gallery_id} from state"); 
                     self.state.remove_gallery(gallery_id)
                 });
             },

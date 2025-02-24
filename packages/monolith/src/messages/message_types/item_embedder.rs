@@ -1,4 +1,4 @@
-use crate::galleries::pipeline_states::GalleryItemEmbedderState;
+use crate::{galleries::pipeline_states::GalleryItemEmbedderState, messages::message_buses::MessageError};
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::galleries::domain_types::GalleryId;
@@ -11,6 +11,8 @@ pub enum ItemEmbedderError {
     TotalEmbedFailure { gallery_id: GalleryId },
     #[error("Error from state tracker for gallery {gallery_id}: {err}")]
     StateErr { gallery_id: GalleryId, err: StateTrackerError },
+    #[error("Error while sending a message for gallery {gallery_id}: {err}")]
+    MessageErr { gallery_id: GalleryId, err: MessageError },
     #[error("Encountered an different error for gallery {gallery_id}: {message}")]
     Other { gallery_id: GalleryId, message: String }
 }

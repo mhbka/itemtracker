@@ -166,3 +166,16 @@ impl<'de> Deserialize<'de> for UnixUtcDateTime {
         Ok(UnixUtcDateTime(datetime))
     }
 }
+
+impl From<i64> for UnixUtcDateTime {
+    fn from(value: i64) -> Self {
+        let datetime = chrono::Utc.timestamp_opt(value, 0)
+            .single()
+            .unwrap_or_else(|| {
+                chrono::Utc.timestamp_opt(0, 0)
+                .single()
+                .unwrap() // NOTE: should be OK as it's just beginning of UNIX time 
+            });
+        Self(datetime)
+    }
+}

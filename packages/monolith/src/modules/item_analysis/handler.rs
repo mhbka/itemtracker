@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemAnalysisConfig, 
-    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemEmbedderState, GalleryItemAnalysisState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
-        message_types::{item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisError, item_scraper::ItemScraperMessage
+        message_types::{item_analysis::ItemAnalysisError, item_embedder::{ItemEmbedderError, ItemEmbedderMessage}, item_scraper::ItemScraperMessage
         }, ItemEmbedderSender, StateTrackerSender
     }
 };
@@ -13,7 +13,7 @@ use super::analyzer::Analyzer;
 /// Coordinates the internal workings of the module.
 pub(super) struct Handler {
     state_tracker_sender: StateTrackerSender,
-    image_classifier_sender: ItemEmbedderSender,
+    item_embedder_sender: ItemEmbedderSender,
     analyzer: Analyzer
 }
 
@@ -22,12 +22,12 @@ impl Handler {
     pub fn new(
         config: &ItemAnalysisConfig,
         state_tracker_sender: StateTrackerSender,
-        image_classifier_sender: ItemEmbedderSender
+        item_embedder_sender: ItemEmbedderSender
     ) -> Self {
         let analyzer = Analyzer::new(config.clone());
         Self {
             state_tracker_sender,
-            image_classifier_sender,
+            item_embedder_sender,
             analyzer
         }
     }
@@ -57,9 +57,10 @@ impl Handler {
             gallery.marketplace_updated_datetimes,
             gallery.failed_marketplace_reasons,
         ).await?;
-        self.image_classifier_sender
-            .send(ItemEmbedderMessage::Classify { gallery_id })
-            .await;
+        self.item_embedder_sender
+            .send(ItemEmbedderMessage::Classify { gallery_id: gallery_id.clone() })
+            .await
+            .map_err(|err| ItemAnalysisError::MessageErr { gallery_id, err })?;
             Ok(())
     }
     
