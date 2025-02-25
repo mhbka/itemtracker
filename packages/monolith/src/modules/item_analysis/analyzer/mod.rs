@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anthropic::AnthropicRequester;
 use openai::OpenAIRequester;
 
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::MarketplaceAnalyzedItems}, pipeline_states::GalleryItemAnalysisState}, messages::{message_types::{item_embedder::ItemEmbedderMessage, item_analysis::ItemAnalysisError}, ItemEmbedderSender}};
+use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::MarketplaceAnalyzedItems}}};
 
 mod anthropic;
 mod openai;

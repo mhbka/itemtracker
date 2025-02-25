@@ -1,6 +1,6 @@
 use message_buses::{MessageError, MessageReceiver, MessageSender};
 use message_types::{
-    item_analysis::ItemAnalysisMessage, item_embedder::ItemEmbedderMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, GetGalleryStateMessage, UpdateGalleryStateMessage}, storage::StorageMessage
+    item_analysis::ItemAnalysisMessage, item_embedder::ItemEmbedderMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, GetGalleryStateMessage, UpdateGalleryStateMessage}, storage::StorageMessage
 };
 
 use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
@@ -84,27 +84,11 @@ impl StateTrackerSender {
         receiver.await
             .map_err(Into::into)
     }
-
-    /// Verify if a gallery matches the given state type.
-    /// 
-    /// Returns an `Err` if it doesn't exist or doesn't match.
-    pub async fn check_gallery_state(
-        &mut self,
-        gallery_id: GalleryId,
-        state_type: GalleryPipelineStateTypes
-    ) -> Result<Result<(), StateTrackerError>, MessageError> {
-        let (msg, receiver) = CheckGalleryStateMessage::new((gallery_id, state_type));
-        self.sender
-            .send(StateTrackerMessage::CheckGalleryState(msg))
-            .await?;
-        receiver.await
-            .map_err(Into::into)
-    }
     
     /// Take a gallery's state, leaving it stored as `None`.
     /// 
     /// Returns an `Err` if it doesn't exist, its state is wrong, or its state is already taken.
-    pub async fn take_gallery_state(
+    pub async fn get_gallery_state(
         &mut self,
         gallery_id: GalleryId,
         state_type: GalleryPipelineStateTypes
@@ -129,7 +113,8 @@ impl StateTrackerSender {
         self.sender
             .send(StateTrackerMessage::UpdateGalleryState(msg))
             .await?;
-        receiver.await
+        receiver
+            .await
             .map_err(Into::into)
     }
 
@@ -144,7 +129,8 @@ impl StateTrackerSender {
         self.sender
             .send(StateTrackerMessage::RemoveGallery(msg))
             .await?;
-        receiver.await
+        receiver
+            .await
             .map_err(Into::into)
     }
 }

@@ -112,7 +112,7 @@ impl Handler {
     /// - the state tracker is not contactable
     async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GallerySearchScrapingState, SearchScraperError> {
         let state = self.state_tracker_sender
-            .take_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
+            .get_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
             .await
             .map_err(|err| SearchScraperError::Other { 
                 gallery_id: gallery_id.clone(), 

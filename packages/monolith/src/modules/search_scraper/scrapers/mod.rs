@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use futures::future::join_all;
 use mercari::MercariSearchScraper;
-use crate::{config::SearchScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, items::item_data::MarketplaceItemData, pipeline_states::GallerySearchScrapingState}};
+use crate::{config::SearchScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, pipeline_states::GallerySearchScrapingState}};
 
 mod mercari;
 

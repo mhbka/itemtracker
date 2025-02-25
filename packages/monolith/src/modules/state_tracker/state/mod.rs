@@ -1,5 +1,3 @@
-use std::sync::Arc;
-use axum::async_trait;
 use internal::InternalState;
 use redis::RedisState;
 use crate::{config::state_tracker::StateTrackerConfig, galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};

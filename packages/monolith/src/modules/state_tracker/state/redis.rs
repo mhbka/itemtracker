@@ -1,6 +1,5 @@
 use std::error::Error;
-use axum::async_trait;
-use redis::{aio::MultiplexedConnection, AsyncCommands, Client, JsonAsyncCommands};
+use redis::{aio::MultiplexedConnection, AsyncCommands, Client};
 use crate::{config::state_tracker::StateTrackerConfig, galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
 use super::State;
 

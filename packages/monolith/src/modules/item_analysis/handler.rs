@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemAnalysisConfig, 
-    galleries::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
-        message_types::{item_analysis::ItemAnalysisError, item_embedder::{ItemEmbedderError, ItemEmbedderMessage}, item_scraper::ItemScraperMessage
+        message_types::{item_analysis::ItemAnalysisError, item_embedder::ItemEmbedderMessage
         }, ItemEmbedderSender, StateTrackerSender
     }
 };
@@ -91,7 +91,7 @@ impl Handler {
     /// - the state tracker is not contactable
     async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemAnalysisState, ItemAnalysisError> {
         let state = self.state_tracker_sender
-            .take_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
+            .get_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::ItemAnalysis)
             .await
             .map_err(|err| ItemAnalysisError::Other { 
                 gallery_id: gallery_id.clone(),

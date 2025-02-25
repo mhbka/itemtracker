@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use axum::async_trait;
 
 use crate::{galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
 use super::State;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::{
     config::ItemScraperConfig, 
     galleries::{domain_types::{GalleryId, Marketplace}, items::item_data::MarketplaceItemData, pipeline_states::{GalleryItemAnalysisState, GalleryItemScrapingState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
-    messages::{message_types::{item_analysis::{ItemAnalysisError, ItemAnalysisMessage}, item_scraper::ItemScraperError}, ItemAnalysisSender, StateTrackerSender}
+    messages::{message_types::{item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperError}, ItemAnalysisSender, StateTrackerSender}
     };
 
 use super::scrapers::ItemScraper;
@@ -87,7 +87,7 @@ impl Handler {
     /// - the state tracker is not contactable
     async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemScrapingState, ItemScraperError> {
         let state = self.state_tracker_sender
-            .take_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
+            .get_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::ItemScraping)
             .await
             .map_err(|err| ItemScraperError::Other { 
                 gallery_id: gallery_id.clone(), 

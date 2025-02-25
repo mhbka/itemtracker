@@ -1,5 +1,5 @@
 use chrono::Utc;
-use crate::{galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}}, messages::{message_types::{scraper_scheduler::SchedulerError, state_tracker::{AddGalleryMessage, StateTrackerError, StateTrackerMessage}}, SearchScraperSender, StateTrackerSender}};
+use crate::{galleries::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_types::{scraper_scheduler::SchedulerError, state_tracker::StateTrackerError}, SearchScraperSender, StateTrackerSender}};
 
 /// A wrapper representing the actual running scheduler task for a gallery, which starts on `run()`.
 pub struct ScheduledGalleryTask {

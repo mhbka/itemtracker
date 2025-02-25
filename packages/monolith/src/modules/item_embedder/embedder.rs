@@ -3,7 +3,7 @@ use image::DynamicImage;
 use reqwest::{multipart::{self, Part}, Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::{config::ItemEmbedderConfig, galleries::{domain_types::Marketplace, items::pipeline_items::{AnalyzedMarketplaceItem, EmbeddedMarketplaceItem, ErrorEmbeddedMarketplaceItem, MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}, pipeline_states::GalleryItemEmbedderState}};
+use crate::{config::ItemEmbedderConfig, galleries::{domain_types::Marketplace, items::pipeline_items::{AnalyzedMarketplaceItem, EmbeddedMarketplaceItem, ErrorEmbeddedMarketplaceItem, MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}};
 
 /// The response from the embedder.
 /// 

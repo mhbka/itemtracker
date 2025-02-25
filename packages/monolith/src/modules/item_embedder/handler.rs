@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemEmbedderConfig, 
-    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
-        message_types::{item_embedder::{ItemEmbedderError, ItemEmbedderMessage
-        }, storage::StorageMessage}, StateTrackerSender, StorageSender
+        message_types::{item_embedder::ItemEmbedderError, storage::StorageMessage}, StateTrackerSender, StorageSender
     }
 };
 
@@ -109,7 +108,7 @@ impl Handler {
     /// - the state tracker is not contactable
     async fn fetch_gallery_state(&mut self, gallery_id: GalleryId) -> Result<GalleryItemEmbedderState, ItemEmbedderError> {
         let state = self.state_tracker_sender
-            .take_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::SearchScraping)
+            .get_gallery_state(gallery_id.clone(), GalleryPipelineStateTypes::ItemEmbedding)
             .await
             .map_err(|err| ItemEmbedderError::Other { 
                 gallery_id: gallery_id.clone(),

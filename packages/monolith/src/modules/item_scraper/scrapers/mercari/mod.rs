@@ -2,7 +2,6 @@ use std::error::Error;
 
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder};
-use serde::{Deserialize, Serialize};
 use types::{MercariItemData, MercariItemResponse};
 use crate::{galleries::{domain_types::ItemId, items::item_data::{MarketplaceItemData, MarketplaceSeller}}, utils::generate_dpop::generate_dpop};
 
