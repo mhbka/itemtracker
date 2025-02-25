@@ -1,6 +1,6 @@
 use message_buses::{MessageError, MessageReceiver, MessageSender};
 use message_types::{
-    item_analysis::ItemAnalysisMessage, item_embedder::ItemEmbedderMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, TakeGalleryStateMessage, UpdateGalleryStateMessage}, storage::StorageMessage
+    item_analysis::ItemAnalysisMessage, item_embedder::ItemEmbedderMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, CheckGalleryStateMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, GetGalleryStateMessage, UpdateGalleryStateMessage}, storage::StorageMessage
 };
 
 use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
@@ -109,9 +109,9 @@ impl StateTrackerSender {
         gallery_id: GalleryId,
         state_type: GalleryPipelineStateTypes
     ) -> Result<Result<GalleryPipelineStates, StateTrackerError>, MessageError> {
-        let (msg, receiver) = TakeGalleryStateMessage::new((gallery_id, state_type));
+        let (msg, receiver) = GetGalleryStateMessage::new((gallery_id, state_type));
         self.sender
-            .send(StateTrackerMessage::TakeGalleryState(msg))
+            .send(StateTrackerMessage::GetGalleryState(msg))
             .await?;
         receiver.await
             .map_err(Into::into)

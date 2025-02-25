@@ -1,5 +1,6 @@
 use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates, GallerySearchScrapingState}};
 use super::ModuleMessageWithReturn;
+use redis::RedisError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -12,10 +13,22 @@ pub enum StateTrackerError {
     GalleryDoesntExist,
     #[error("Gallery has the wrong state")]
     GalleryHasWrongState,
-    #[error("Gallery state is already taken")]
-    GalleryStateIsTaken,
-    #[error("Gallery state has not been taken yet")]
-    GalleryStateIsntTaken
+    #[error("{0}")]
+    Other(String)
+}
+
+// Map a Redis error into the Other variant.
+impl From<RedisError> for StateTrackerError {
+    fn from(err: RedisError) -> Self {
+        StateTrackerError::Other(err.to_string())
+    }
+}
+
+// Map a Redis error into the Other variant.
+impl From<serde_json::Error> for StateTrackerError {
+    fn from(err: serde_json::Error) -> Self {
+        StateTrackerError::Other(err.to_string())
+    }
 }
 
 /// The types of messages that the state tracker module can take.
@@ -29,14 +42,10 @@ pub enum StateTrackerMessage {
     /// 
     /// Returns an `Err` if it isn't (not intuitive, but allows one to use the returned `StateTrackerError`)
     CheckGalleryDoesntExist(CheckGalleryDoesntExistMessage),
-    /// Check the gallery's state.
-    /// 
-    /// Returns an `Err` if the gallery doesn't exist or is not in the expected state
-    CheckGalleryState(CheckGalleryStateMessage),
     /// Take the gallery's state (leaving the stored state as `None`).
     /// 
     /// Returns an `Err` if the gallery doesn't exist, its state has already been taken, or the requested state type doesn't match the stored state.
-    TakeGalleryState(TakeGalleryStateMessage),
+    GetGalleryState(GetGalleryStateMessage),
     /// Update a gallery's state, overwriting its old state.
     /// 
     /// Returns an `Err` if the gallery doesn't exist, or its state has not been taken.
@@ -57,7 +66,7 @@ pub type CheckGalleryDoesntExistMessage = ModuleMessageWithReturn<GalleryId, Res
 pub type CheckGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStateTypes), Result<(), StateTrackerError>>;
 
 /// Message for taking a gallery's state, leaving it set as `None`.
-pub type TakeGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStateTypes), Result<GalleryPipelineStates, StateTrackerError>>;
+pub type GetGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStateTypes), Result<GalleryPipelineStates, StateTrackerError>>;
 
 /// Message for updating and overwriting a gallery's state. 
 pub type UpdateGalleryStateMessage = ModuleMessageWithReturn<(GalleryId, GalleryPipelineStates), Result<(), StateTrackerError>>;

@@ -55,7 +55,8 @@ where
     /// Returns an `Err` with the response value if it couldn't be successfully delivered.
     pub fn act<F>(self, f: F) -> Result<(), Return>
     where 
-        F: FnOnce(Message) -> Return {
+        F: FnOnce(Message) -> Return 
+    {
         let response = f(self.message);
         self.respond_to.send(response)
     }
@@ -66,7 +67,8 @@ where
     pub async fn act_async<F, Fut>(self, f: F) -> Result<(), Return>
     where 
         F: FnOnce(Message) -> Fut,
-        Fut: Future<Output = Return> {
+        Fut: Future<Output = Return> 
+    {
         let response = f(self.message).await;
         self.respond_to.send(response)
     }

@@ -32,11 +32,11 @@ pub struct AppModules {
 
 impl AppModules {
     /// Initialize the app's modules.
-    pub fn init(config: AppConfig, connections: AppModuleConnections) -> Self {
+    pub async fn init(config: AppConfig, connections: AppModuleConnections) -> Self {
         let state_tracker_module = StateTrackerModule::init(
             config.state_tracker_config, 
             connections.state_tracker.1
-        );
+        ).await;
         let scheduler_module = ScraperSchedulerModule::init(
             config.scraper_scheduler_config,
             connections.scraper_scheduler.1, 
