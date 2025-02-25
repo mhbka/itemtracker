@@ -1,13 +1,13 @@
 mod config;
 mod galleries;
-mod modules;
+mod scraping_pipeline;
 mod messages;
 mod routes;
 mod utils;
 
 use axum::Router;
 use config::{AppConfig, AxumConfig};
-use modules::{AppModuleConnections, AppModules};
+use scraping_pipeline::{AppModuleConnections, AppModules};
 use tokio::net::TcpListener;
 use dotenv::dotenv;
 
