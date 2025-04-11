@@ -4,7 +4,7 @@ use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use crate::galleries::domain_types::UnixUtcDateTime;
-use crate::galleries::search_criteria::GallerySearchCriteria;
+use crate::galleries::search_criteria::SearchCriteria;
 use crate::galleries::domain_types::ItemId;
 use crate::utils::generate_dpop::generate_dpop;
 
@@ -25,7 +25,7 @@ impl MercariSearchScraper {
     /// Performs the search scrape for Mercari.
     pub(super) async fn request(
         &self, 
-        search_criteria: &GallerySearchCriteria,
+        search_criteria: &SearchCriteria,
         previous_scraped_item_datetime: UnixUtcDateTime
     ) -> Result<Vec<ItemId>, String> {
         let dpop_key = match generate_dpop(&REQ_URL, "POST") {
@@ -118,7 +118,7 @@ impl MercariSearchScraper {
     fn build_request(
         &self, 
         dpop_key: &String,
-        search_criteria: &GallerySearchCriteria, 
+        search_criteria: &SearchCriteria, 
         next_page_token: &str
     ) -> RequestBuilder {
         self.client
@@ -129,7 +129,7 @@ impl MercariSearchScraper {
     }
 
     /// Build the payload for scraping the search.
-    fn build_payload(&self, search_criteria: &GallerySearchCriteria, next_page_token: &str) -> Value {
+    fn build_payload(&self, search_criteria: &SearchCriteria, next_page_token: &str) -> Value {
         json!(
             {
                 "userId": "",

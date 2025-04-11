@@ -1,6 +1,4 @@
-use crate::{config::StorageConfig, messages::{
-    message_types::storage::StorageMessage, StateTrackerSender, StorageReceiver
-}};
+use crate::messages::{message_types::storage::StorageMessage, StateTrackerSender, StorageReceiver};
 use handler::Handler;
 
 mod handler;
@@ -14,7 +12,6 @@ pub struct StorageModule {
 impl StorageModule {
     /// Initialize the module.
     pub fn init(
-        config: StorageConfig,
         msg_receiver: StorageReceiver,
         state_tracker_sender: StateTrackerSender
     ) -> Self

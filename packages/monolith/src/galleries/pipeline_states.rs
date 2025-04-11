@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use super::{
-    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}, search_criteria::GallerySearchCriteria
+    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}, search_criteria::SearchCriteria
 };
 
 /// The possible states of a gallery in the scraping pipeline.
@@ -70,7 +70,7 @@ impl GalleryPipelineStateTypes {
 pub struct GallerySchedulerState {
     pub gallery_id: GalleryId,
     pub scraping_periodicity: ValidCronString,
-    pub search_criteria: GallerySearchCriteria,
+    pub search_criteria: SearchCriteria,
     pub marketplace_previous_scraped_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub evaluation_criteria: EvaluationCriteria,
 }
@@ -93,7 +93,7 @@ impl GallerySchedulerState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GallerySearchScrapingState {
     pub gallery_id: GalleryId,
-    pub search_criteria: GallerySearchCriteria,
+    pub search_criteria: SearchCriteria,
     pub marketplace_previous_scraped_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub evaluation_criteria: EvaluationCriteria,
 }
@@ -168,10 +168,9 @@ impl GalleryItemEmbedderState {
 
 /// This is the state of a gallery after its items are classified into groups within the gallery.
 /// 
-/// Initialized in the image classifier module.
+/// Initialized in the item embedder module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryFinalState {
-    // TODO: figure out the state here
     pub gallery_id: GalleryId,
     pub items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,

@@ -1,9 +1,10 @@
-use std::iter::zip;
-
+use std::{io::Write, iter::zip};
+use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{self, Output, ToSql}, sql_types::Jsonb};
 use serde::{Serialize, Deserialize};
 
 /// A Vec of user-defined questions to ask the LLM about each item in a gallery.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, AsExpression, FromSqlRow)]
+#[diesel(sql_type = Jsonb)]
 pub struct EvaluationCriteria {
     criteria: Vec<Criterion>
 }
@@ -88,6 +89,23 @@ impl EvaluationCriteria {
                 }
             })
     } 
+}
+
+// Implement FromSql
+impl FromSql<Jsonb, Pg> for EvaluationCriteria {
+    fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
+        let val: serde_json::Value = <serde_json::Value as FromSql<Jsonb, Pg>>::from_sql(bytes)?;
+        serde_json::from_value(val).map_err(|e| e.into())
+    }
+}
+
+// Implement ToSql
+impl ToSql<Jsonb, Pg> for EvaluationCriteria {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        let json = serde_json::to_string(self)?;
+        out.write_all(json.as_bytes())?;
+        Ok(serialize::IsNull::No)
+    }
 }
 
 /// A criterion, consisting of:

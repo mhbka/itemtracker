@@ -18,7 +18,6 @@ pub(super) fn build(config: &AxumConfig, module_connections: &AppModuleConnectio
     router
 }
 
-
 async fn start_scrape(
     Json(gallery): Json<GallerySearchScrapingState>,
     mut sender: SearchScraperSender

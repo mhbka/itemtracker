@@ -68,7 +68,6 @@ impl AppModules {
             connections.storage.0.clone()
         );
         let storage_module = StorageModule::init(
-            config.storage_config,
             connections.storage.1,
             connections.state_tracker.0.clone()
         );

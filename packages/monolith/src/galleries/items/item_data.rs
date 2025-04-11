@@ -4,7 +4,7 @@ use crate::galleries::domain_types::{ItemId, UnixUtcDateTime};
 /// This is the data for each item, common across all marketplaces.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MarketplaceItemData {
-    pub id: ItemId,
+    pub item_id: ItemId,
     pub name: String,
     pub price: f32,  
     pub description: String,

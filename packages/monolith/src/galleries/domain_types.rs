@@ -87,7 +87,7 @@ impl Display for GalleryId {
     }
 }
 
-/// A String wrapper for a marketplace item ID.
+/// A wrapper for a marketplace item ID.
 /// 
 /// There is (currently) no special functionality or validation; this exists simply because the item ID is a heavily used domain type.
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]

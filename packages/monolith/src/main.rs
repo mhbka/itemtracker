@@ -2,12 +2,15 @@ mod config;
 mod galleries;
 mod scraping_pipeline;
 mod messages;
+mod stores;
 mod routes;
 mod utils;
+mod schema;
+mod models;
 
-use axum::Router;
-use config::{AppConfig, AxumConfig};
+use config::AppConfig;
 use scraping_pipeline::{AppModuleConnections, AppModules};
+use stores::AppStores;
 use tokio::net::TcpListener;
 use dotenv::dotenv;
 
@@ -18,16 +21,19 @@ async fn main() {
 
     let app_config = AppConfig::load().unwrap();
     let axum_config = app_config.axum_config.clone();
+
+    let stores = AppStores::new(&app_config.store_config); 
+
     let module_connections = AppModuleConnections::new();
     let router = routes::build_router(&app_config.axum_config, &module_connections);
     let app_modules = AppModules::init(app_config, module_connections).await.run();
 
     tracing::info!("App started");
 
-    start_app(router, &axum_config).await;
-}
-
-async fn start_app(router: Router, axum_config: &AxumConfig) {
-    let listener = TcpListener::bind(axum_config.host_addr.clone()).await.unwrap();
-    axum::serve(listener, router).await.unwrap();
+    let listener = TcpListener::bind(axum_config.host_addr.clone())
+        .await
+        .unwrap();
+    axum::serve(listener, router)
+        .await
+        .unwrap();
 }

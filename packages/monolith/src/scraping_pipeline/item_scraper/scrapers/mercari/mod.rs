@@ -85,7 +85,7 @@ impl MercariItemScraper {
             name: data.seller.name
         };
         MarketplaceItemData {
-            id: data.id.into(),
+            item_id: data.id.into(),
             name: data.name,
             price: data.price.into(),
             description: data.description,
