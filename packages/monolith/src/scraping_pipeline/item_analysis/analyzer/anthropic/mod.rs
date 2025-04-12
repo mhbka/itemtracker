@@ -5,7 +5,7 @@ use futures::future::join_all;
 use image::ImageFormat;
 use reqwest::{Client, RequestBuilder, StatusCode};
 use types::{AnthropicImageMessageContent, AnthropicMessage, AnthropicMessageContent, AnthropicRequestForm, AnthropicResponse, EvaluationAnswers};
-use crate::{config::ItemAnalysisConfig, galleries::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}}};
+use crate::{config::ItemAnalysisConfig, domain::{domain_types::Marketplace, eval_criteria::EvaluationCriteria, item_data::MarketplaceItemData, pipeline_items::{AnalyzedMarketplaceItem, ErrorAnalyzedMarketplaceItem, MarketplaceAnalyzedItems}}};
 
 pub(super) mod types;
 

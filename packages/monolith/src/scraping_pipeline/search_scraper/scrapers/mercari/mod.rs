@@ -3,9 +3,9 @@ use std::error::Error;
 use reqwest::{Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use crate::galleries::domain_types::UnixUtcDateTime;
-use crate::galleries::search_criteria::SearchCriteria;
-use crate::galleries::domain_types::ItemId;
+use crate::domain::domain_types::UnixUtcDateTime;
+use crate::domain::search_criteria::SearchCriteria;
+use crate::domain::domain_types::ItemId;
 use crate::utils::generate_dpop::generate_dpop;
 
 const REQ_URL: &str = "https://api.mercari.jp/v2/entities:search";

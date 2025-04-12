@@ -1,6 +1,6 @@
 use thiserror::Error;
 use serde::{Deserialize, Serialize};
-use crate::{galleries::{domain_types::GalleryId, pipeline_states::GallerySchedulerState}, messages::message_buses::MessageError};
+use crate::{domain::{domain_types::GalleryId, pipeline_states::GallerySchedulerState}, messages::message_buses::MessageError};
 use super::{state_tracker::StateTrackerError, ModuleMessageWithReturn};
 
 /// Possible errors emitted from the scraper scheduler.

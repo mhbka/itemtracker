@@ -1,4 +1,4 @@
-use crate::{galleries::{domain_types::GalleryId, pipeline_states::GalleryFinalState}, messages::{message_types::storage::StorageError, StateTrackerSender}};
+use crate::{domain::{domain_types::GalleryId, pipeline_states::GalleryFinalState}, messages::{message_types::storage::StorageError, StateTrackerSender}};
 
 pub(super) struct Handler {
     state_tracker_sender: StateTrackerSender

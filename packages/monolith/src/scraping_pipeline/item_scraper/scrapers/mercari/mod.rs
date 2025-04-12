@@ -3,7 +3,7 @@ use std::error::Error;
 use futures::future::join_all;
 use reqwest::{Client, RequestBuilder};
 use types::{MercariItemData, MercariItemResponse};
-use crate::{galleries::{domain_types::ItemId, items::item_data::{MarketplaceItemData, MarketplaceSeller}}, utils::generate_dpop::generate_dpop};
+use crate::{domain::{domain_types::ItemId, item_data::MarketplaceItemData}, utils::generate_dpop::generate_dpop};
 
 const REQ_URL: &str = "https://api.mercari.jp/items/get"; // TODO: move to config
 
@@ -80,10 +80,6 @@ impl MercariItemScraper {
 
     /// Map from Mercari's raw data to the internal type.
     fn map_to_marketplace_item(&self, data: MercariItemData) -> MarketplaceItemData {
-        let seller = MarketplaceSeller {
-            id: data.seller.id.to_string(),
-            name: data.seller.name
-        };
         MarketplaceItemData {
             item_id: data.id.into(),
             name: data.name,
@@ -91,7 +87,7 @@ impl MercariItemScraper {
             description: data.description,
             status: data.status.into(),
             created: data.created.into(),
-            seller,
+            seller_id: data.seller.id.to_string(),
             category: data.item_category.name,
             thumbnails: data.thumbnails,
             item_condition: data.item_condition.name,

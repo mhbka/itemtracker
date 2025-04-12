@@ -1,6 +1,6 @@
 use std::error::Error;
 use redis::{aio::MultiplexedConnection, AsyncCommands, Client};
-use crate::{config::state_tracker::StateTrackerConfig, galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
+use crate::{config::state_tracker::StateTrackerConfig, domain::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
 use super::State;
 
 /// The Redis-backed inner state of the state tracker. 

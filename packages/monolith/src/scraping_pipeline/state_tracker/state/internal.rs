@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
+use crate::{domain::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
 use super::State;
 
 /// A hashmap-backed inner state for the state tracker.

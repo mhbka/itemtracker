@@ -1,10 +1,10 @@
 use uuid::Uuid;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use crate::models::galleries::{Gallery, GalleryChanges, NewGallery};
+use crate::models::galleries::{GalleryModel, GalleryChanges, NewGallery};
 use super::{error::StoreError, ConnectionPool};
 
-/// A cloneable interface for accessing galleries.
+/// A (cloneable) interface for accessing galleries.
 #[derive(Clone)]
 pub struct GalleryStore {
     pool: ConnectionPool
@@ -19,27 +19,27 @@ impl GalleryStore {
     }
 
     /// Get the data for a gallery.
-    pub async fn get_gallery(&mut self, gallery_id: Uuid) -> Result<Gallery, StoreError> {
+    pub async fn get_gallery(&mut self, gallery_id: Uuid) -> Result<GalleryModel, StoreError> {
         use crate::schema::galleries::dsl::*;
         
         let mut conn = self.pool.get().await?;
         
         galleries
             .filter(id.eq(gallery_id))
-            .first::<Gallery>(&mut conn)
+            .first::<GalleryModel>(&mut conn)
             .await
             .map_err(StoreError::from)
     }
 
     /// Get all galleries under a user.
-    pub async fn get_all_galleries(&mut self, uid: Uuid) -> Result<Vec<Gallery>, StoreError> {
+    pub async fn get_all_galleries(&mut self, uid: Uuid) -> Result<Vec<GalleryModel>, StoreError> {
         use crate::schema::galleries::dsl::*;
         
         let mut conn = self.pool.get().await?;
         
         galleries
             .filter(user_id.eq(uid))
-            .load::<Gallery>(&mut conn)
+            .load::<GalleryModel>(&mut conn)
             .await
             .map_err(StoreError::from)
     }

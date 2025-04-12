@@ -1,6 +1,6 @@
 use axum::{routing::post, Json, Router};
 use reqwest::StatusCode;
-use crate::{config::AxumConfig, galleries::pipeline_states::GallerySearchScrapingState, messages::{message_types::search_scraper::SearchScraperMessage, SearchScraperSender}, scraping_pipeline::AppModuleConnections};
+use crate::{config::AxumConfig, domain::pipeline_states::GallerySearchScrapingState, messages::{message_types::search_scraper::SearchScraperMessage, SearchScraperSender}, scraping_pipeline::AppModuleConnections};
 
 /// Build the router for ingesting data from the scraper. 
 /// 

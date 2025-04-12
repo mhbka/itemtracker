@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemAnalysisConfig, 
-    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, items::pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    domain::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
         message_types::{item_analysis::ItemAnalysisError, item_embedder::ItemEmbedderMessage
         }, ItemEmbedderSender, StateTrackerSender

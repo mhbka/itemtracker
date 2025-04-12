@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
-use crate::{galleries::{domain_types::GalleryId, pipeline_states::GalleryItemAnalysisState}, messages::message_buses::MessageError};
+use crate::{domain::{domain_types::GalleryId, pipeline_states::GalleryItemAnalysisState}, messages::message_buses::MessageError};
 use super::state_tracker::StateTrackerError;
 
 /// Possible errors emitted from the item analysis module.

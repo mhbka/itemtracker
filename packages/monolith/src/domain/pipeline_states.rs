@@ -4,8 +4,9 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use super::{
-    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, items::{item_data::MarketplaceItemData, pipeline_items::{MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}, search_criteria::SearchCriteria
+    domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime, ValidCronString}, eval_criteria::EvaluationCriteria, item_data::MarketplaceItemData, pipeline_items::{MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}, search_criteria::SearchCriteria
 };
+
 
 /// The possible states of a gallery in the scraping pipeline.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -76,8 +77,6 @@ pub struct GallerySchedulerState {
 }
 
 /// This is the initial state that a scraping job starts in.
-/// 
-/// Initialized in the scraper scheduler module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GallerySearchScrapingState {
     pub gallery_id: GalleryId,
@@ -86,13 +85,7 @@ pub struct GallerySearchScrapingState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-impl GallerySearchScrapingState {
-
-}
-
 /// This is the state of a gallery after it has been search-scraped.
-/// 
-/// Initialized in the scraper scheduler module.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryItemScrapingState {
     pub gallery_id: GalleryId,
@@ -102,9 +95,7 @@ pub struct GalleryItemScrapingState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-/// This is the state of a scraping job after the items are scraped.
-/// 
-/// Initialized in the scraper module.
+/// This is the state of a scraping job after the items are item-scraped.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryItemAnalysisState {
     pub gallery_id: GalleryId,
@@ -114,9 +105,7 @@ pub struct GalleryItemAnalysisState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-/// This is the state of a gallery after its items are embedded.
-/// 
-/// Initialized in the item analysis module.
+/// This is the state of a gallery after its items are analyzed.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryItemEmbedderState {
     pub gallery_id: GalleryId,
@@ -126,9 +115,7 @@ pub struct GalleryItemEmbedderState {
     pub used_evaluation_criteria: EvaluationCriteria,
 }
 
-/// This is the state of a gallery after its items are classified into groups within the gallery.
-/// 
-/// Initialized in the item embedder module.
+/// This is the state of a gallery after its items are embedded.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryFinalState {
     pub gallery_id: GalleryId,

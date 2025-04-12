@@ -2,7 +2,7 @@ use diesel_async::pooled_connection::deadpool::PoolError;
 use thiserror::Error;
 use uuid::Uuid;
 
-/// Errors that may arise while interacting with a store.
+/// Errors that may arise while accessing a store.
 #[derive(Error, Debug)]
 pub enum StoreError {
     #[error("Error from the pool: {0}")]

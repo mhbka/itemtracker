@@ -1,8 +1,7 @@
 use chrono::NaiveDateTime;
-use uuid::Uuid;
 
 /// Model of a scraped item.
-pub struct Item {
+pub struct ItemModel {
     pub marketplace: String,
     pub item_id: String,
     pub name: String,

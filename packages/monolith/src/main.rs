@@ -1,5 +1,5 @@
 mod config;
-mod galleries;
+mod domain;
 mod scraping_pipeline;
 mod messages;
 mod stores;

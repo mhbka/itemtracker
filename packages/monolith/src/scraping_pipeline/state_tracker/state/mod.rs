@@ -1,6 +1,6 @@
 use internal::InternalState;
 use redis::RedisState;
-use crate::{config::state_tracker::StateTrackerConfig, galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
+use crate::{config::state_tracker::StateTrackerConfig, domain::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}}, messages::message_types::state_tracker::StateTrackerError};
 
 mod internal;
 mod redis;

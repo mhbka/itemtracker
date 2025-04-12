@@ -3,7 +3,7 @@ use message_types::{
     item_analysis::ItemAnalysisMessage, item_embedder::ItemEmbedderMessage, item_scraper::ItemScraperMessage, scraper_scheduler::SchedulerMessage, search_scraper::SearchScraperMessage, state_tracker::{AddGalleryMessage, CheckGalleryDoesntExistMessage, RemoveGalleryMessage, StateTrackerError, StateTrackerMessage, GetGalleryStateMessage, UpdateGalleryStateMessage}, storage::StorageMessage
 };
 
-use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
+use crate::domain::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
 
 pub mod message_buses;
 pub mod message_types;

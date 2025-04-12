@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::galleries::eval_criteria::{CriterionAnswer, EvaluationCriteria};
+use crate::domain::eval_criteria::{CriterionAnswer, EvaluationCriteria};
 use super::item_data::MarketplaceItemData;
 
 /* 

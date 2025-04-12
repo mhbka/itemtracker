@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use futures::future::join_all;
 use mercari::MercariSearchScraper;
-use crate::{config::SearchScraperConfig, galleries::{domain_types::{ItemId, Marketplace}, pipeline_states::GallerySearchScrapingState}};
+use crate::{config::SearchScraperConfig, domain::{domain_types::{ItemId, Marketplace}, pipeline_states::GallerySearchScrapingState}};
 
 mod mercari;
 
@@ -26,6 +26,14 @@ impl SearchScraper {
     /// Returns an `Err` for whichever marketplaces had errors while scraping.
     pub async fn scrape_search(&mut self, gallery: &GallerySearchScrapingState) -> HashMap<Marketplace, Result<Vec<ItemId>, String>> {
         tracing::debug!("Starting scrape search for gallery {}", gallery.gallery_id);
+
+        let new_mercari_scraped_datetime = match gallery.marketplace_previous_scraped_datetimes.mercari {
+            Some(datetime) => {
+
+            },
+            None => None
+        };
+
         let results = join_all(
             gallery.marketplace_previous_scraped_datetimes
                 .clone()
@@ -43,6 +51,7 @@ impl SearchScraper {
                     (marketplace, result)
                 })
             ).await;
+
         results
             .into_iter()
             .collect()

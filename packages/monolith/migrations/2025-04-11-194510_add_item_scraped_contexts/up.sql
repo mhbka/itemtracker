@@ -32,16 +32,3 @@ CREATE TABLE error_embedded_marketplace_items (
     error TEXT NOT NULL,
     UNIQUE(analyzed_item_id)
 );
-
--- Table for criterion answers (used by both embedded and analyzed items)
-CREATE TABLE criterion_answers (
-    id SERIAL PRIMARY KEY,
-    embedded_item_id INTEGER REFERENCES embedded_marketplace_items(id) ON DELETE CASCADE,
-    analyzed_item_id INTEGER REFERENCES analyzed_marketplace_items(id) ON DELETE CASCADE,
-    criterion VARCHAR NOT NULL,
-    answer TEXT NOT NULL,
-    CHECK (
-        (embedded_item_id IS NULL AND analyzed_item_id IS NOT NULL) OR
-        (embedded_item_id IS NOT NULL AND analyzed_item_id IS NULL)
-    )
-);

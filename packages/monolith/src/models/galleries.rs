@@ -1,12 +1,12 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use uuid::Uuid;
-use crate::{galleries::{eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries};
+use crate::{domain::{eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries};
 
 // Model of the gallery table.
 #[derive(Queryable, Identifiable, Debug)]
 #[table_name = "galleries"]
-pub struct Gallery {
+pub struct GalleryModel {
     pub id: Uuid,
     pub user_id: Uuid,
     pub scraping_periodicity: String,

@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
-use crate::galleries::domain_types::GalleryId;
+use crate::domain::domain_types::GalleryId;
 use crate::messages::{SearchScraperSender, StateTrackerSender};
 use crate::{
-    galleries::pipeline_states::GallerySchedulerState, 
+    domain::pipeline_states::GallerySchedulerState, 
     messages::message_types::scraper_scheduler::SchedulerError
 };
 

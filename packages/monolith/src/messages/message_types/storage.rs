@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::galleries::{domain_types::GalleryId, pipeline_states::GalleryFinalState};
+use crate::domain::{domain_types::GalleryId, pipeline_states::GalleryFinalState};
 use thiserror::Error;
 
 use super::state_tracker::StateTrackerError;

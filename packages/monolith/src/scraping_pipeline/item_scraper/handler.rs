@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemScraperConfig, 
-    galleries::{domain_types::{GalleryId, Marketplace}, items::item_data::MarketplaceItemData, pipeline_states::{GalleryItemAnalysisState, GalleryItemScrapingState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    domain::{domain_types::{GalleryId, Marketplace}, item_data::MarketplaceItemData, pipeline_states::{GalleryItemAnalysisState, GalleryItemScrapingState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{message_types::{item_analysis::ItemAnalysisMessage, item_scraper::ItemScraperError}, ItemAnalysisSender, StateTrackerSender}
     };
 

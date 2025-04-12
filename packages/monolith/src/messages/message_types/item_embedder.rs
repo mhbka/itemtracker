@@ -1,7 +1,7 @@
-use crate::{galleries::pipeline_states::GalleryItemEmbedderState, messages::message_buses::MessageError};
+use crate::{domain::pipeline_states::GalleryItemEmbedderState, messages::message_buses::MessageError};
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
-use crate::galleries::domain_types::GalleryId;
+use crate::domain::domain_types::GalleryId;
 use super::state_tracker::StateTrackerError;
 
 /// Possible errors emitted from the item analysis module.

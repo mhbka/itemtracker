@@ -1,4 +1,4 @@
-use crate::galleries::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
+use crate::domain::{domain_types::GalleryId, pipeline_states::{GalleryPipelineStateTypes, GalleryPipelineStates}};
 use super::ModuleMessageWithReturn;
 use redis::RedisError;
 use serde::{Deserialize, Serialize};
