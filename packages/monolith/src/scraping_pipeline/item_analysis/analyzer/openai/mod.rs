@@ -34,7 +34,8 @@ impl OpenAIRequester {
             gallery_id: gallery.gallery_id,
             items: analyzed_items,
             failed_marketplace_reasons: gallery.failed_marketplace_reasons,
-            marketplace_updated_datetimes: gallery.marketplace_updated_datetimes
+            marketplace_updated_datetimes: gallery.marketplace_updated_datetimes,
+            used_evaluation_criteria: gallery.evaluation_criteria
         }
     }
 

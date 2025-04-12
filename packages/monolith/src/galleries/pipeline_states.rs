@@ -1,5 +1,5 @@
 //! This module holds types related to each stage of the scraping pipeline.
-//! We can map each stage's state to the next stage using `map_to_next_stage`.
+//! We can map each stage's state to the next stage using `map_to_next_state`.
 
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
@@ -75,18 +75,6 @@ pub struct GallerySchedulerState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-impl GallerySchedulerState {
-    /// Convenience function for mapping to the next state.
-    pub fn to_next_stage(self) -> GallerySearchScrapingState {
-        GallerySearchScrapingState {
-            gallery_id: self.gallery_id,
-            search_criteria: self.search_criteria,
-            marketplace_previous_scraped_datetimes: self.marketplace_previous_scraped_datetimes,
-            evaluation_criteria: self.evaluation_criteria,
-        }
-    }
-}
-
 /// This is the initial state that a scraping job starts in.
 /// 
 /// Initialized in the scraper scheduler module.
@@ -114,19 +102,6 @@ pub struct GalleryItemScrapingState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-impl GalleryItemScrapingState {
-    /// Convenience function for mapping to the next state.
-    pub fn to_next_stage(self, items: HashMap<Marketplace, Vec<MarketplaceItemData>>) -> GalleryItemAnalysisState {
-        GalleryItemAnalysisState {
-            gallery_id: self.gallery_id,
-            items,
-            marketplace_updated_datetimes: self.marketplace_updated_datetimes,
-            failed_marketplace_reasons: self.failed_marketplace_reasons,
-            evaluation_criteria: self.evaluation_criteria,
-        }
-    }
-}
-
 /// This is the state of a scraping job after the items are scraped.
 /// 
 /// Initialized in the scraper module.
@@ -139,18 +114,6 @@ pub struct GalleryItemAnalysisState {
     pub evaluation_criteria: EvaluationCriteria,
 }
 
-impl GalleryItemAnalysisState {
-    /// Convenience function for mapping to the next state.
-    pub fn to_next_stage(self, items: HashMap<Marketplace, MarketplaceAnalyzedItems>) -> GalleryItemEmbedderState {
-        GalleryItemEmbedderState {
-            gallery_id: self.gallery_id,
-            items,
-            marketplace_updated_datetimes: self.marketplace_updated_datetimes,
-            failed_marketplace_reasons: self.failed_marketplace_reasons,
-        }
-    }
-}
-
 /// This is the state of a gallery after its items are embedded.
 /// 
 /// Initialized in the item analysis module.
@@ -160,10 +123,7 @@ pub struct GalleryItemEmbedderState {
     pub items: HashMap<Marketplace, MarketplaceAnalyzedItems>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub failed_marketplace_reasons: HashMap<Marketplace, String>,
-}
-
-impl GalleryItemEmbedderState {
-
+    pub used_evaluation_criteria: EvaluationCriteria,
 }
 
 /// This is the state of a gallery after its items are classified into groups within the gallery.
@@ -175,8 +135,5 @@ pub struct GalleryFinalState {
     pub items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
     pub marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
     pub failed_marketplace_reasons: HashMap<Marketplace, String>,
-}
-
-impl GalleryFinalState {
-
+    pub used_evaluation_criteria: EvaluationCriteria,
 }

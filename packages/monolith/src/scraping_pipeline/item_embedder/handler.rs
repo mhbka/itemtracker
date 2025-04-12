@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{
     config::ItemEmbedderConfig, 
-    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, items::pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    galleries::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, items::pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
     messages::{
         message_types::{item_embedder::ItemEmbedderError, storage::StorageMessage}, StateTrackerSender, StorageSender
     }
@@ -73,6 +73,7 @@ impl Handler {
             embedded_items,
             gallery.marketplace_updated_datetimes,
             gallery.failed_marketplace_reasons,
+            gallery.used_evaluation_criteria
         ).await?;
         self.storage_sender
             .send(StorageMessage::StoreGallery { gallery_id: gallery_id.clone() })
@@ -141,12 +142,14 @@ impl Handler {
         embedded_items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
+        evaluation_criteria: EvaluationCriteria
     ) -> Result<(), ItemEmbedderError> {
         let new_state = self.process_to_next_state(
             gallery_id.clone(), 
             embedded_items, 
             marketplace_updated_datetimes, 
-            failed_marketplace_reasons
+            failed_marketplace_reasons,
+            evaluation_criteria
         );
         self.state_tracker_sender
             .update_gallery_state(gallery_id.clone(), GalleryPipelineStates::Final(new_state))
@@ -168,12 +171,14 @@ impl Handler {
         embedded_items: HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems>,
         marketplace_updated_datetimes: HashMap<Marketplace, UnixUtcDateTime>,
         failed_marketplace_reasons: HashMap<Marketplace, String>,
+        used_evaluation_criteria: EvaluationCriteria
     ) -> GalleryFinalState {
         GalleryFinalState {
             gallery_id,
             items: embedded_items,
             marketplace_updated_datetimes,
             failed_marketplace_reasons,
+            used_evaluation_criteria
         }
     }
 }

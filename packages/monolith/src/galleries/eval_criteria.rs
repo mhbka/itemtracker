@@ -91,7 +91,7 @@ impl EvaluationCriteria {
     } 
 }
 
-// Implement FromSql
+// So that we can directly write to/pull from SQL
 impl FromSql<Jsonb, Pg> for EvaluationCriteria {
     fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
         let val: serde_json::Value = <serde_json::Value as FromSql<Jsonb, Pg>>::from_sql(bytes)?;
@@ -99,7 +99,7 @@ impl FromSql<Jsonb, Pg> for EvaluationCriteria {
     }
 }
 
-// Implement ToSql
+// ^^
 impl ToSql<Jsonb, Pg> for EvaluationCriteria {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
         let json = serde_json::to_string(self)?;
