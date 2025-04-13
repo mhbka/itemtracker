@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use futures::future::join_all;
 use mercari::MercariSearchScraper;
 use crate::{config::SearchScraperConfig, domain::{domain_types::{ItemId, Marketplace}, pipeline_states::GallerySearchScrapingState}};
@@ -27,13 +26,6 @@ impl SearchScraper {
     pub async fn scrape_search(&mut self, gallery: &GallerySearchScrapingState) -> HashMap<Marketplace, Result<Vec<ItemId>, String>> {
         tracing::debug!("Starting scrape search for gallery {}", gallery.gallery_id);
 
-        let new_mercari_scraped_datetime = match gallery.marketplace_previous_scraped_datetimes.mercari {
-            Some(datetime) => {
-
-            },
-            None => None
-        };
-
         let results = join_all(
             gallery.marketplace_previous_scraped_datetimes
                 .clone()
@@ -45,8 +37,14 @@ impl SearchScraper {
                             .await
                     };
                     match &result {
-                        Ok(ids) => tracing::debug!("Gallery {}, marketplace {}: scraped {} item IDs", gallery.gallery_id, marketplace, ids.len()),
-                        Err(err) => tracing::debug!("Gallery {}, marketplace {} encountered error: {}", gallery.gallery_id, marketplace, err)
+                        Ok(ids) => tracing::debug!(
+                            "Gallery {}, marketplace {}: scraped {} item IDs", 
+                            gallery.gallery_id, marketplace, ids.len()
+                        ),
+                        Err(err) => tracing::debug!(
+                            "Gallery {}, marketplace {} encountered error: {}", 
+                            gallery.gallery_id, marketplace, err
+                        )
                     };
                     (marketplace, result)
                 })

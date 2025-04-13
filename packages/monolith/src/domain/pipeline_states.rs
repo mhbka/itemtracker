@@ -115,7 +115,7 @@ pub struct GalleryItemEmbedderState {
     pub used_evaluation_criteria: EvaluationCriteria,
 }
 
-/// This is the state of a gallery after its items are embedded.
+/// This is the final state of a scraping session.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GalleryFinalState {
     pub gallery_id: GalleryId,

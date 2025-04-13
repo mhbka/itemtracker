@@ -13,6 +13,5 @@ CREATE TABLE marketplace_items (
     created TIMESTAMP NOT NULL,
     updated TIMESTAMP NOT NULL,
     seller_id VARCHAR NOT NULL,
-    seller_name VARCHAR NOT NULL,
     UNIQUE(marketplace, item_id)
 );

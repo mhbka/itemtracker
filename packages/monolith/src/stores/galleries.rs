@@ -1,10 +1,10 @@
 use uuid::Uuid;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use crate::models::galleries::{GalleryModel, GalleryChanges, NewGallery};
+use crate::models::gallery::{GalleryModel, UpdatedGallery, NewGallery};
 use super::{error::StoreError, ConnectionPool};
 
-/// A (cloneable) interface for accessing galleries.
+/// For accessing/storing galleries.
 #[derive(Clone)]
 pub struct GalleryStore {
     pool: ConnectionPool
@@ -59,7 +59,7 @@ impl GalleryStore {
     }
 
     /// Update a gallery's data.
-    pub async fn update_gallery(&mut self, gallery_id: Uuid, gallery_changes: GalleryChanges) -> Result<(), StoreError> {
+    pub async fn update_gallery(&mut self, gallery_id: Uuid, gallery_changes: UpdatedGallery) -> Result<(), StoreError> {
         use crate::schema::galleries::dsl::*;
         
         let mut conn = self.pool.get().await?;

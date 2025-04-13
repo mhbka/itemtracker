@@ -6,7 +6,7 @@ use crate::domain::domain_types::{ItemId, UnixUtcDateTime};
 pub struct MarketplaceItemData {
     pub item_id: ItemId,
     pub name: String,
-    pub price: f32,  
+    pub price: f64,  
     pub description: String,
     pub status: String,
     pub seller_id: String,

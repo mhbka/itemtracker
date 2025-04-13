@@ -1,5 +1,5 @@
 use std::{io::Write, iter::zip};
-use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{self, Output, ToSql}, sql_types::Jsonb};
+use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{self, Output, ToSql}, sql_types::{Jsonb, Nullable}};
 use serde::{Serialize, Deserialize};
 
 /// A Vec of user-defined questions to ask the LLM about each item in a gallery.
@@ -190,13 +190,37 @@ pub enum CriterionType {
 }
 
 /// The possible answers for each criterion.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, FromSqlRow)]
 pub enum CriterionAnswer {
     YesNo(YesNo),
     YesNoUncertain(YesNoUncertain),
     Int(usize),
     Float(f64),
     OpenEnded(String)
+}
+
+// So that we can directly write to/pull from SQL
+impl FromSql<Jsonb, Pg> for CriterionAnswer {
+    fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
+        let val: serde_json::Value = <serde_json::Value as FromSql<Jsonb, Pg>>::from_sql(bytes)?;
+        serde_json::from_value(val).map_err(|e| e.into())
+    }
+}
+
+// ^^
+impl ToSql<Jsonb, Pg> for CriterionAnswer {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        let json = serde_json::to_string(self)?;
+        out.write_all(json.as_bytes())?;
+        Ok(serialize::IsNull::No)
+    }
+}
+
+impl ToSql<Nullable<Jsonb>, Pg> for CriterionAnswer {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        // Delegate to the implementation for non-nullable Jsonb
+        ToSql::<Jsonb, Pg>::to_sql(self, out)
+    }
 }
 
 /// The possible types of hard criterion.

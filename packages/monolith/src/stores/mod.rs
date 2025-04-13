@@ -3,6 +3,7 @@ use galleries::GalleryStore;
 use crate::config::StoreConfig;
 
 pub mod galleries;
+pub mod gallery_sessions;
 pub mod error;
 
 pub type ConnectionPool = Pool<AsyncPgConnection>;

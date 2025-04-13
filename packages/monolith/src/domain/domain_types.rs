@@ -6,11 +6,24 @@ use chrono::{DateTime, TimeZone, Utc};
 use croner::{errors::CronError, Cron};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
+use uuid::Uuid;
 
 /// All supported marketplaces.
 #[derive(Hash, Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
 pub enum Marketplace {
     Mercari
+}
+
+impl Marketplace {
+    /// Attempts to convert from a string, return an error if not possible.
+    pub fn from_string(string: &str) -> Result<Self, ()> {
+        Ok(
+            match string {
+            "Mercari" => Self::Mercari,
+            _ => Err(())?
+            }
+        )
+    }
 }
 
 impl Display for Marketplace {
@@ -62,14 +75,14 @@ impl<'de> Deserialize<'de> for ValidCronString {
     }
 }
 
-/// A String wrapper for a gallery ID.
+/// A wrapper for a gallery ID.
 /// 
 /// There is (currently) no special functionality or validation; this exists simply because the gallery ID is a heavily used domain type.
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
-pub struct GalleryId(String);
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct GalleryId(Uuid);
 
 impl Deref for GalleryId {
-    type Target = String;
+    type Target = Uuid;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
