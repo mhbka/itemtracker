@@ -10,6 +10,7 @@ tokio = { version = "^1.40.0", features = ["full"] }
 serde = { version = "^1.0.210", features = ["derive"] }
 reqwest = { version = "^0.12.8", features = ["json", "multipart"] }
 axum = "^0.7.7"
+axum-extra = { version = "0.10.1", features = ["typed-header"] }
 uuid = { version = "^1.11.0", features = ["serde"] }
 chrono = { version = "^0.4.38", features = ["serde"] }
 tracing = "^0.1.40"
@@ -32,3 +33,5 @@ redis = { version = "0.29.0", features = ["tokio-comp", "json"] }
 diesel-async = { version = "0.5.2", features = ["postgres", "deadpool"] }
 diesel = { version = "2.2.9", features = ["postgres_backend", "serde_json", "chrono", "uuid"] }
 scoped-futures = "0.1.4"
+once_cell = "1.21.3"
+

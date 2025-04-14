@@ -1,5 +1,6 @@
 use diesel_async::{pooled_connection::{deadpool::Pool, AsyncDieselConnectionManager}, AsyncPgConnection};
 use galleries::GalleryStore;
+use gallery_sessions::GallerySessionsStore;
 use crate::config::StoreConfig;
 
 pub mod galleries;
@@ -10,7 +11,8 @@ pub type ConnectionPool = Pool<AsyncPgConnection>;
 
 /// A centralized struct for initializing all stores.
 pub struct AppStores {
-    gallery_store: GalleryStore
+    pub gallery_store: GalleryStore,
+    pub gallery_sessions_store: GallerySessionsStore
 }
 
 impl AppStores {
@@ -21,8 +23,11 @@ impl AppStores {
             .build()
             .unwrap();
 
+        tracing::info!("Connection pool successfully initialized...");
+
         Self {
-            gallery_store: GalleryStore::new(pool.clone())
+            gallery_store: GalleryStore::new(pool.clone()),
+            gallery_sessions_store: GallerySessionsStore::new(pool.clone())
         }
     }
 }

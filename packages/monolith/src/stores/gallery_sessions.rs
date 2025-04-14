@@ -6,6 +6,7 @@ use diesel_async::{AsyncConnection, RunQueryDsl};
 use scoped_futures::ScopedFutureExt;
 
 /// For accessing/storing gallery sessions.
+#[derive(Clone)]
 pub struct GallerySessionsStore {
     pool: ConnectionPool
 }
@@ -18,13 +19,13 @@ impl GallerySessionsStore {
         }
     }
 
-    /// Add a new gallery session.
+    /// Store a new gallery session.
     pub async fn add_new_session(&mut self, state: GalleryFinalState) -> Result<SessionId, StoreError> {
         let mut conn = self.pool.get().await?;
 
         // TODO: move pieces of this into the models themselves
         conn.transaction::<_, StoreError, _>(|conn| async move {
-                // create the new session
+                // create and insert the new session
                 let new_session = NewGallerySession {
                     gallery_id: *state.gallery_id.clone(),
                     created: Utc::now().naive_utc(),
@@ -84,7 +85,8 @@ impl GallerySessionsStore {
                             let gallery_update = UpdatedGallery::update_marketplace_datetimes(Some(updated_datetime.naive_utc()));
                             update(galleries::table)
                                 .set(&gallery_update)
-                                .execute(conn);
+                                .execute(conn)
+                                .await?;
                         }
                     }
                 }

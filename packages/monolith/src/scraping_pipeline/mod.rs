@@ -7,7 +7,7 @@ use tokio::sync::mpsc;
 use search_scraper::SearchScraperModule;
 use scraper_scheduler::ScraperSchedulerModule;
 use tokio::task::JoinHandle;
-use crate::{config::AppConfig, messages::{message_buses::MessageSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemEmbedderReceiver, ItemEmbedderSender, ItemScraperReceiver, ItemScraperSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender, StorageReceiver, StorageSender}};
+use crate::{config::AppConfig, messages::{message_buses::MessageSender, ItemAnalysisReceiver, ItemAnalysisSender, ItemEmbedderReceiver, ItemEmbedderSender, ItemScraperReceiver, ItemScraperSender, ScraperSchedulerReceiver, ScraperSchedulerSender, SearchScraperReceiver, SearchScraperSender, StateTrackerReceiver, StateTrackerSender, StorageReceiver, StorageSender}, stores::AppStores};
 
 pub mod state_tracker;
 pub mod scraper_scheduler;
@@ -32,7 +32,11 @@ pub struct AppModules {
 
 impl AppModules {
     /// Initialize the app's modules.
-    pub async fn init(config: AppConfig, connections: AppModuleConnections) -> Self {
+    pub async fn init(
+        config: AppConfig, 
+        connections: AppModuleConnections,
+        stores: &AppStores
+    ) -> Self {
         let state_tracker_module = StateTrackerModule::init(
             config.state_tracker_config, 
             connections.state_tracker.1
@@ -69,7 +73,8 @@ impl AppModules {
         );
         let storage_module = StorageModule::init(
             connections.storage.1,
-            connections.state_tracker.0.clone()
+            connections.state_tracker.0.clone(),
+            stores.gallery_sessions_store.clone()
         );
         AppModules {
             state_tracker_module,

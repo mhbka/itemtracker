@@ -7,6 +7,7 @@ mod routes;
 mod utils;
 mod schema;
 mod models;
+mod auth;
 
 use config::AppConfig;
 use scraping_pipeline::{AppModuleConnections, AppModules};
@@ -26,7 +27,7 @@ async fn main() {
 
     let module_connections = AppModuleConnections::new();
     let router = routes::build_router(&app_config.axum_config, &module_connections);
-    let app_modules = AppModules::init(app_config, module_connections).await.run();
+    let app_modules = AppModules::init(app_config, module_connections, &stores).await.run();
 
     tracing::info!("App started");
 

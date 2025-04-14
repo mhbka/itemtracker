@@ -1,4 +1,4 @@
-use crate::messages::{message_types::storage::StorageMessage, StateTrackerSender, StorageReceiver};
+use crate::{messages::{message_types::storage::StorageMessage, StateTrackerSender, StorageReceiver}, stores::gallery_sessions::GallerySessionsStore};
 use handler::Handler;
 
 mod handler;
@@ -13,11 +13,13 @@ impl StorageModule {
     /// Initialize the module.
     pub fn init(
         msg_receiver: StorageReceiver,
-        state_tracker_sender: StateTrackerSender
+        state_tracker_sender: StateTrackerSender,
+        gallery_sessions_store: GallerySessionsStore
     ) -> Self
     {   
         let handler = Handler::new(
-            state_tracker_sender
+            state_tracker_sender,
+            gallery_sessions_store
         );
         Self { 
             msg_receiver, 

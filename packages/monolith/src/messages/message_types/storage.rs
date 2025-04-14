@@ -1,14 +1,16 @@
 use serde::{Deserialize, Serialize};
-use crate::domain::{domain_types::GalleryId, pipeline_states::GalleryFinalState};
+use crate::{domain::{domain_types::GalleryId, pipeline_states::GalleryFinalState}, stores::error::StoreError};
 use thiserror::Error;
 
 use super::state_tracker::StateTrackerError;
 
 /// Possible errors emitted from the scraper.
-#[derive(Error, Debug, Serialize, Deserialize, Clone)]
+#[derive(Error, Debug)]
 pub enum StorageError {
     #[error("Error from state tracker for gallery {gallery_id}: {err}")]
     StateErr { gallery_id: GalleryId, err: StateTrackerError },
+    #[error("{0}")]
+    StoreErr(#[from] StoreError),
     #[error("Encountered a different error for gallery {gallery_id}: {message}")]
     Other { gallery_id: GalleryId, message: String }
 }
