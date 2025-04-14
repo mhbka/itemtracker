@@ -1,13 +1,23 @@
-use super::{domain_types::{GalleryId, UnixUtcDateTime}, pipeline_states::GalleryFinalState};
+use serde::{Deserialize, Serialize};
+use super::{domain_types::{GalleryId, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_items::EmbeddedMarketplaceItem};
 
 /// Represents a session of item scraping + processing.
 /// 
 /// This is always tied to a gallery via the `gallery_id`.
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GallerySession {
     pub id: SessionId,
     pub gallery_id: GalleryId,
     pub created: UnixUtcDateTime,
-    pub data: GalleryFinalState
+    pub used_evaluation_criteria: EvaluationCriteria,
+    pub mercari_items: Vec<EmbeddedMarketplaceItem>
+
+    /* 
+    // As we currently only store embedded items, other data required here cannot be pulled from storage,
+    // so we only keep the embedded items for Mercari (as above).
+    // Once we're able to store all data in here, we can directly use this as a field.
+    pub items: GalleryFinalState
+    */
 }
 
 /// The type of `GallerySession` ID.

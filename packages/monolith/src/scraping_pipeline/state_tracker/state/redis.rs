@@ -40,7 +40,7 @@ impl State for RedisState {
     async fn add_gallery(&mut self, gallery_id: GalleryId, gallery_state: GalleryPipelineStates) -> Result<(), StateTrackerError> {
         let gallery_str = serde_json::to_string(&gallery_state)?;
         let res: Option<()> = self.connection
-            .set_nx(gallery_id.as_str(), gallery_str)
+            .set_nx(gallery_id.to_string(), gallery_str)
             .await?;
         match res {
             Some(v) => return Ok(()),
@@ -50,7 +50,7 @@ impl State for RedisState {
 
     async fn check_gallery_doesnt_exist(&mut self, gallery_id: GalleryId) -> Result<(), StateTrackerError> {
         let res: bool = self.connection
-            .exists(gallery_id.as_str())
+            .exists(gallery_id.to_string())
             .await?;
         match res {
             true => Err(StateTrackerError::GalleryAlreadyExists),
@@ -60,7 +60,7 @@ impl State for RedisState {
 
     async fn get_gallery_state(&mut self, gallery_id: GalleryId, requested_state_type: GalleryPipelineStateTypes) -> Result<GalleryPipelineStates, StateTrackerError> {
         let gallery_str: String = self.connection
-            .get(gallery_id.as_str())
+            .get(gallery_id.to_string())
             .await?;
         let gallery: GalleryPipelineStates = serde_json::from_str(&gallery_str)?;
         match gallery.matches(&requested_state_type) {
@@ -71,13 +71,13 @@ impl State for RedisState {
 
     async fn update_gallery_state(&mut self, gallery_id: GalleryId, updated_state: GalleryPipelineStates) -> Result<(), StateTrackerError> {
         match self.connection
-            .exists(gallery_id.as_str())
+            .exists(gallery_id.to_string())
             .await?
         {
             true => {
                 let gallery_str = serde_json::to_string(&updated_state)?;
                 let _: () = self.connection
-                    .set(gallery_id.as_str(), gallery_str)
+                    .set(gallery_id.to_string(), gallery_str)
                     .await?;
                 Ok(())
             },
@@ -87,12 +87,12 @@ impl State for RedisState {
 
     async fn remove_gallery(&mut self, gallery_id: GalleryId) -> Result<(), StateTrackerError> {
         match self.connection
-            .exists(gallery_id.as_str())
+            .exists(gallery_id.to_string())
             .await?
         {
             true => {
                 let _: () = self.connection
-                    .del(gallery_id.as_str())
+                    .del(gallery_id.to_string())
                     .await?;
                 Ok(())
             },

@@ -1,10 +1,11 @@
 use chrono::{NaiveDateTime, Utc};
-use diesel::prelude::*;
+use diesel::{pg::Pg, prelude::*};
 use uuid::Uuid;
 use crate::{domain::{eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries::{self, mercari_last_scraped_time}};
 
 // Model of the gallery table.
-#[derive(Queryable, Identifiable, Debug)]
+#[derive(Queryable, Selectable, Identifiable, Debug)]
+#[diesel(check_for_backend(Pg))]
 #[table_name = "galleries"]
 pub struct GalleryModel {
     pub id: Uuid,
@@ -12,7 +13,7 @@ pub struct GalleryModel {
     pub scraping_periodicity: String,
     pub search_criteria: SearchCriteria,
     pub evaluation_criteria: EvaluationCriteria,
-    pub mercari_last_scraped_time: Option<i64>,
+    pub mercari_last_scraped_time: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }

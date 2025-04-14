@@ -19,7 +19,7 @@ diesel::table! {
         scraping_periodicity -> Text,
         search_criteria -> Jsonb,
         evaluation_criteria -> Jsonb,
-        mercari_last_scraped_time -> Timestamp,
+        mercari_last_scraped_time -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

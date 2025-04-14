@@ -15,7 +15,9 @@ pub enum Marketplace {
 }
 
 impl Marketplace {
-    /// Attempts to convert from a string, return an error if not possible.
+    /// Attempts to convert from a string; return an error if not possible.
+    /// 
+    /// The strings used should be the exact same as used in the `Display` impl.
     pub fn from_string(string: &str) -> Result<Self, ()> {
         Ok(
             match string {
@@ -100,6 +102,12 @@ impl Display for GalleryId {
     }
 }
 
+impl From<Uuid> for GalleryId {
+    fn from(value: Uuid) -> Self {
+        Self(value)
+    }
+}
+
 /// A wrapper for a marketplace item ID.
 /// 
 /// There is (currently) no special functionality or validation; this exists simply because the item ID is a heavily used domain type.
@@ -141,6 +149,11 @@ impl UnixUtcDateTime {
     /// Instantiate with the current datetime.
     pub fn now() -> Self {
         Self(Utc::now())
+    }
+
+    /// Instantiate with a given datetime.
+    pub fn new(datetime: DateTime<Utc>) -> Self {
+        Self(datetime)
     }
 }
 

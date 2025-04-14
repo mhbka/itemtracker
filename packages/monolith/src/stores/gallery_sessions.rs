@@ -1,4 +1,4 @@
-use crate::{domain::{domain_types::Marketplace, gallery_session::{GallerySession, SessionId}, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::NewItem}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
+use crate::{domain::{domain_types::Marketplace, gallery_session::{GallerySession, SessionId}, pipeline_items::EmbeddedMarketplaceItem, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
 use super::{error::StoreError, ConnectionPool};
 use chrono::Utc;
 use diesel::{associations::HasTable, dsl::update, insert_into, prelude::*};
@@ -96,6 +96,45 @@ impl GallerySessionsStore {
     
     /// Get a gallery session.
     pub async fn get_session(&mut self, id: SessionId) -> Result<GallerySession, StoreError> {
-        todo!()
+        let mut conn = self.pool.get().await?;
+
+        let session_model = gallery_sessions::table
+            .filter(gallery_sessions::columns::id.eq(id))
+            .first::<GallerySessionModel>(&mut conn)
+            .await?;
+        let mut embedded_item_models = embedded_marketplace_items::table
+            .filter(embedded_marketplace_items::gallery_session_id.eq(session_model.id))
+            .load::<EmbeddedItemModel>(&mut conn)
+            .await?;
+        let embedded_item_ids = embedded_item_models
+            .iter()
+            .map(|i| i.marketplace_item_id)
+            .collect::<Vec<_>>();
+        let embedded_item_data = marketplace_items::table
+            .filter(marketplace_items::columns::id.eq_any(&embedded_item_ids))
+            .load::<ItemModel>(&mut conn)
+            .await?;
+
+        // NOTE: If more marketplaces are added in the future, this needs to be rewritten to get items for each of them
+        let mercari_embedded_items = embedded_item_data
+            .into_iter()
+            .filter(|i| i.marketplace == Marketplace::Mercari.to_string())
+            .filter_map(|item| {
+                // this should always be true since we filtered items by `eq_any` above, but just in case...
+                if let Some(pos) = embedded_item_models
+                    .iter()
+                    .position(|e| e.marketplace_item_id == item.id)
+                {
+                    let embedded_item_model = embedded_item_models.swap_remove(pos);
+                    let item = item.convert_to();
+                    let embedded_item = embedded_item_model.convert_to(item);
+                    return Some(embedded_item);
+                }
+                None
+            })
+            .collect();
+
+        let session = session_model.convert_to(mercari_embedded_items);
+        Ok(session)
     }
 }

@@ -7,7 +7,7 @@ CREATE TABLE galleries (
     scraping_periodicity TEXT NOT NULL,
     search_criteria JSONB NOT NULL,
     evaluation_criteria JSONB NOT NULL,
-    mercari_last_scraped_time TIMESTAMP NOT NULL,
+    mercari_last_scraped_time TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

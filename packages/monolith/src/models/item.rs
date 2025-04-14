@@ -1,9 +1,10 @@
 use chrono::NaiveDateTime;
-use diesel::prelude::*;
-use crate::{domain::{domain_types::Marketplace, item_data::MarketplaceItemData}, schema::marketplace_items};
+use diesel::{prelude::*, pg::Pg};
+use crate::{domain::{domain_types::{ItemId, Marketplace, UnixUtcDateTime}, item_data::MarketplaceItemData}, schema::marketplace_items};
 
 /// Model of a marketplace item.
-#[derive(Queryable, Identifiable, Debug)]
+#[derive(Queryable, Selectable, Identifiable, Debug)]
+#[diesel(check_for_backend(Pg))]
 #[table_name = "marketplace_items"]
 pub struct ItemModel {
     pub id: i32,
@@ -14,11 +15,35 @@ pub struct ItemModel {
     pub description: String,
     pub status: String,
     pub category: String,
-    pub thumbnails: Vec<String>, 
+    pub thumbnails: Vec<Option<String>>, 
     pub item_condition: String,
     pub created: NaiveDateTime,
     pub updated: NaiveDateTime,
     pub seller_id: String,
+}
+
+impl ItemModel {
+    /// Convert to the domain type.
+    pub fn convert_to(self) -> MarketplaceItemData {
+        let thumbnails = self.thumbnails
+            .into_iter()
+            .filter_map(|t| t)
+            .collect();
+
+        MarketplaceItemData {
+            item_id: ItemId::from(self.item_id),
+            name: self.name,
+            price: self.price,
+            description: self.description,
+            status: self.status,
+            thumbnails,
+            seller_id: self.seller_id,
+            category: self.category,
+            item_condition: self.item_condition,
+            created: UnixUtcDateTime::new(self.created.and_utc()),
+            updated: UnixUtcDateTime::new(self.updated.and_utc())
+        }
+    }
 }
 
 /// For inserting a new item.
