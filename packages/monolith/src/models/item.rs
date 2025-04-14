@@ -5,7 +5,7 @@ use crate::{domain::{domain_types::{ItemId, Marketplace, UnixUtcDateTime}, item_
 /// Model of a marketplace item.
 #[derive(Queryable, Selectable, Identifiable, Debug)]
 #[diesel(check_for_backend(Pg))]
-#[table_name = "marketplace_items"]
+#[diesel(table_name = marketplace_items)]
 pub struct ItemModel {
     pub id: i32,
     pub marketplace: String,

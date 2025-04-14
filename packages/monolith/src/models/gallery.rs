@@ -1,16 +1,17 @@
 use chrono::{NaiveDateTime, Utc};
 use diesel::{pg::Pg, prelude::*};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{domain::{eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries::{self, mercari_last_scraped_time}};
+use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries::{self, mercari_last_scraped_time}};
 
 // Model of the gallery table.
 #[derive(Queryable, Selectable, Identifiable, Debug)]
 #[diesel(check_for_backend(Pg))]
-#[table_name = "galleries"]
+#[diesel(table_name = galleries)]
 pub struct GalleryModel {
     pub id: Uuid,
     pub user_id: Uuid,
-    pub scraping_periodicity: String,
+    pub scraping_periodicity: ValidCronString,
     pub search_criteria: SearchCriteria,
     pub evaluation_criteria: EvaluationCriteria,
     pub mercari_last_scraped_time: Option<NaiveDateTime>,
@@ -19,11 +20,11 @@ pub struct GalleryModel {
 }
 
 /// For inserting a new gallery.
-#[derive(Insertable)]
+#[derive(Insertable, Serialize, Deserialize, Debug)]
 #[table_name = "galleries"]
 pub struct NewGallery {
     pub user_id: Uuid,
-    pub scraping_periodicity: String,
+    pub scraping_periodicity: ValidCronString,
     pub search_criteria: SearchCriteria,
     pub evaluation_criteria: EvaluationCriteria,
     pub mercari_last_scraped_time: Option<NaiveDateTime>,
@@ -35,7 +36,7 @@ pub struct NewGallery {
 #[derive(AsChangeset)]
 #[table_name = "galleries"]
 pub struct UpdatedGallery {
-    pub scraping_periodicity: Option<String>,
+    pub scraping_periodicity: Option<ValidCronString>,
     pub search_criteria: Option<SearchCriteria>,
     pub evaluation_criteria: Option<EvaluationCriteria>,
     pub mercari_last_scraped_time: Option<NaiveDateTime>,

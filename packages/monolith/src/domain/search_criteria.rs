@@ -24,9 +24,8 @@ impl FromSql<Jsonb, Pg> for SearchCriteria {
 
 // ^^
 impl ToSql<Jsonb, Pg> for SearchCriteria {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        let json = serde_json::to_string(self)?;
-        out.write_all(json.as_bytes())?;
-        Ok(serialize::IsNull::No)
+    fn to_sql(&self, out: &mut diesel::serialize::Output<Pg>) -> diesel::serialize::Result {
+        let value = serde_json::to_value(self)?;
+        <serde_json::Value as ToSql<Jsonb, Pg>>::to_sql(&value, &mut out.reborrow())
     }
 }

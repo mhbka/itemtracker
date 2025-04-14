@@ -6,7 +6,7 @@ use diesel::{pg::Pg, Associations, Identifiable, Insertable, Queryable, Selectab
 #[belongs_to(ItemModel, foreign_key = "marketplace_item_id")]
 #[belongs_to(GallerySessionModel, foreign_key = "gallery_session_id")]
 #[diesel(check_for_backend(Pg))]
-#[table_name = "embedded_marketplace_items"]
+#[diesel(table_name = embedded_marketplace_items)]
 pub struct EmbeddedItemModel {
     pub id: i32,
     /// **NOTE**: This refers to the `id` of the marketplace item,

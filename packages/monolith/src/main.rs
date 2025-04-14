@@ -26,7 +26,7 @@ async fn main() {
     let stores = AppStores::new(&app_config.store_config); 
 
     let module_connections = AppModuleConnections::new();
-    let router = routes::build_router(&app_config.axum_config, &module_connections);
+    let router = routes::build_router(&app_config.axum_config, &module_connections, &stores);
     let app_modules = AppModules::init(app_config, module_connections, &stores).await.run();
 
     tracing::info!("App started");

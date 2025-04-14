@@ -26,12 +26,13 @@ impl Handler {
     /// Store a new gallery.
     pub async fn store_gallery(&mut self, state: GalleryFinalState) -> Result<(), StorageError> {
         let gallery_id = state.gallery_id.clone();
-
         let session_id = self.gallery_sessions_store
             .add_new_session(state)
             .await?;
 
         tracing::info!("Successfully stored new session for gallery {}; ID: {}", gallery_id, session_id);
+
+        self.remove_gallery_from_state(gallery_id).await?;
         
         Ok(())
     }
@@ -62,5 +63,22 @@ impl Handler {
                     }
                 )
         }
+    }
+
+    /// Removes a gallery from the state.
+    /// 
+    /// Returns an `Err` if the gallery isn't in state, or the state tracker had an error.
+    async fn remove_gallery_from_state(&mut self, gallery_id: GalleryId) -> Result<(), StorageError> {
+        self.state_tracker_sender
+            .remove_gallery(gallery_id.clone())
+            .await
+            .map_err(|err| StorageError::Other { 
+                gallery_id: gallery_id.clone(), 
+                message: format!("Could not receive response from state tracker: {err}") 
+            })?
+            .map_err(|err| StorageError::StateErr { 
+                gallery_id: gallery_id.clone(), 
+                err 
+            })
     }
 }

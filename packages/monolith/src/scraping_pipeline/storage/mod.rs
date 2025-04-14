@@ -44,7 +44,7 @@ impl StorageModule {
                     .store_gallery(gallery)
                     .await;
                 if let Err(err) = schedule_result {
-                    tracing::error!("Error while search scraping: {err}");
+                    tracing::error!("Error while storing: {err}");
                 };
             },
             StorageMessage::StoreGallery{ gallery_id } => {
@@ -53,7 +53,7 @@ impl StorageModule {
                     .store_gallery_in_state(gallery_id)
                     .await;
                 if let Err(err) = schedule_result {
-                    tracing::error!("Error while search scraping: {err}");
+                    tracing::error!("Error while storing: {err}");
                 };
             }
             StorageMessage::StoreGalleryError { gallery_id, error } => {

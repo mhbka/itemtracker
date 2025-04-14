@@ -6,7 +6,7 @@ use diesel::{pg::Pg, Associations, Identifiable, Insertable, Queryable, Selectab
 /// Model of the `gallery_sessions` table.
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
 #[diesel(check_for_backend(Pg))]
-#[table_name = "gallery_sessions"]
+#[diesel(table_name = gallery_sessions)]
 pub struct GallerySessionModel {
     pub id: i32,
     pub gallery_id: Uuid,

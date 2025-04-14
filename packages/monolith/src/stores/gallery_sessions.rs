@@ -1,7 +1,7 @@
 use crate::{domain::{domain_types::Marketplace, gallery_session::{GallerySession, SessionId}, pipeline_items::EmbeddedMarketplaceItem, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
 use super::{error::StoreError, ConnectionPool};
 use chrono::Utc;
-use diesel::{associations::HasTable, dsl::update, insert_into, prelude::*};
+use diesel::{associations::HasTable, dsl::update, insert_into, prelude::*, upsert::excluded};
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use scoped_futures::ScopedFutureExt;
 
@@ -53,6 +53,18 @@ impl GallerySessionsStore {
                     .collect();
                 let embedded_items_data_ids: Vec<i32> = insert_into(marketplace_items::table)
                     .values(&embedded_items_data)
+                        // below are for conflicts
+                        .on_conflict((marketplace_items::marketplace, marketplace_items::item_id))
+                        .do_update()
+                        .set(( 
+                            // for brevity, I ommitted seller_id, category, item_condition
+                            marketplace_items::columns::name.eq(excluded(marketplace_items::columns::name)),
+                            marketplace_items::columns::price.eq(excluded(marketplace_items::columns::price)),
+                            marketplace_items::columns::description.eq(excluded(marketplace_items::columns::description)),
+                            marketplace_items::columns::status.eq(excluded(marketplace_items::columns::status)),
+                            marketplace_items::columns::thumbnails.eq(excluded(marketplace_items::columns::thumbnails)),
+                            marketplace_items::columns::updated.eq(excluded(marketplace_items::columns::updated)),
+                        ))
                     .returning(marketplace_items::columns::id)
                     .get_results(conn)
                     .await?;

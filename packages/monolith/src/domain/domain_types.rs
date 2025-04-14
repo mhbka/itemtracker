@@ -4,6 +4,12 @@ use std::fmt::{self, Display};
 use std::ops::{Deref, DerefMut};
 use chrono::{DateTime, TimeZone, Utc};
 use croner::{errors::CronError, Cron};
+use diesel::deserialize::FromSql;
+use diesel::FromSqlRow;
+use diesel::expression::AsExpression;
+use diesel::pg::{Pg, PgValue};
+use diesel::serialize::ToSql;
+use diesel::sql_types::Text;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
 use uuid::Uuid;
@@ -41,7 +47,8 @@ impl Display for Marketplace {
 /// This is used over a `Cron`, as:
 /// - `Cron` is not `(De)Serialize`
 /// - `Cron` doesn't verify that its string is a valid Cron pattern
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, FromSqlRow, AsExpression)]
+#[diesel(sql_type = diesel::sql_types::Text)]
 pub struct ValidCronString(String);
 
 impl ValidCronString {
@@ -74,6 +81,22 @@ impl<'de> Deserialize<'de> for ValidCronString {
     {
         let s = String::deserialize(deserializer)?;
         ValidCronString::new(s).map_err(|_| D::Error::custom("String is not a valid Cron pattern"))
+    }
+}
+
+// So that we can directly write to/pull from SQL
+impl FromSql<Text, Pg> for ValidCronString {
+    fn from_sql(bytes: PgValue<'_>) -> diesel::deserialize::Result<Self> {
+        let val: String = <String as FromSql<Text, Pg>>::from_sql(bytes)?;
+        Self::new(val)
+            .map_err(|e| e.into())
+    }
+}
+
+// ^^
+impl ToSql<Text, Pg> for ValidCronString {
+    fn to_sql(&self, out: &mut diesel::serialize::Output<Pg>) -> diesel::serialize::Result {
+        <String as ToSql<Text, Pg>>::to_sql(&self.0, &mut out.reborrow())
     }
 }
 

@@ -101,10 +101,9 @@ impl FromSql<Jsonb, Pg> for EvaluationCriteria {
 
 // ^^
 impl ToSql<Jsonb, Pg> for EvaluationCriteria {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        let json = serde_json::to_string(self)?;
-        out.write_all(json.as_bytes())?;
-        Ok(serialize::IsNull::No)
+    fn to_sql(&self, out: &mut diesel::serialize::Output<Pg>) -> diesel::serialize::Result {
+        let value = serde_json::to_value(self)?;
+        <serde_json::Value as ToSql<Jsonb, Pg>>::to_sql(&value, &mut out.reborrow())
     }
 }
 
@@ -209,17 +208,16 @@ impl FromSql<Jsonb, Pg> for CriterionAnswer {
 
 // ^^
 impl ToSql<Jsonb, Pg> for CriterionAnswer {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        let json = serde_json::to_string(self)?;
-        out.write_all(json.as_bytes())?;
-        Ok(serialize::IsNull::No)
+    fn to_sql(&self, out: &mut diesel::serialize::Output<Pg>) -> diesel::serialize::Result {
+        let value = serde_json::to_value(self)?;
+        <serde_json::Value as ToSql<Jsonb, Pg>>::to_sql(&value, &mut out.reborrow())
     }
 }
 
 impl ToSql<Nullable<Jsonb>, Pg> for CriterionAnswer {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
-        // Delegate to the implementation for non-nullable Jsonb
-        ToSql::<Jsonb, Pg>::to_sql(self, out)
+    fn to_sql(&self, out: &mut diesel::serialize::Output<Pg>) -> diesel::serialize::Result {
+        let value = serde_json::to_value(self)?;
+        <serde_json::Value as ToSql<Jsonb, Pg>>::to_sql(&value, &mut out.reborrow())
     }
 }
 
