@@ -34,4 +34,6 @@ diesel-async = { version = "0.5.2", features = ["postgres", "deadpool"] }
 diesel = { version = "2.2.9", features = ["postgres_backend", "serde_json", "chrono", "uuid"] }
 scoped-futures = "0.1.4"
 once_cell = "1.21.3"
+strum = "0.27.1"
+strum_macros = "0.27.1"
 

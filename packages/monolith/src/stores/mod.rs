@@ -10,6 +10,7 @@ pub mod error;
 pub type ConnectionPool = Pool<AsyncPgConnection>;
 
 /// A centralized struct for initializing all stores.
+#[derive(Clone)]
 pub struct AppStores {
     pub gallery_store: GalleryStore,
     pub gallery_sessions_store: GallerySessionsStore

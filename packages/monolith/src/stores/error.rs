@@ -14,3 +14,7 @@ pub enum StoreError {
     #[error("Error does not fit into category: {message}")]
     Other { message: String }
 }
+
+/// Alias for a result whose error is `StoreError`.
+pub type StoreResult<T> = Result<T, StoreError>;
+

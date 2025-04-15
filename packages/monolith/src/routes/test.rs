@@ -1,10 +1,10 @@
 use axum::{routing::post, Json, Router};
 use reqwest::StatusCode;
-use crate::{config::AxumConfig, domain::pipeline_states::GallerySearchScrapingState, messages::{message_types::search_scraper::SearchScraperMessage, SearchScraperSender}, models::gallery::NewGallery, scraping_pipeline::AppModuleConnections, stores::{galleries::GalleryStore, AppStores}};
+use crate::{config::AxumConfig, domain::pipeline_states::GallerySearchScrapingState, messages::{message_types::search_scraper::SearchScraperMessage, SearchScraperSender}, models::gallery::NewGallery, scraping_pipeline::PipelineConnections, stores::{galleries::GalleryStore, AppStores}};
 
 pub(super) fn build(
     config: &AxumConfig, 
-    module_connections: &AppModuleConnections,
+    module_connections: &PipelineConnections,
     app_store: &AppStores
 ) -> Router {
     let mut router = Router::new();

@@ -1,6 +1,6 @@
 use scheduler::SchedulerHandler;
 use tracing::info;
-use crate::{config::ScraperSchedulerConfig, messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, SearchScraperSender, StateTrackerSender}};
+use crate::{config::ScraperSchedulerConfig, domain::pipeline_states::GallerySchedulerState, messages::{message_types::scraper_scheduler::SchedulerMessage, ScraperSchedulerReceiver, SearchScraperSender, StateTrackerSender}};
 
 mod scheduled_task;
 mod scheduler;
@@ -18,15 +18,22 @@ pub struct ScraperSchedulerModule {
 
 impl ScraperSchedulerModule {
     /// Initializes the module.
-    pub fn init( 
+    pub async fn init( 
         config: ScraperSchedulerConfig,
+        initial_state: Vec<GallerySchedulerState>,
         msg_receiver: ScraperSchedulerReceiver,
         search_scraper_sender: SearchScraperSender,
         state_tracker_sender: StateTrackerSender
     ) -> Self
-    {
+    {   
+        let scheduler = SchedulerHandler::new(
+            search_scraper_sender.clone(), 
+            state_tracker_sender,
+            initial_state
+        ).await;
+
         ScraperSchedulerModule {
-            scheduler: SchedulerHandler::new(search_scraper_sender.clone(), state_tracker_sender),
+            scheduler,
             msg_receiver,
             search_scraper_sender
         }

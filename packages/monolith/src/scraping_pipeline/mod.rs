@@ -34,19 +34,25 @@ impl AppModules {
     /// Initialize the app's modules.
     pub async fn init(
         config: AppConfig, 
-        connections: AppModuleConnections,
-        stores: &AppStores
+        connections: PipelineConnections,
+        stores: &mut AppStores
     ) -> Self {
+        let initial_gallery_states = stores.gallery_store
+            .initial_gallery_tasks()
+            .await
+            .expect("Should not fail to get initial gallery tasks");
+
         let state_tracker_module = StateTrackerModule::init(
             config.state_tracker_config, 
             connections.state_tracker.1
         ).await;
         let scheduler_module = ScraperSchedulerModule::init(
             config.scraper_scheduler_config,
+            initial_gallery_states,
             connections.scraper_scheduler.1, 
             connections.search_scraper.0,
-            connections.state_tracker.0.clone()
-        );
+            connections.state_tracker.0.clone(),
+        ).await;
         let search_scraper_module = SearchScraperModule::init(
             config.search_scraper_config, 
             connections.search_scraper.1, 
@@ -88,7 +94,7 @@ impl AppModules {
     }
 
     /// Start running all of the app's modules.
-    pub fn run(mut self) -> AppModulesRunningHandles {
+    pub fn run(mut self) -> PipelineRunningHandles {
         let state_tracker_task = tokio::spawn(async move { self.state_tracker_module.run().await; });
         let scheduler_task = tokio::spawn(async move { self.scheduler_module.run().await; });
         let search_scraper_task = tokio::spawn(async move { self.search_scraper_module.run().await; });
@@ -96,7 +102,7 @@ impl AppModules {
         let analysis_task = tokio::spawn(async move { self.analysis_module.run().await; });
         let classifier_task = tokio::spawn(async move { self.classifier_module.run().await; });
         let storage_task = tokio::spawn(async move { self.storage_module.run().await; });
-        AppModulesRunningHandles {
+        PipelineRunningHandles {
             state_tracker_task,
             scheduler_task,
             search_scraper_task,
@@ -109,7 +115,7 @@ impl AppModules {
 }
 
 /// Holds task handles for each module's running tasks.
-pub struct AppModulesRunningHandles {
+pub struct PipelineRunningHandles {
     state_tracker_task: JoinHandle<()>,
     scheduler_task: JoinHandle<()>,
     search_scraper_task: JoinHandle<()>,
@@ -120,7 +126,7 @@ pub struct AppModulesRunningHandles {
 }
 
 /// Struct for initializing inter-module connections.
-pub struct AppModuleConnections {
+pub struct PipelineConnections {
     pub state_tracker: (StateTrackerSender, StateTrackerReceiver),
     pub scraper_scheduler: (ScraperSchedulerSender, ScraperSchedulerReceiver),
     pub search_scraper: (SearchScraperSender, SearchScraperReceiver),
@@ -130,7 +136,7 @@ pub struct AppModuleConnections {
     pub storage: (StorageSender, StorageReceiver)
 }
 
-impl AppModuleConnections {
+impl PipelineConnections {
     /// Initialize the app module connections.
     pub fn new() -> Self {
         Self {

@@ -12,10 +12,11 @@ use diesel::serialize::ToSql;
 use diesel::sql_types::Text;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error;
+use strum_macros::EnumIter;
 use uuid::Uuid;
 
 /// All supported marketplaces.
-#[derive(Hash, Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
+#[derive(Hash, Eq, PartialEq, Clone, Debug, Serialize, Deserialize, EnumIter)]
 pub enum Marketplace {
     Mercari
 }

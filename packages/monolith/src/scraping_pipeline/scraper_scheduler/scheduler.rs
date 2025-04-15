@@ -26,12 +26,20 @@ impl SchedulerHandler {
     /// Instantiate the scheduler.
     /// 
     /// TODO: be able to instantiate from a Vec of galleries here
-    pub fn new(scraper_msg_sender: SearchScraperSender, state_tracker_sender: StateTrackerSender) -> Self {
-        Self {
+    pub async fn new(
+        scraper_msg_sender: SearchScraperSender, 
+        state_tracker_sender: StateTrackerSender,
+        initial_state: Vec<GallerySchedulerState>
+    ) -> Self {
+        let mut handler = Self {
             galleries: Arc::new(RwLock::new(HashMap::new())),
             scraper_msg_sender,
             state_tracker_sender
-        }
+        };
+
+        handler.initialize_tasks(initial_state).await;
+
+        handler
     }
 
     /// Add a new gallery to the scheduler.
@@ -96,5 +104,25 @@ impl SchedulerHandler {
             }
         );
         (task, task_handle)
+    }
+
+    /// Start up tasks for all present galleries.
+    async fn initialize_tasks(&mut self, galleries: Vec<GallerySchedulerState>) {
+        let total = galleries.len();
+        let mut successful = 0;
+        let mut failed = 0;
+
+        for gallery in galleries {
+            let gallery_id = gallery.gallery_id.clone();
+            match self.add_gallery(gallery).await {
+                Ok(_) => successful += 1,
+                Err(err) => {
+                    tracing::warn!("Failed to initialize task for gallery {gallery_id}: {err}");
+                    failed += 1;
+                }
+            }
+        }
+
+        tracing::info!("Finished initializing {total} galleries in the scheduler ({successful} successful, {failed} failed)");
     }
 }
