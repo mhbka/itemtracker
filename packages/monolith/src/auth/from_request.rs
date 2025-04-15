@@ -36,13 +36,20 @@ where
             .typed_get::<Authorization<Bearer>>()
             .ok_or_else(|| AuthError::Auth)?;
 
+        // HACK: set aud validation to false for now
+        let mut validation = Validation::default();
+        validation.validate_aud = false;
+
         // Decode the token
         let token_data = decode::<AuthClaims>(
             bearer.token(),
             &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
-            &Validation::default(),
+            &validation,
         )
-            .map_err(|e| AuthError::InvalidToken)?;
+            .map_err(|e| {
+                tracing::info!("Failed to decode: {:?}", e.kind());
+                AuthError::InvalidToken
+            })?;
 
         // Extract user data from claims
         let claims = token_data.claims;

@@ -5,13 +5,13 @@ export interface UserMetadata {
     email?: string;
     picture?: string;
     [key: string]: any;
-  }
-  
-  export interface User {
-    id: string;
-    email?: string;
-    user_metadata: UserMetadata;
-    app_metadata: Record<string, any>;
-    aud: string;
-    created_at: string;
-  }
+}
+
+export interface User {
+  id: string;
+  email?: string;
+  user_metadata: UserMetadata;
+  app_metadata: Record<string, any>;
+  aud: string;
+  created_at: string;
+}

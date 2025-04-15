@@ -2,7 +2,7 @@ use chrono::{NaiveDateTime, Utc};
 use diesel::{pg::Pg, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries::{self}};
+use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, pipeline_states::GallerySchedulerState, search_criteria::SearchCriteria}, schema::galleries::{self}};
 
 // Model of the gallery table.
 #[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize, Debug)]

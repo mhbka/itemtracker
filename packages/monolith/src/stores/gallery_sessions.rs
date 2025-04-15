@@ -1,8 +1,11 @@
+use std::error::Error;
+
 use crate::{domain::{domain_types::{Marketplace, UnixUtcDateTime}, gallery_session::{GallerySession, GallerySessionStats, SessionId}, pipeline_items::EmbeddedMarketplaceItem, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
 use super::{error::{StoreError, StoreResult}, ConnectionPool};
 use chrono::Utc;
-use diesel::{associations::HasTable, dsl::update, insert_into, prelude::*, upsert::excluded};
+use diesel::{associations::HasTable, dsl::{count_star, update}, insert_into, prelude::*, upsert::excluded};
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use futures::future::join_all;
 use scoped_futures::ScopedFutureExt;
 use uuid::Uuid;
 
@@ -187,6 +190,46 @@ impl GallerySessionsStore {
             used_evaluation_criteria: session_model.used_evaluation_criteria,
             total_items
         };
+        Ok(stats)
+    }
+
+    /// Get the stats of all sessions under a gallery.
+    pub async fn get_all_session_stats(&mut self, gallery_id: Uuid) -> StoreResult<Vec<(SessionId, GallerySessionStats)>> {
+        let mut conn = self.pool.get().await?;
+
+        let session_models = gallery_sessions::table
+            .filter(gallery_sessions::columns::gallery_id.eq(gallery_id))
+            .get_results::<GallerySessionModel>(&mut conn)
+            .await?;
+        let session_ids: Vec<_> = session_models.iter().map(|s| s.id).collect();
+
+        // TODO: verify this is correct
+        let counts = embedded_marketplace_items::table
+            .filter(embedded_marketplace_items::columns::gallery_session_id.eq_any(&session_ids))
+            .group_by(embedded_marketplace_items::columns::gallery_session_id)
+            .select((
+                embedded_marketplace_items::columns::gallery_session_id,
+                count_star()
+            ))
+            .load::<(SessionId, i64)>(&mut conn)
+            .await?;
+
+        let stats = session_models
+            .into_iter()
+            .filter_map(|session| {
+                // by right, this should always be true, but just in case...
+                if let Some((id, count)) = counts.iter().find(|(id, _)| *id == session.id) {
+                    let stats = GallerySessionStats {
+                        created: UnixUtcDateTime::new(session.created.and_utc()),
+                        used_evaluation_criteria: session.used_evaluation_criteria,
+                        total_items: *count as u32
+                    };
+                    return Some((*id, stats));
+                }
+                None
+            })
+            .collect();
+        
         Ok(stats)
     }
 }

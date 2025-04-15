@@ -13,7 +13,9 @@ pub enum RouteError {
     #[error("User is not authorized to access this resource")]
     Unauthorized,
     #[error("{0}")]
-    Store(#[from] StoreError)
+    Store(#[from] StoreError),
+    #[error("Got an error communicating with the pipeline")]
+    Pipeline
 }
 
 impl IntoResponse for RouteError {
@@ -21,6 +23,7 @@ impl IntoResponse for RouteError {
         let (status, message) = match self {
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, self.to_string()),
             Self::Store(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Encountered an internal error".into()),
+            Self::Pipeline => (StatusCode::INTERNAL_SERVER_ERROR, "Encountered an internal error".into()),
         };
         let body = json!({
             "error": message,

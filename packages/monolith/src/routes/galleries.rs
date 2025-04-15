@@ -1,7 +1,7 @@
 use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Router};
 use serde::Serialize;
 use uuid::Uuid;
-use crate::{app_state::AppState, auth::types::AuthUser, domain::gallery::{Gallery, GalleryStats}, models::gallery::{NewGallery, UpdatedGallery}};
+use crate::{app_state::AppState, auth::types::AuthUser, domain::gallery::{Gallery, GalleryStats}, messages::message_types::{scraper_scheduler::{DeleteGalleryMessage, NewGalleryMessage, SchedulerMessage, UpdateGalleryMessage}, ModuleMessageWithReturn}, models::gallery::{NewGallery, UpdatedGallery}};
 use super::error::{RouteError, RouteResult};
 
 #[derive(Serialize, Debug)]
@@ -22,14 +22,26 @@ pub fn build_routes() -> Router<AppState> {
 }
 
 async fn add_new_gallery(
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     user: AuthUser,
     Json(mut new_gallery): Json<NewGallery>
 ) -> RouteResult<Json<NewGalleryResponse>> {
     let mut gallery_store = app_state.stores.gallery_store;
 
     new_gallery.user_id = user.id; // in case a different user's ID was given -_-
-    let new_gallery_id = gallery_store.add_new_gallery(new_gallery).await?;
+    let new_gallery = gallery_store.add_new_gallery(new_gallery).await?;
+    let new_gallery_id = new_gallery.id.clone();
+
+    // TODO: this is pretty shitty tbh
+    let (message, receiver) = NewGalleryMessage::new(new_gallery.to_scheduler_state());
+    app_state.scheduler_sender
+        .send(SchedulerMessage::NewGallery(message))
+        .await
+        .map_err(|err| RouteError::Pipeline)?;
+    receiver
+        .await
+        .map_err(|err| RouteError::Pipeline)?
+        .map_err(|err| RouteError::Pipeline)?;
 
     Ok(Json(NewGalleryResponse { new_gallery_id }))
 }
@@ -51,7 +63,7 @@ async fn get_gallery(
 }
 
 async fn update_gallery( 
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     Path(gallery_id): Path<Uuid>,
     user: AuthUser,
     Json(gallery_changes): Json<UpdatedGallery>
@@ -59,9 +71,18 @@ async fn update_gallery(
     let mut gallery_store = app_state.stores.gallery_store;
 
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
-        gallery_store.update_gallery(gallery_id, gallery_changes).await?;
+        let updated_gallery = gallery_store.update_gallery(gallery_id, gallery_changes).await?;
 
-        // TODO: update in the scheduler too
+        // TODO: this is pretty shitty tbh
+        let (message, receiver) = UpdateGalleryMessage::new(updated_gallery.to_scheduler_state());
+        app_state.scheduler_sender
+            .send(SchedulerMessage::UpdateGallery(message))
+            .await
+            .map_err(|err| RouteError::Pipeline)?;
+        receiver
+            .await
+            .map_err(|err| RouteError::Pipeline)?
+            .map_err(|err| RouteError::Pipeline)?;
 
         Ok(())
     }
@@ -71,7 +92,7 @@ async fn update_gallery(
 }
 
 async fn delete_gallery(
-    State(app_state): State<AppState>,
+    State(mut app_state): State<AppState>,
     user: AuthUser,
     Path(gallery_id): Path<Uuid>
 ) -> RouteResult<()> {
@@ -80,7 +101,16 @@ async fn delete_gallery(
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
         gallery_store.delete_gallery(gallery_id).await?;
         
-        // TODO: remove from the scheduler
+        // TODO: this is pretty shitty tbh
+        let (message, receiver) = DeleteGalleryMessage::new(gallery_id.into());
+        app_state.scheduler_sender
+            .send(SchedulerMessage::DeleteGallery(message))
+            .await
+            .map_err(|err| RouteError::Pipeline)?;
+        receiver
+            .await
+            .map_err(|err| RouteError::Pipeline)?
+            .map_err(|err| RouteError::Pipeline)?;
 
         return Ok(());
     }

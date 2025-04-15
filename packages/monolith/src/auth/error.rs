@@ -8,10 +8,11 @@ use thiserror::Error;
 pub enum AuthError {
     #[error("Authentication failed")]
     Auth,
-    #[error("Token format is not valid")]
+    #[error("Token decoding failed")]
     InvalidToken,
 }
 
+/// For immediately returning upon a failed auth
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         let status = match self {
