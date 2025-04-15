@@ -20,5 +20,13 @@ pub struct GallerySession {
     */
 }
 
+/// Useful statistics about the gallery.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GallerySessionStats {
+    pub created: UnixUtcDateTime,
+    pub used_evaluation_criteria: EvaluationCriteria,
+    pub total_items: u32
+}
+
 /// The type of `GallerySession` ID.
 pub type SessionId = i32;

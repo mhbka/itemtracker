@@ -1,9 +1,10 @@
-use crate::{domain::{domain_types::Marketplace, gallery_session::{GallerySession, SessionId}, pipeline_items::EmbeddedMarketplaceItem, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
-use super::{error::StoreError, ConnectionPool};
+use crate::{domain::{domain_types::{Marketplace, UnixUtcDateTime}, gallery_session::{GallerySession, GallerySessionStats, SessionId}, pipeline_items::EmbeddedMarketplaceItem, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
+use super::{error::{StoreError, StoreResult}, ConnectionPool};
 use chrono::Utc;
 use diesel::{associations::HasTable, dsl::update, insert_into, prelude::*, upsert::excluded};
 use diesel_async::{AsyncConnection, RunQueryDsl};
 use scoped_futures::ScopedFutureExt;
+use uuid::Uuid;
 
 /// For accessing/storing gallery sessions.
 #[derive(Clone)]
@@ -19,8 +20,23 @@ impl GallerySessionsStore {
         }
     }
 
+    /// Return if the session's gallery belongs to a user.
+    pub async fn session_belongs_to_user(&mut self, session_id: i32, uid: Uuid) -> StoreResult<bool> {
+        let mut conn = self.pool.get().await?;
+
+        let count = gallery_sessions::table
+            .inner_join(galleries::table)
+            .filter(gallery_sessions::columns::id.eq(session_id))
+            .filter(galleries::columns::user_id.eq(uid))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await?;
+        
+        Ok(count > 0)
+    }
+
     /// Store a new gallery session.
-    pub async fn add_new_session(&mut self, state: GalleryFinalState) -> Result<SessionId, StoreError> {
+    pub async fn add_new_session(&mut self, state: GalleryFinalState) -> StoreResult<SessionId> {
         let mut conn = self.pool.get().await?;
 
         // TODO: move pieces of this into the models themselves
@@ -109,7 +125,7 @@ impl GallerySessionsStore {
     }
     
     /// Get a gallery session.
-    pub async fn get_session(&mut self, id: SessionId) -> Result<GallerySession, StoreError> {
+    pub async fn get_session(&mut self, id: SessionId) -> StoreResult<GallerySession> {
         let mut conn = self.pool.get().await?;
 
         let session_model = gallery_sessions::table
@@ -150,5 +166,27 @@ impl GallerySessionsStore {
 
         let session = session_model.convert_to(mercari_embedded_items);
         Ok(session)
+    }
+
+    /// Get a gallery session's stats.
+    pub async fn get_session_stats(&mut self, id: SessionId) -> StoreResult<GallerySessionStats> {
+        let mut conn = self.pool.get().await?;
+
+        let session_model = gallery_sessions::table
+            .filter(gallery_sessions::columns::id.eq(id))
+            .first::<GallerySessionModel>(&mut conn)
+            .await?;
+        let total_items = embedded_marketplace_items::table
+            .filter(embedded_marketplace_items::columns::gallery_session_id.eq(id))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await? as u32;
+
+        let stats = GallerySessionStats {
+            created: UnixUtcDateTime::new(session_model.created.and_utc()),
+            used_evaluation_criteria: session_model.used_evaluation_criteria,
+            total_items
+        };
+        Ok(stats)
     }
 }

@@ -35,7 +35,7 @@ impl Gallery {
     }
 }
 
-/// Useful statistics to know about the gallery.
+/// Useful statistics about the gallery.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GalleryStats {
     pub total_sessions: u32,

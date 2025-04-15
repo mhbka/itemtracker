@@ -13,7 +13,6 @@ mod scheduler;
 pub struct ScraperSchedulerModule {
     scheduler: SchedulerHandler,
     msg_receiver: ScraperSchedulerReceiver,
-    search_scraper_sender: SearchScraperSender
 }
 
 impl ScraperSchedulerModule {
@@ -27,7 +26,7 @@ impl ScraperSchedulerModule {
     ) -> Self
     {   
         let scheduler = SchedulerHandler::new(
-            search_scraper_sender.clone(), 
+            search_scraper_sender, 
             state_tracker_sender,
             initial_state
         ).await;
@@ -35,7 +34,6 @@ impl ScraperSchedulerModule {
         ScraperSchedulerModule {
             scheduler,
             msg_receiver,
-            search_scraper_sender
         }
         
     }

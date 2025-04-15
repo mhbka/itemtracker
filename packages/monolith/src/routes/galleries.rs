@@ -13,12 +13,12 @@ struct NewGalleryResponse {
 /// Build gallery-related routes.
 pub fn build_routes() -> Router<AppState> {
     Router::new()
-        .route("/gallery", post(add_new_gallery))
-        .route("/gallery/:gallery_id", get(get_gallery))
-        .route("/gallery/:gallery_id", patch(update_gallery))
-        .route("/gallery/:gallery_id", delete(delete_gallery))
-        .route("/gallery_stats/:gallery_id", get(get_gallery_stats))
-        .route("/gallery_stats/all", get(get_all_gallery_stats))
+        .route("/", post(add_new_gallery))
+        .route("/:gallery_id", get(get_gallery))
+        .route("/:gallery_id", patch(update_gallery))
+        .route("/:gallery_id", delete(delete_gallery))
+        .route("/stats/:gallery_id", get(get_gallery_stats))
+        .route("/stats/all", get(get_all_gallery_stats))
 }
 
 async fn add_new_gallery(
