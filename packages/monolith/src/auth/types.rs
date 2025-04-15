@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// Information about an authenticated user present in their bearer token.
+/// Information about an authenticated user, present in their request's bearer token.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthUser {
     pub id: Uuid,

@@ -2,7 +2,7 @@ use chrono::{NaiveDateTime, Utc};
 use diesel::{pg::Pg, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, pipeline_states::GallerySchedulerState, search_criteria::SearchCriteria}, schema::galleries::{self, mercari_last_scraped_time}};
+use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries::{self}};
 
 // Model of the gallery table.
 #[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize, Debug)]
@@ -11,6 +11,7 @@ use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCri
 pub struct GalleryModel {
     pub id: Uuid,
     pub user_id: Uuid,
+    pub name: String,
     pub is_active: bool,
     pub scraping_periodicity: ValidCronString,
     pub search_criteria: SearchCriteria,
@@ -25,6 +26,7 @@ pub struct GalleryModel {
 #[table_name = "galleries"]
 pub struct NewGallery {
     pub user_id: Uuid,
+    pub name: String,
     pub scraping_periodicity: ValidCronString,
     pub search_criteria: SearchCriteria,
     pub evaluation_criteria: EvaluationCriteria,
@@ -37,6 +39,7 @@ pub struct NewGallery {
 #[derive(AsChangeset, Serialize, Deserialize, Clone, Debug)]
 #[table_name = "galleries"]
 pub struct UpdatedGallery {
+    pub name: Option<String>,
     pub is_active: Option<bool>,
     pub scraping_periodicity: Option<ValidCronString>,
     pub search_criteria: Option<SearchCriteria>,
@@ -49,6 +52,7 @@ impl UpdatedGallery {
     /// Get the model for updating marketplace datetimes.
     pub fn update_marketplace_datetimes(mercari: Option<NaiveDateTime>) -> Self {
         Self {
+            name: None,
             is_active: None,
             scraping_periodicity: None,
             search_criteria: None,

@@ -15,7 +15,7 @@ use std::env;
 
 /// The JWT secret used for decoding auth-side JWTs.
 /// 
-/// Must be the same as used for encoding them.
+/// Must be the same as the one used for encoding them.
 static JWT_SECRET: Lazy<String> = Lazy::new(|| {
     env::var("JWT_SECRET").expect("JWT_SECRET must be set")
 });

@@ -16,6 +16,7 @@ diesel::table! {
     galleries (id) {
         id -> Uuid,
         user_id -> Uuid,
+        name -> Varchar,
         is_active -> Bool,
         scraping_periodicity -> Text,
         search_criteria -> Jsonb,
