@@ -23,6 +23,11 @@ impl ScheduledGalleryTask {
         }
     }
 
+    /// Get a ref to the task's gallery.
+    pub fn gallery(&self) -> &GallerySchedulerState {
+        &self.gallery
+    }
+
     /// Schedules the gallery at the appointed periodicity, and registers the gallery in the state tracker.
     /// 
     /// If the gallery is already registered with the state tracker, it won't be scheduled.

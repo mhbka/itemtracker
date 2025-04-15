@@ -62,7 +62,7 @@ impl ValidCronString {
     } 
 
     /// Get a (guaranteed valid) `Cron` from the string.
-    pub fn get_cron(&mut self) -> Cron {
+    pub fn get_cron(&self) -> Cron {
         Cron::new(&self.0)
             .parse()
             .expect("Should be valid as we've already checked during instantiation")

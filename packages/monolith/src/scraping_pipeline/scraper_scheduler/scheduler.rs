@@ -1,6 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
+use chrono::{TimeDelta, Utc};
 use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
+use tokio::time::sleep;
 use crate::domain::domain_types::GalleryId;
 use crate::messages::{SearchScraperSender, StateTrackerSender};
 use crate::{
@@ -42,7 +44,10 @@ impl SchedulerHandler {
         handler
     }
 
-    /// Add a new gallery to the scheduler.
+    /// Add a gallery to the scheduler.
+    /// 
+    /// It will wait until it is next due, based on the latest datetime in `marketplace_latest_scraped_datetimes` + `scraping_periodicity`,
+    /// unless that time has already passed, in which case it will immediately begin running.
     pub async fn add_gallery(&self, new_gallery: GallerySchedulerState) -> Result<(), SchedulerError>
     {
         let gallery_id = new_gallery.gallery_id.clone();
@@ -82,11 +87,28 @@ impl SchedulerHandler {
         }
     }
 
-    /// Spawns a task to periodically trigger scraper requests for the input gallery,
-    /// returning a handle to the task, and an Arc Mutex handle to the task struct.
-    async fn generate_gallery_task(&self, gallery: GallerySchedulerState) 
+    /// Spawns a task to repeatedly trigger scraper requests for the input gallery 
+    /// (with interval based on the gallery's `scraping_periodicity`), 
+    /// returning a handle to the task + an `Arc Mutex` handle to the task struct.
+    /// 
+    /// ### Note
+    /// If, based on the latest datetime in the gallery's `marketplace_last_scraped_datetimes`,
+    /// the gallery isn't due to be scraped yet,
+    /// the task will sleep for that time difference.
+    /// 
+    /// ### Examples
+    /// Will sleep first:
+    /// - The scraping periodicity is once a day
+    /// - The latest datetime in `marketplace_last_scraped_datetimes` is 12 hours ago
+    /// - The task will sleep for 12 more hours, then begin running
+    /// 
+    /// Will immediately run:
+    /// - The scraping periodicity is once a day
+    /// - The latest datetime is 48 hours ago
+    /// - The task will immediately begin running
+    async fn generate_gallery_task(&self, mut gallery: GallerySchedulerState) 
     -> (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>) 
-    {
+    {   
         let task = ScheduledGalleryTask::new(
             gallery, 
             self.state_tracker_sender.clone(),
@@ -94,15 +116,43 @@ impl SchedulerHandler {
         );
         let task = Arc::new(Mutex::new(task));
         let cloned_task = task.clone();
+
         let task_handle = tokio::spawn(
             async move {
-                cloned_task
+                let mut task = cloned_task
                     .lock()
-                    .await
+                    .await;
+
+                // see if we still have time till the next schedule; if so, sleep...
+                let cur_time = Utc::now();
+                let next_time = match task.gallery().scraping_periodicity
+                    .get_cron()
+                    .find_next_occurrence(&cur_time, false)
+                {
+                    Ok(next_time) => next_time,
+                    Err(err) => cur_time
+                };
+                let wait_time = next_time - cur_time;
+                if wait_time > TimeDelta::zero() {
+                    let wait_time = wait_time
+                        .to_std()
+                        .expect("Should not fail as time is greater than zero");
+                    sleep(wait_time).await;
+                }
+
+                // ...then begin running indefinitely
+                let task_run_result = task
                     .run()
                     .await;
+                if let Err(err) = task_run_result {
+                    tracing::error!(
+                        "The scheduling task for the following gallery got an unexpected error and returned: {:#?}", 
+                        task.gallery()
+                    );
+                }
             }
         );
+
         (task, task_handle)
     }
 
