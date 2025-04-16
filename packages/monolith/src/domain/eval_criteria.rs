@@ -1,5 +1,5 @@
-use std::{io::Write, iter::zip};
-use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{self, Output, ToSql}, sql_types::{Jsonb, Nullable}};
+use std::iter::zip;
+use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{ToSql}, sql_types::{Jsonb, Nullable}};
 use serde::{Serialize, Deserialize};
 
 /// A Vec of user-defined questions to ask the LLM about each item in a gallery.

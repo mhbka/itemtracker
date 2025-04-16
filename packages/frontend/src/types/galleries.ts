@@ -75,8 +75,8 @@ export interface NewGallery {
   scraping_periodicity: ValidCronString;
   search_criteria: SearchCriteria;
   evaluation_criteria: EvaluationCriteria;
-  mercari_last_scraped_time?: NaiveDateTime;
-}
+  mercari_last_scraped_time: NaiveDateTime;
+} 
 
 export interface Gallery {
   id: UUID;
@@ -126,8 +126,6 @@ export interface EmbeddedMarketplaceItem {
   item: MarketplaceItemData;
   evaluation_answers: CriterionAnswer[];
   item_description: string;
-  description_embedding: number[];
-  image_embedding: number[];
 }
 
 export interface GallerySession {

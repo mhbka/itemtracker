@@ -2,7 +2,7 @@ use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Ro
 use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{app_state::AppState, auth::types::AuthUser, domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, gallery::{Gallery, GalleryStats}, search_criteria::SearchCriteria}, messages::message_types::{scraper_scheduler::{DeleteGalleryMessage, NewGalleryMessage, SchedulerMessage, UpdateGalleryMessage}, ModuleMessageWithReturn}, models::gallery::{NewGallery, UpdatedGallery}};
+use crate::{app_state::AppState, auth::types::AuthUser, domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, gallery::{Gallery, GalleryStats}, search_criteria::SearchCriteria}, models::gallery::{NewGallery, UpdatedGallery}};
 use super::error::{RouteError, RouteResult};
 
 #[derive(Deserialize, Debug)]
@@ -57,16 +57,16 @@ async fn add_new_gallery(
         .await?;
     let new_gallery_id = new_gallery.id.clone();
 
-    // TODO: this is pretty shitty tbh
-    let (message, receiver) = NewGalleryMessage::new(new_gallery.to_scheduler_state());
-    app_state.scheduler_sender
-        .send(SchedulerMessage::NewGallery(message))
-        .await
-        .map_err(|err| RouteError::Pipeline)?;
-    receiver
-        .await
-        .map_err(|err| RouteError::Pipeline)?
-        .map_err(|err| RouteError::Pipeline)?;
+    let pipeline_result = app_state.pipeline
+        .add_gallery(new_gallery.to_scheduler_state())
+        .await;
+    if let Err(err) = pipeline_result {
+        // if it failed to register in the pipeline, remove from the store too
+        gallery_store
+            .delete_gallery(new_gallery_id)
+            .await?;
+        Err(err)?
+    }
 
     Ok(Json(NewGalleryResponse { new_gallery_id }))
 }
@@ -98,16 +98,9 @@ async fn update_gallery(
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
         let updated_gallery = gallery_store.update_gallery(gallery_id, gallery_changes).await?;
 
-        // TODO: this is pretty shitty tbh
-        let (message, receiver) = UpdateGalleryMessage::new(updated_gallery.to_scheduler_state());
-        app_state.scheduler_sender
-            .send(SchedulerMessage::UpdateGallery(message))
-            .await
-            .map_err(|err| RouteError::Pipeline)?;
-        receiver
-            .await
-            .map_err(|err| RouteError::Pipeline)?
-            .map_err(|err| RouteError::Pipeline)?;
+        app_state.pipeline
+            .update_gallery(updated_gallery.to_scheduler_state())
+            .await?;
 
         Ok(())
     }
@@ -124,18 +117,12 @@ async fn delete_gallery(
     let mut gallery_store = app_state.stores.gallery_store;
 
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
-        gallery_store.delete_gallery(gallery_id).await?;
-        
-        // TODO: this is pretty shitty tbh
-        let (message, receiver) = DeleteGalleryMessage::new(gallery_id.into());
-        app_state.scheduler_sender
-            .send(SchedulerMessage::DeleteGallery(message))
-            .await
-            .map_err(|err| RouteError::Pipeline)?;
-        receiver
-            .await
-            .map_err(|err| RouteError::Pipeline)?
-            .map_err(|err| RouteError::Pipeline)?;
+        app_state.pipeline
+            .delete_gallery(gallery_id.into())
+            .await?;
+        gallery_store
+            .delete_gallery(gallery_id)
+            .await?;
 
         return Ok(());
     }

@@ -1,5 +1,4 @@
-use std::io::Write;
-use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{self, Output, ToSql}, sql_types::Jsonb};
+use diesel::{deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, pg::{Pg, PgValue}, serialize::{ToSql}, sql_types::Jsonb};
 use serde::{Serialize, Deserialize};
 
 /// The search criteria used for all marketplaces within the gallery.

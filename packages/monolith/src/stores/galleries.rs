@@ -1,5 +1,4 @@
 use chrono::NaiveDateTime;
-use futures::future::join_all;
 use uuid::Uuid;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;

@@ -5,7 +5,7 @@ pub use item_analysis::ItemAnalysisConfig;
 pub use image_classifier::ItemEmbedderConfig;
 pub use search_scraper::SearchScraperConfig;
 pub use item_scraper::ItemScraperConfig;
-pub use scraper_scheduler::ScraperSchedulerConfig;
+pub use scraper_scheduler::SchedulerConfig;
 use state_tracker::StateTrackerConfig;
 
 pub mod state_tracker;
@@ -18,14 +18,14 @@ pub mod image_classifier;
 /// Holds all types of configs for the app.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AppConfig {
-    pub axum_config: AxumConfig,
-    pub state_tracker_config: StateTrackerConfig,
-    pub scraper_scheduler_config: ScraperSchedulerConfig,
-    pub search_scraper_config: SearchScraperConfig,
-    pub item_scraper_config: ItemScraperConfig,
-    pub item_analysis_config: ItemAnalysisConfig,
-    pub img_classifier_config: ItemEmbedderConfig,
-    pub store_config: StoreConfig
+    pub axum: AxumConfig,
+    pub state_tracker: StateTrackerConfig,
+    pub scraper_scheduler: SchedulerConfig,
+    pub search_scraper: SearchScraperConfig,
+    pub item_scraper: ItemScraperConfig,
+    pub item_analysis: ItemAnalysisConfig,
+    pub item_embedder: ItemEmbedderConfig,
+    pub store: StoreConfig
 }
 
 impl AppConfig {
@@ -33,14 +33,14 @@ impl AppConfig {
     pub fn load() -> Result<Self, VarError> {
         Ok(
             AppConfig {
-                axum_config: AxumConfig::load()?,
-                state_tracker_config: StateTrackerConfig::load()?,
-                scraper_scheduler_config: ScraperSchedulerConfig::load()?,
-                search_scraper_config: SearchScraperConfig::load()?,
-                item_scraper_config: ItemScraperConfig::load()?,
-                item_analysis_config: ItemAnalysisConfig::load()?,
-                img_classifier_config: ItemEmbedderConfig::load()?,
-                store_config: StoreConfig::load()?
+                axum: AxumConfig::load()?,
+                state_tracker: StateTrackerConfig::load()?,
+                scraper_scheduler: SchedulerConfig::load()?,
+                search_scraper: SearchScraperConfig::load()?,
+                item_scraper: ItemScraperConfig::load()?,
+                item_analysis: ItemAnalysisConfig::load()?,
+                item_embedder: ItemEmbedderConfig::load()?,
+                store: StoreConfig::load()?
             }
         )
     }

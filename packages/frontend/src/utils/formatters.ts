@@ -1,10 +1,15 @@
 import type { UnixUtcDateTime, CriterionAnswer } from '@/types/galleries';
+import { format } from 'date-fns/format';
 
 export function formatUnixTimestamp(timestamp?: UnixUtcDateTime): string {
   if (timestamp) {
     return new Date(timestamp * 1000).toLocaleString();
   }
   return '--';
+}
+
+export function getZeroedNaiveDatetime(): string {
+  return format(new Date(0), 'yyyy-M-d\'T\'HH:mm:ss');
 }
 
 export function formatPrice(price: number): string {
