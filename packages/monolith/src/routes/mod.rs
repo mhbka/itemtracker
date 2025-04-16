@@ -1,4 +1,3 @@
-mod test;
 mod galleries;
 mod gallery_sessions;
 mod items;

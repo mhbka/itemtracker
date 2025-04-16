@@ -16,7 +16,7 @@ use strum_macros::EnumIter;
 use uuid::Uuid;
 
 /// All supported marketplaces.
-#[derive(Hash, Eq, PartialEq, Clone, Debug, Serialize, Deserialize, EnumIter)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug, Serialize, Deserialize, EnumIter)]
 pub enum Marketplace {
     Mercari
 }
@@ -104,7 +104,7 @@ impl ToSql<Text, Pg> for ValidCronString {
 /// A wrapper for a gallery ID.
 /// 
 /// There is (currently) no special functionality or validation; this exists simply because the gallery ID is a heavily used domain type.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct GalleryId(Uuid);
 
 impl Deref for GalleryId {
@@ -166,7 +166,7 @@ impl From<String> for ItemId {
 /// A DateTime<Utc> wrapper that (de)serializes to/from a UNIX timestamp integer.
 /// 
 /// There is (currently) no special functionality or validation; this exists simply because UNIX timestamps are easier to work with.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct UnixUtcDateTime(DateTime<Utc>);
 
 impl UnixUtcDateTime {

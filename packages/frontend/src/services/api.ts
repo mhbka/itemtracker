@@ -20,7 +20,7 @@ export async function fetchGallery(galleryId: UUID): Promise<Gallery> {
 }
 
 export async function fetchAllSessionStats(galleryId: UUID): Promise<[SessionId, GallerySessionStats][]> {
-  const response = await apiClient.get(`/s/stats/all?gallery_id=${galleryId}`);
+  const response = await apiClient.get(`/s/stats/all/${galleryId}`);
   return response.data;
 }
 

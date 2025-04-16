@@ -44,7 +44,13 @@
               </div>
               <div class="info-item">
                 <span class="info-label">Last Scraped:</span>
-                <span>{{ gallery?.mercari_last_scraped_time ? formatDateTime(gallery.mercari_last_scraped_time) : 'Never' }}</span>
+                <span>
+                  {{ 
+                    gallery?.mercari_last_scraped_time && gallery?.mercari_last_scraped_time != getZeroedNaiveDatetime()
+                    ? formatDateTime(gallery.mercari_last_scraped_time) 
+                    : 'Never' 
+                    }}
+                </span>
               </div>
             </div>
           </div>
@@ -159,7 +165,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { fetchGallery, fetchAllSessionStats, deleteGallery } from '@/services/api';
-import { formatUnixTimestamp, formatPrice } from '@/utils/formatters';
+import { formatUnixTimestamp, formatPrice, getZeroedNaiveDatetime } from '@/utils/formatters';
 import type { Gallery, SessionId, GallerySessionStats } from '@/types/galleries';
 
 interface SessionWithStats {
