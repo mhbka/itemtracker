@@ -4,7 +4,8 @@ import type {
   Gallery, 
   SessionId, 
   GallerySessionStats, 
-  GallerySession 
+  GallerySession, 
+  NewGallery
 } from '@/types/galleries';
 import apiClient from './client';
 
@@ -26,6 +27,14 @@ export async function fetchAllSessionStats(galleryId: UUID): Promise<[SessionId,
 export async function fetchSession(sessionId: SessionId): Promise<GallerySession> {
   const response = await apiClient.get(`/s/${sessionId}`);
   return response.data;
+}
+
+export async function addNewGallery(gallery: NewGallery): Promise<void> {
+  await apiClient.post(`/g`, gallery);
+}
+
+export async function deleteGallery(galleryId: UUID): Promise<void> {
+  await apiClient.delete(`/g/${galleryId}`);
 }
 
 export async function formatDate(timestamp: number): Promise<string> {

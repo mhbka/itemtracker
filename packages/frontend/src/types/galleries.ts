@@ -7,9 +7,10 @@ export type ValidCronString = string;
 export type NaiveDateTime = string;
 
 export interface GalleryStats {
+  name: string,
   total_sessions: number;
   total_mercari_items: number;
-  latest_scrape: UnixUtcDateTime;
+  latest_scrape?: UnixUtcDateTime;
 }
 
 export interface GalleryListItem {
@@ -66,6 +67,15 @@ export interface Criterion {
 
 export interface EvaluationCriteria {
   criteria: Criterion[];
+}
+
+export interface NewGallery {
+  name: string;
+  is_active: boolean;
+  scraping_periodicity: ValidCronString;
+  search_criteria: SearchCriteria;
+  evaluation_criteria: EvaluationCriteria;
+  mercari_last_scraped_time?: NaiveDateTime;
 }
 
 export interface Gallery {

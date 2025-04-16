@@ -38,7 +38,8 @@ impl Gallery {
 /// Useful statistics about the gallery.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GalleryStats {
+    pub name: String,
     pub total_sessions: u32,
     pub total_mercari_items: u32,
-    pub latest_scrape: UnixUtcDateTime
+    pub latest_scrape: Option<UnixUtcDateTime>
 }

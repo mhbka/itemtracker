@@ -1,49 +1,52 @@
 <template>
-  <div class="dashboard container mx-auto py-8 px-4">
-    <h1 class="text-2xl font-bold mb-6">Galleries Dashboard</h1>
-    
-    <div v-if="loading" class="flex justify-center my-8">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">Galleries Dashboard</h1>
     </div>
-    
-    <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+
+    <div v-if="loading" class="loading-spinner-container">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <div v-else-if="error" class="error-message">
       <p>{{ error }}</p>
     </div>
-    
-    <div v-else-if="galleries.length === 0" class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+
+    <div v-else-if="galleries.length === 0" class="empty-message">
       <p>No galleries found. Create a new gallery to get started.</p>
+      <button @click="navigateToNewGallery" class="primary-button">Create New Gallery</button>
     </div>
-    
-    <div v-else class="overflow-x-auto bg-white shadow-md rounded-lg">
-      <table class="min-w-full table-auto">
+
+    <div v-else class="table-container">
+      <button @click="navigateToNewGallery" class="primary-button">Create New Gallery</button>
+      <table class="gallery-table">
         <thead>
-          <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
-            <th @click="sortBy('id')" class="py-3 px-6 text-left cursor-pointer">
+          <tr class="table-header">
+            <th>
+              Name
+            </th>
+            <th>
               Gallery ID
-              <span v-if="sortColumn === 'id'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th @click="sortBy('sessions')" class="py-3 px-6 text-left cursor-pointer">
+            <th>
               Total Sessions
-              <span v-if="sortColumn === 'sessions'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th @click="sortBy('items')" class="py-3 px-6 text-left cursor-pointer">
+            <th>
               Total Items
-              <span v-if="sortColumn === 'items'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
-            <th @click="sortBy('lastScrape')" class="py-3 px-6 text-left cursor-pointer">
+            <th>
               Last Scraped
-              <span v-if="sortColumn === 'lastScrape'" class="ml-1">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
             </th>
           </tr>
         </thead>
-        <tbody class="text-gray-600 text-sm">
-          <tr v-for="gallery in sortedGalleries" :key="gallery.id" 
-              @click="navigateToGallery(gallery.id)" 
-              class="border-b border-gray-200 hover:bg-gray-100 cursor-pointer">
-            <td class="py-3 px-6 text-left">{{ truncatedId(gallery.id) }}</td>
-            <td class="py-3 px-6 text-left">{{ gallery.stats.total_sessions }}</td>
-            <td class="py-3 px-6 text-left">{{ gallery.stats.total_mercari_items }}</td>
-            <td class="py-3 px-6 text-left">{{ formatUnixTimestamp(gallery.stats.latest_scrape) }}</td>
+        
+        <tbody>
+          <tr v-for="gallery in galleries" :key="gallery.id" @click="navigateToGallery(gallery.id)">
+            <td>{{ gallery.stats.name }}</td>
+            <td>{{ gallery.id }}</td>
+            <td>{{ gallery.stats.total_sessions }}</td>
+            <td>{{ gallery.stats.total_mercari_items }}</td>
+            <td>{{ formatUnixTimestamp(gallery.stats.latest_scrape) }}</td>
           </tr>
         </tbody>
       </table>
@@ -56,7 +59,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { fetchAllGalleryStats } from '@/services/api';
 import { formatUnixTimestamp } from '@/utils/formatters';
-import type { UUID, GalleryStats } from '@/types/galleries';
+import { type UUID, type GalleryStats } from '@/types/galleries';
 
 interface GalleryWithStats {
   id: UUID;
@@ -82,39 +85,108 @@ onMounted(async () => {
   }
 });
 
-const truncatedId = (id: UUID) => {
-  return id.substring(0, 8) + '...';
-};
-
-const sortBy = (column: string) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortColumn.value = column;
-    sortDirection.value = 'desc';
-  }
-};
-
-const sortedGalleries = computed(() => {
-  return [...galleries.value].sort((a, b) => {
-    const direction = sortDirection.value === 'asc' ? 1 : -1;
-    
-    switch (sortColumn.value) {
-      case 'id':
-        return direction * a.id.localeCompare(b.id);
-      case 'sessions':
-        return direction * (a.stats.total_sessions - b.stats.total_sessions);
-      case 'items':
-        return direction * (a.stats.total_mercari_items - b.stats.total_mercari_items);
-      case 'lastScrape':
-        return direction * (a.stats.latest_scrape - b.stats.latest_scrape);
-      default:
-        return 0;
-    }
-  });
-});
-
 const navigateToGallery = (galleryId: UUID) => {
   router.push(`/gallery/${galleryId}`);
 };
+
+const navigateToNewGallery = () => {
+  router.push('/new_gallery');
+};
 </script>
+
+<style scoped>
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.loading-spinner-container {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 0.25rem solid #3b82f6;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message,
+.empty-message {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.empty-message {
+  background-color: #fef9c3;
+  border-color: #facc15;
+  color: #92400e;
+  text-align: center;
+  padding: 2rem;
+}
+
+.primary-button {
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+}
+
+.primary-button:hover {
+  background-color: #2563eb;
+}
+
+.table-container {
+  overflow-x: auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+}
+
+.gallery-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table-header {
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.table-header th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sortable {
+  user-select: none;
+}
+</style>

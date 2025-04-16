@@ -6,19 +6,26 @@ import GalleryView from '../views/GalleryView.vue'
 import GallerySessionView from '../views/GallerySessionView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import { supabase } from '../main'
+import NewGalleryView from '@/views/NewGalleryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
         path: '/',
-        name: 'Home',
-        component: HomeView
+        name: 'home',
+        component: HomeView,
+        meta: {
+          requiresAuth: false
+        }
     },
     {
         path: '/login',
-        name: 'Login',
-        component: LoginView
+        name: 'login',
+        component: LoginView,
+        meta: {
+          requiresAuth: false
+        }
     },
     {
         path: '/dashboard',
@@ -27,6 +34,14 @@ const router = createRouter({
         meta: {
             requiresAuth: true
         }
+    },
+    {
+      path: '/new_gallery',
+      name: 'new_gallery',
+      component: NewGalleryView,
+      meta: {
+        requiresAuth: true
+      }
     },
     {
         path: '/gallery/:id',
@@ -38,7 +53,7 @@ const router = createRouter({
     },
     {
         path: '/session/:id',
-        name: 'session',
+        name: 'gallery_session',
         component: GallerySessionView,
         meta: {
             requiresAuth: true
@@ -46,7 +61,7 @@ const router = createRouter({
     },
     {
         path: '/:pathMatch(.*)*',
-        name: 'not-found',
+        name: 'not_found',
         component: NotFoundView
     }
   ]
@@ -58,12 +73,17 @@ router.beforeEach(async (to, from, next) => {
   
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (user == null || error != null) {
-      next({ name: 'Login' })
+      next({ name: 'login' })
     } else {
       next()
     }
-  } else {
-    next()
+  } 
+  else if (to.matched.some(record => record.meta.requiresAuth == false)) {
+    if (user != null) {
+      next({ name: 'dashboard' })
+    } else {
+      next()
+    }
   }
 })
 

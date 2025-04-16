@@ -3,7 +3,7 @@ use futures::future::join_all;
 use uuid::Uuid;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use crate::{domain::{domain_types::UnixUtcDateTime, gallery::{Gallery, GalleryStats}, pipeline_states::GallerySchedulerState}, models::gallery::{GalleryModel, NewGallery, UpdatedGallery}, schema::{embedded_marketplace_items, gallery_sessions, marketplace_items}};
+use crate::{domain::{domain_types::UnixUtcDateTime, gallery::{Gallery, GalleryStats}, pipeline_states::GallerySchedulerState}, models::gallery::{GalleryModel, NewGallery, UpdatedGallery}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
 use super::{error::{StoreError, StoreResult}, ConnectionPool};
 
 /// For accessing/storing galleries.
@@ -106,6 +106,11 @@ impl GalleryStore {
     pub async fn get_stats(&mut self, gallery_id: Uuid) -> StoreResult<GalleryStats> {
         let mut conn = self.pool.get().await?;
 
+        let name = galleries::table
+            .filter(galleries::columns::id.eq(gallery_id))
+            .select(galleries::columns::name)
+            .get_result::<String>(&mut conn)
+            .await?;
         let total_sessions = gallery_sessions::table
             .filter(gallery_sessions::columns::gallery_id.eq(gallery_id))
             .count()
@@ -124,12 +129,15 @@ impl GalleryStore {
             .order(gallery_sessions::columns::created.desc())
             .select(gallery_sessions::columns::created)
             .first::<NaiveDateTime>(&mut conn)
-            .await?;
+            .await
+            .optional()?
+            .map(|dt| UnixUtcDateTime::new(dt.and_utc()));
         Ok(
             GalleryStats { 
+                name,
                 total_sessions, 
                 total_mercari_items, 
-                latest_scrape: UnixUtcDateTime::new(latest_scrape.and_utc())
+                latest_scrape
             }
         )
     }
@@ -140,7 +148,7 @@ impl GalleryStore {
         let mut conn = self.pool.get().await?;
 
         let gallery_ids = galleries
-            .filter(user_id.eq(user_id))
+            .filter(user_id.eq(uid))
             .select(id)
             .load::<Uuid>(&mut conn)
             .await?;

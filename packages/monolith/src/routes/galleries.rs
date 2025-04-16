@@ -1,14 +1,38 @@
 use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Router};
-use serde::Serialize;
+use chrono::{NaiveDateTime, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{app_state::AppState, auth::types::AuthUser, domain::gallery::{Gallery, GalleryStats}, messages::message_types::{scraper_scheduler::{DeleteGalleryMessage, NewGalleryMessage, SchedulerMessage, UpdateGalleryMessage}, ModuleMessageWithReturn}, models::gallery::{NewGallery, UpdatedGallery}};
+use crate::{app_state::AppState, auth::types::AuthUser, domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, gallery::{Gallery, GalleryStats}, search_criteria::SearchCriteria}, messages::message_types::{scraper_scheduler::{DeleteGalleryMessage, NewGalleryMessage, SchedulerMessage, UpdateGalleryMessage}, ModuleMessageWithReturn}, models::gallery::{NewGallery, UpdatedGallery}};
 use super::error::{RouteError, RouteResult};
+
+#[derive(Deserialize, Debug)]
+struct NewGalleryRequest {
+    pub name: String,
+    pub scraping_periodicity: ValidCronString,
+    pub search_criteria: SearchCriteria,
+    pub evaluation_criteria: EvaluationCriteria,
+    pub mercari_last_scraped_time: Option<NaiveDateTime>,
+}
+
+impl NewGalleryRequest {
+    fn map_to_model(self, user_id: Uuid) -> NewGallery {
+        NewGallery {
+            user_id,
+            name: self.name,
+            scraping_periodicity: self.scraping_periodicity,
+            search_criteria: self.search_criteria,
+            evaluation_criteria: self.evaluation_criteria,
+            mercari_last_scraped_time: self.mercari_last_scraped_time,
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
+        }
+    }
+}
 
 #[derive(Serialize, Debug)]
 struct NewGalleryResponse {
     new_gallery_id: Uuid
 }
-
 
 /// Build gallery-related routes.
 pub fn build_routes() -> Router<AppState> {
@@ -24,12 +48,13 @@ pub fn build_routes() -> Router<AppState> {
 async fn add_new_gallery(
     State(mut app_state): State<AppState>,
     user: AuthUser,
-    Json(mut new_gallery): Json<NewGallery>
+    Json(new_gallery): Json<NewGalleryRequest>
 ) -> RouteResult<Json<NewGalleryResponse>> {
     let mut gallery_store = app_state.stores.gallery_store;
-
-    new_gallery.user_id = user.id; // in case a different user's ID was given -_-
-    let new_gallery = gallery_store.add_new_gallery(new_gallery).await?;
+    
+    let new_gallery = gallery_store
+        .add_new_gallery(new_gallery.map_to_model(user.id))
+        .await?;
     let new_gallery_id = new_gallery.id.clone();
 
     // TODO: this is pretty shitty tbh

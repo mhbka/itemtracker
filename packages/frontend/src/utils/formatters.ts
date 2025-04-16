@@ -1,7 +1,10 @@
 import type { UnixUtcDateTime, CriterionAnswer } from '@/types/galleries';
 
-export function formatUnixTimestamp(timestamp: UnixUtcDateTime): string {
-  return new Date(timestamp * 1000).toLocaleString();
+export function formatUnixTimestamp(timestamp?: UnixUtcDateTime): string {
+  if (timestamp) {
+    return new Date(timestamp * 1000).toLocaleString();
+  }
+  return '--';
 }
 
 export function formatPrice(price: number): string {

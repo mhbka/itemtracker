@@ -124,8 +124,9 @@ impl SchedulerHandler {
                     .await;
 
                 // see if we still have time till the next schedule; if so, sleep...
+                let gallery = task.gallery();
                 let cur_time = Utc::now();
-                let next_time = match task.gallery().scraping_periodicity
+                let next_time = match gallery.scraping_periodicity
                     .get_cron()
                     .find_next_occurrence(&cur_time, false)
                 {
@@ -137,6 +138,12 @@ impl SchedulerHandler {
                     let wait_time = wait_time
                         .to_std()
                         .expect("Should not fail as time is greater than zero");
+
+                    tracing::debug!(
+                        "Gallery {} task initialization: will sleep for {:?} till next schedule ({})",
+                        gallery.gallery_id, wait_time, next_time
+                    );
+
                     sleep(wait_time).await;
                 }
 

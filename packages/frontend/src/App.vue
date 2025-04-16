@@ -10,66 +10,54 @@ import { RouterLink, RouterView } from 'vue-router'
   <RouterView />
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+<style>
+#app {
+  background-color: #1e1e1e;
+  color: #e8e8e8cf;
+  font-family: 'Courier New', Courier, monospace;
+  min-height: 100vh; /* Ensure it covers the full viewport height */
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+button, input, select, textarea {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #414141; 
+  color: #e8e8e8cf;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-weight: 500;
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+button {
+  cursor: pointer
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+button:hover {
+  background-color: #1e40af;
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+tr {
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
 }
 
-nav a:first-of-type {
-  border: 0;
+tr:hover {
+  background-color: #3d3d3d;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+tr td {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+}
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
+body, html {
+  margin: 0;
+  padding: 0;
+  align-items: center;
 }
 </style>
