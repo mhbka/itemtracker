@@ -1,7 +1,6 @@
 mod config;
 mod domain;
-mod scraping_pipeline;
-mod messages;
+mod pipeline;
 mod stores;
 mod routes;
 mod utils;
@@ -12,7 +11,7 @@ mod app_state;
 
 use app_state::AppState;
 use config::AppConfig;
-use scraping_pipeline::{PipelineConnections, AppModules};
+use pipeline::Pipeline;
 use stores::AppStores;
 use tokio::net::TcpListener;
 use dotenv::dotenv;
@@ -23,21 +22,18 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let app_config = AppConfig::load().unwrap();
-    let axum_config = app_config.axum_config.clone();
-    let mut stores = AppStores::new(&app_config.store_config); 
-    let module_connections = PipelineConnections::new();
+    let axum_config = app_config.axum.clone();
+    let mut stores = AppStores::new(&app_config.store); 
+    let pipeline = Pipeline::init(app_config, &mut stores).await;
 
     let app_state = AppState {
         stores: stores.clone(),
-        scheduler_sender: module_connections.scraper_scheduler.0.clone(),
-        search_scraper_sender: module_connections.search_scraper.0.clone()
+        pipeline: pipeline
     };
-
-    let app_modules = AppModules::init(app_config, module_connections, &mut stores).await.run();
     
     let router = routes::build_router(app_state);
-
-    tracing::info!("App started");
+    
+    tracing::info!("App fully initialized");
 
     let listener = TcpListener::bind(axum_config.host_addr.clone())
         .await
