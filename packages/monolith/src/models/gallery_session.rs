@@ -1,5 +1,5 @@
 use uuid::Uuid;
-use crate::{domain::{domain_types::UnixUtcDateTime, eval_criteria::EvaluationCriteria, gallery_session::GallerySession, pipeline_items::EmbeddedMarketplaceItem}, schema::*};
+use crate::{domain::{domain_types::UnixUtcDateTime, eval_criteria::EvaluationCriteria, gallery_session::GallerySession, pipeline_items::{EmbeddedMarketplaceItem, EmbeddedMarketplaceItemWithoutEmbeddings}}, schema::*};
 use chrono::NaiveDateTime;
 use diesel::{pg::Pg, Identifiable, Insertable, Queryable, Selectable};
 
@@ -16,7 +16,7 @@ pub struct GallerySessionModel {
 
 impl GallerySessionModel {
     /// Convert to the domain type.
-    pub fn convert_to(self, mercari_items: Vec<EmbeddedMarketplaceItem>) -> GallerySession {
+    pub fn convert_to(self, mercari_items: Vec<EmbeddedMarketplaceItemWithoutEmbeddings>) -> GallerySession {
         GallerySession {
             id: self.id,
             gallery_id: self.gallery_id.into(),

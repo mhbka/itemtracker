@@ -127,7 +127,6 @@ impl AnthropicRequester {
                         StatusCode::OK => {
                             match res.json::<AnthropicResponse>().await {
                                 Ok(response) => {
-                                    tracing::info!("Successful response: {response:#?}"); // TODO: delete this later on
                                     if response.content.len() == 0 {
                                         err_str = Some("Expected 1 message in Anthropic response but found none".into());
                                     }

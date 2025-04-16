@@ -29,9 +29,11 @@ impl Pipeline {
             .initial_gallery_tasks()
             .await
             .expect("Failure to fetch initial gallery tasks should stop the app");
-
-        let pipeline_instance = PipelineInstance::new(&config, stores);
-
+        let pipeline_instance = PipelineInstance::new(
+            &config, 
+            stores,
+            sender.clone()
+        );
         let mut scheduler = Scheduler::init(
             config.scraper_scheduler.clone(), 
             pipeline_instance,

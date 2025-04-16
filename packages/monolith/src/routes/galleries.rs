@@ -117,11 +117,12 @@ async fn delete_gallery(
     let mut gallery_store = app_state.stores.gallery_store;
 
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
-        let pipeline_result = app_state.pipeline
-        .delete_gallery(gallery_id.into())
-        .await?;
-
-        gallery_store.delete_gallery(gallery_id).await?;
+        app_state.pipeline
+            .delete_gallery(gallery_id.into())
+            .await?;
+        gallery_store
+            .delete_gallery(gallery_id)
+            .await?;
 
         return Ok(());
     }

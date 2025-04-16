@@ -50,7 +50,7 @@ impl Scheduler {
             SchedulerMessage::AddGallery((state, responder)) => {
                 let gallery_id = state.gallery_id;
 
-                tracing::info!("Received message to update gallery {} in scheduler", state.gallery_id);
+                tracing::info!("Received message to add gallery {} in scheduler", state.gallery_id);
 
                 let result = self.scheduler.add_gallery(state).await;
                 let send_result = responder.send(result);

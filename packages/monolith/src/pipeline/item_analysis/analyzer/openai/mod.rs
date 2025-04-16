@@ -81,7 +81,6 @@ impl OpenAIRequester {
                         StatusCode::OK => {
                             match res.json::<OpenAIResponse>().await {
                                 Ok(response) => {
-                                    tracing::trace!("Successful response: {response:#?}"); // TODO: delete this later on
                                     if response.choices.len() == 0 {
                                         err_str = Some("Expected 1 message in Anthropic response but found none".into());
                                     }

@@ -1,5 +1,6 @@
-use crate::{domain::{eval_criteria::CriterionAnswer, item_data::MarketplaceItemData, pipeline_items::EmbeddedMarketplaceItem}, models::{gallery_session::GallerySessionModel, item::ItemModel}, schema::*, utils::vec::OnlySome};
+use crate::{domain::{eval_criteria::CriterionAnswer, item_data::MarketplaceItemData, pipeline_items::{EmbeddedMarketplaceItem, EmbeddedMarketplaceItemWithoutEmbeddings}}, models::{gallery_session::GallerySessionModel, item::ItemModel}, schema::*, utils::vec::OnlySome};
 use diesel::{pg::Pg, Associations, Identifiable, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
 
 /// Model of the `embedded_marketplace_items` table.
 #[derive(Queryable, Identifiable, Selectable, Associations, Debug, Clone)]
@@ -28,6 +29,31 @@ impl EmbeddedItemModel {
             item_description: self.item_description,
             description_embedding: self.description_embedding.only_some(),
             image_embedding: self.image_embedding.only_some()
+        }
+    }
+}
+
+/// An embedded item, without the embeddings but with all other data.
+/// 
+/// Useful for displaying, since the embeddings aren't useful for display.
+#[derive(Queryable, Identifiable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(check_for_backend(Pg))]
+#[diesel(table_name = embedded_marketplace_items)]
+pub struct EmbeddedItemWithoutEmbeddings {
+    pub id: i32,
+    pub marketplace_item_id: i32,
+    pub gallery_session_id: i32,
+    pub item_description: String,
+    pub evaluation_answers: Vec<Option<CriterionAnswer>>,
+}
+
+impl EmbeddedItemWithoutEmbeddings {
+    /// Convert to the domain type.
+    pub fn convert_to(self, item: MarketplaceItemData) -> EmbeddedMarketplaceItemWithoutEmbeddings {
+        EmbeddedMarketplaceItemWithoutEmbeddings {
+            item,
+            evaluation_answers: self.evaluation_answers.only_some(),
+            item_description: self.item_description,
         }
     }
 }

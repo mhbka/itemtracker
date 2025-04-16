@@ -38,6 +38,16 @@ pub struct EmbeddedMarketplaceItem {
     pub image_embedding: Vec<f32>
 }
 
+/// An `EmbeddedMarketplaceItem` but without the embeddings.
+/// 
+/// Useful for displaying.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EmbeddedMarketplaceItemWithoutEmbeddings {
+    pub item: MarketplaceItemData,
+    pub evaluation_answers: Vec<CriterionAnswer>,
+    pub item_description: String,
+}
+
 /// An analyzed item under a marketplace.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AnalyzedMarketplaceItem {

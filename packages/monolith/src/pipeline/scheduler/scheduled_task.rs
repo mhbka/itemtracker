@@ -89,7 +89,7 @@ impl ScheduledGalleryTask {
         let pipeline_result = pipeline.run_pipeline(gallery_state).await;
         if let Err(err) = pipeline_result {
             // TODO: persist this error to a store or something?
-            tracing::warn!("A pipeline run for gallery {gallery_id} failed; will continue anyway: {err}");
+            tracing::warn!("A pipeline run for gallery {gallery_id} failed (scheduler task will continue): {err}");
         }
 
         Ok(())
@@ -108,6 +108,12 @@ impl ScheduledGalleryTask {
                 let time_to_next_schedule = (next_time - cur_time)
                     .to_std()
                     .expect("Should never fail, as this time should logically always be greater than 0");
+
+                tracing::debug!(
+                    "Gallery {} scheduler task sleeping for {:?} to next schedule",
+                    self.gallery().gallery_id, time_to_next_schedule
+                );
+
                 tokio::time::sleep(time_to_next_schedule).await;
                 Ok(())
             },

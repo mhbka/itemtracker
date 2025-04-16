@@ -71,6 +71,7 @@
   import { useRouter } from 'vue-router';
   import { addNewGallery } from '@/services/api';
   import { Gallery, CriterionType, NewGallery } from '@/types/galleries';
+import { getZeroedNaiveDatetime } from '@/utils/formatters';
   
   const router = useRouter();
   const error = ref<string | null>(null);
@@ -93,6 +94,7 @@
         }
       ]
     },
+    mercari_last_scraped_time: getZeroedNaiveDatetime()
   });
   
   const submitNewGallery = async () => {

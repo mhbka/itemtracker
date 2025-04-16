@@ -1,4 +1,5 @@
 use axum::{extract::{Path, State}, routing::get, Json, Router};
+use uuid::Uuid;
 use crate::{app_state::AppState, auth::types::AuthUser, domain::gallery_session::{GallerySession, GallerySessionStats, SessionId}};
 
 use super::error::{RouteError, RouteResult};
@@ -8,7 +9,7 @@ pub fn build_routes() -> Router<AppState> {
     Router::new()
         .route("/:session_id", get(get_gallery_session))
         .route("/stats/:session_id", get(get_gallery_session_stats))
-        .route("/stats/all", get(get_all_gallery_session_stats))
+        .route("/stats/all/:gallery_id", get(get_all_gallery_session_stats))
 }
 
 async fn get_gallery_session(
@@ -45,11 +46,19 @@ async fn get_gallery_session_stats(
 
 async fn get_all_gallery_session_stats(
     State(app_state): State<AppState>,
+    Path(gallery_id): Path<Uuid>,
     user: AuthUser,
 ) -> RouteResult<Json<Vec<(SessionId, GallerySessionStats)>>> {
+    let mut gallery_store = app_state.stores.gallery_store;
     let mut gallery_sessions_store = app_state.stores.gallery_sessions_store;
     
-    let session_stats = gallery_sessions_store.get_all_session_stats(user.id).await?;
-
-    Ok(Json(session_stats))
+    if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
+        let session_stats = gallery_sessions_store
+            .get_all_session_stats(gallery_id)
+            .await?;
+        Ok(Json(session_stats))
+    }
+    else {
+        return Err(RouteError::Unauthorized);
+    }
 }

@@ -39,16 +39,22 @@ impl MercariSearchScraper {
                 return Err(err);
             }
         };
-        let mut item_ids = vec![];
+
+        let mut item_ids = Vec::new();
         let mut next_page_token = "".to_string();
-        loop { // keep requesting new pages of search; break only when `scraped_next_page_token` is None
+        loop { 
+            // keep requesting new pages of search; break only when `next_page_token` is None
             let request = self.build_request(
                 &dpop_key, 
                 search_criteria, 
                 &next_page_token
             );
             let response = request.send().await;
-            match self.handle_response(&previous_scraped_item_datetime, response).await {
+
+            tracing::trace!("MERCARI RESPONSE: {response:#?}");
+
+            match self.handle_response(&previous_scraped_item_datetime, response).await 
+            {
                 Ok((scraped_item_ids, scraped_next_page_token)) => {
                     tracing::trace!("got following: {scraped_item_ids:?}, {scraped_next_page_token:?}");
                     item_ids.extend_from_slice(&scraped_item_ids);
@@ -84,7 +90,9 @@ impl MercariSearchScraper {
                                     .iter()
                                     .all(|item| &item.updated > previous_scraped_item_datetime) 
                                 {
-                                    true => { // if all items are after our previous scraped datetime, go to the next page if possible
+                                    true => { 
+                                        // if all items on this page are after our previous scraped datetime, 
+                                        // go to the next page (if it exists)
                                         let item_ids = res.items
                                             .into_iter()
                                             .map(|item| item.id.into())
@@ -95,7 +103,8 @@ impl MercariSearchScraper {
                                         };
                                         return Ok((item_ids, next_page_token));
                                     },
-                                    false => { // else, just return all items after this datetime
+                                    false => { 
+                                        // else, just return all items after this datetime
                                         let item_ids = res.items
                                             .into_iter()
                                             .filter(|item| &item.updated > previous_scraped_item_datetime)
