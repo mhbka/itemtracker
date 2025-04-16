@@ -1,11 +1,9 @@
-use std::error::Error;
 
-use crate::{domain::{domain_types::{Marketplace, UnixUtcDateTime}, gallery_session::{GallerySession, GallerySessionStats, SessionId}, pipeline_items::EmbeddedMarketplaceItem, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
+use crate::{domain::{domain_types::{Marketplace, UnixUtcDateTime}, gallery_session::{GallerySession, GallerySessionStats, SessionId}, pipeline_states::GalleryFinalState}, models::{embedded_item::{EmbeddedItemModel, NewEmbeddedMarketplaceItem}, gallery::UpdatedGallery, gallery_session::{GallerySessionModel, NewGallerySession}, item::{ItemModel, NewItem}}, schema::{embedded_marketplace_items, galleries, gallery_sessions, marketplace_items}};
 use super::{error::{StoreError, StoreResult}, ConnectionPool};
 use chrono::Utc;
-use diesel::{associations::HasTable, dsl::{count_star, update}, insert_into, prelude::*, upsert::excluded};
+use diesel::{dsl::{count_star, update}, insert_into, prelude::*, upsert::excluded};
 use diesel_async::{AsyncConnection, RunQueryDsl};
-use futures::future::join_all;
 use scoped_futures::ScopedFutureExt;
 use uuid::Uuid;
 

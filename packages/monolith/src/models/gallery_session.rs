@@ -1,7 +1,7 @@
 use uuid::Uuid;
 use crate::{domain::{domain_types::UnixUtcDateTime, eval_criteria::EvaluationCriteria, gallery_session::GallerySession, pipeline_items::EmbeddedMarketplaceItem}, schema::*};
 use chrono::NaiveDateTime;
-use diesel::{pg::Pg, Associations, Identifiable, Insertable, Queryable, Selectable};
+use diesel::{pg::Pg, Identifiable, Insertable, Queryable, Selectable};
 
 /// Model of the `gallery_sessions` table.
 #[derive(Queryable, Selectable, Identifiable, Debug, Clone)]
@@ -29,7 +29,7 @@ impl GallerySessionModel {
 
 /// For inserting a new gallery session.
 #[derive(Insertable, Debug, Clone)]
-#[table_name = "gallery_sessions"]
+#[diesel(table_name = gallery_sessions)]
 pub struct NewGallerySession {
     pub gallery_id: Uuid,
     pub created: NaiveDateTime,

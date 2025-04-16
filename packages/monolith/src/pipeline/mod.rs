@@ -1,7 +1,7 @@
 use instance::PipelineInstance;
 use tokio::sync::mpsc::{channel, Sender};
 use crate::{config::AppConfig, domain::{domain_types::GalleryId, pipeline_states::GallerySchedulerState}, stores::AppStores};
-use {item_analysis::ItemAnalyzer, item_embedder::ItemEmbedder, item_scraper::ItemScraper, scheduler::{error::SchedulerError, messages::SchedulerMessage, Scheduler}, search_scraper::SearchScraper, storage::Storage};
+use scheduler::{error::SchedulerError, messages::SchedulerMessage, Scheduler};
 
 pub mod scheduler;
 pub mod search_scraper;

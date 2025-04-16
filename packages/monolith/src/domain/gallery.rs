@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use crate::models::gallery::GalleryModel;
-use super::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, pipeline_states::GallerySchedulerState};
+use super::{domain_types::{Marketplace, UnixUtcDateTime}, pipeline_states::GallerySchedulerState};
 
 /// A gallery.
 /// 

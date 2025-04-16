@@ -1,4 +1,4 @@
-use crate::{config::ItemAnalysisConfig, domain::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_items::MarketplaceAnalyzedItems, pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState}}};
+use crate::{config::ItemAnalysisConfig, domain::pipeline_states::{GalleryItemAnalysisState, GalleryItemEmbedderState}};
 use analyzer::Analyzer;
 use error::ItemAnalysisError;
 

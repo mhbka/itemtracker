@@ -1,5 +1,5 @@
 use chrono::Utc;
-use crate::{domain::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, pipeline::instance::PipelineInstance};
+use crate::{domain::pipeline_states::{GallerySchedulerState, GallerySearchScrapingState}, pipeline::instance::PipelineInstance};
 
 use super::error::SchedulerError;
 
@@ -51,7 +51,7 @@ impl ScheduledGalleryTask {
                     )
                 }
             }
-            tracing::debug!("Successfully started scrape for gallery {}", self.gallery.gallery_id);
+            tracing::debug!("Successfully ran pipeline for gallery {}", self.gallery.gallery_id);
             self.sleep_to_next_time().await?;
         }
     }

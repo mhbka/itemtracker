@@ -3,8 +3,8 @@ use diesel::{pg::Pg, Associations, Identifiable, Insertable, Queryable, Selectab
 
 /// Model of the `embedded_marketplace_items` table.
 #[derive(Queryable, Identifiable, Selectable, Associations, Debug, Clone)]
-#[belongs_to(ItemModel, foreign_key = "marketplace_item_id")]
-#[belongs_to(GallerySessionModel, foreign_key = "gallery_session_id")]
+#[diesel(belongs_to(ItemModel, foreign_key = marketplace_item_id))]
+#[diesel(belongs_to(GallerySessionModel, foreign_key = gallery_session_id))]
 #[diesel(check_for_backend(Pg))]
 #[diesel(table_name = embedded_marketplace_items)]
 pub struct EmbeddedItemModel {

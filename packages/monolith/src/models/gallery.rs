@@ -2,7 +2,7 @@ use chrono::{NaiveDateTime, Utc};
 use diesel::{pg::Pg, prelude::*};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, pipeline_states::GallerySchedulerState, search_criteria::SearchCriteria}, schema::galleries::{self}};
+use crate::{domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, search_criteria::SearchCriteria}, schema::galleries::{self}};
 
 // Model of the gallery table.
 #[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize, Debug)]
@@ -23,7 +23,7 @@ pub struct GalleryModel {
 
 /// For inserting a new gallery.
 #[derive(Insertable, Serialize, Deserialize, Clone, Debug)]
-#[table_name = "galleries"]
+#[diesel(table_name = galleries)]
 pub struct NewGallery {
     pub user_id: Uuid,
     pub name: String,
@@ -37,7 +37,7 @@ pub struct NewGallery {
 
 // For updating a gallery.
 #[derive(AsChangeset, Serialize, Deserialize, Clone, Debug)]
-#[table_name = "galleries"]
+#[diesel(table_name = galleries)]
 pub struct UpdatedGallery {
     pub name: Option<String>,
     pub is_active: Option<bool>,

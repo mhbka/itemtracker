@@ -1,4 +1,4 @@
-use axum::{extract::{Path, State}, routing::{delete, get, patch, post, Route}, Json, Router};
+use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Router};
 use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

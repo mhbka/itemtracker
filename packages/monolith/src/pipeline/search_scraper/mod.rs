@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{config::SearchScraperConfig, domain::{domain_types::{GalleryId, ItemId, Marketplace, UnixUtcDateTime}, pipeline_states::{GalleryItemScrapingState, GallerySearchScrapingState}}};
+use crate::{config::SearchScraperConfig, domain::{domain_types::{ItemId, Marketplace, UnixUtcDateTime}, pipeline_states::{GalleryItemScrapingState, GallerySearchScrapingState}}};
 use error::SearchScraperError;
 use scrapers::Scraper;
 
@@ -58,7 +58,7 @@ impl SearchScraper {
             .filter_map(|(marketplace, result)| result.ok().map(|ids| (marketplace, ids)))
             .collect();
 
-        tracing::info!(
+        tracing::debug!(
             "Gallery {} collected the following:\n Item IDs: {:#?}\n Errors: {:#?}",
             gallery_id, valid_scraped_search_ids, failed_marketplace_reasons
         );

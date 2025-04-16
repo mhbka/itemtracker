@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::{domain::{domain_types::GalleryId, pipeline_states::GalleryItemScrapingState}};
+use crate::domain::domain_types::GalleryId;
 use thiserror::Error;
 
 /// Possible errors emitted from the scraper.

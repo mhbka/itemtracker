@@ -1,4 +1,3 @@
-use crate::{domain::pipeline_states::GalleryItemEmbedderState};
 use serde::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::domain::domain_types::GalleryId;

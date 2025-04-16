@@ -1,4 +1,4 @@
-use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Router};
+use axum::{extract::{Path, State}, routing::get, Json, Router};
 use crate::{app_state::AppState, auth::types::AuthUser, domain::gallery_session::{GallerySession, GallerySessionStats, SessionId}};
 
 use super::error::{RouteError, RouteResult};

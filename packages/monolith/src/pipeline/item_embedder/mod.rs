@@ -1,7 +1,6 @@
-use std::collections::HashMap;
 use crate::{
     config::ItemEmbedderConfig, 
-    domain::{domain_types::{GalleryId, Marketplace, UnixUtcDateTime}, eval_criteria::EvaluationCriteria, pipeline_items::MarketplaceEmbeddedAndAnalyzedItems, pipeline_states::{GalleryFinalState, GalleryItemEmbedderState, GalleryPipelineStateTypes, GalleryPipelineStates}}, 
+    domain::pipeline_states::{GalleryFinalState, GalleryItemEmbedderState}, 
 };
 use embedder::Embedder;
 use error::ItemEmbedderError;

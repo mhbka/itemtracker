@@ -1,5 +1,5 @@
-use crate::{config::AppConfig, domain::pipeline_states::{GallerySchedulerState, GallerySearchScrapingState}, stores::AppStores};
-use super::{error::PipelineError, item_analysis::ItemAnalyzer, item_embedder::{self, ItemEmbedder}, item_scraper::ItemScraper, search_scraper::SearchScraper, storage::Storage};
+use crate::{config::AppConfig, domain::pipeline_states::GallerySearchScrapingState, stores::AppStores};
+use super::{error::PipelineError, item_analysis::ItemAnalyzer, item_embedder::{ItemEmbedder}, item_scraper::ItemScraper, search_scraper::SearchScraper, storage::Storage};
 
 /// An instance of a running pipeline.
 /// 

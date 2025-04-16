@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::{pipeline::scheduler::error::SchedulerError, stores::error::StoreError};
 
 /// An alias for a direct response of a route handler.
-pub type RouteResult<T: IntoResponse> = Result<T, RouteError>;
+pub type RouteResult<T> = Result<T, RouteError>;
 
 /// Errors that may return from route handlers.
 #[derive(Error, Debug)]

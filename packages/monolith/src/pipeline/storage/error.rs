@@ -1,4 +1,4 @@
-use crate::{domain::{domain_types::GalleryId, pipeline_states::GalleryFinalState}, stores::error::StoreError};
+use crate::{domain::domain_types::GalleryId, stores::error::StoreError};
 use thiserror::Error;
 
 /// Possible errors emitted from storage.

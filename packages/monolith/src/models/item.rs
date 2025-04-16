@@ -52,7 +52,7 @@ impl ItemModel {
 /// Fields mapped 1:1 to the domain type are borrowed, hence the lifetime.
 /// All none-borrowed fields are original, cannot be mapped 1:1, or are `Copy`.
 #[derive(Insertable, Debug)]
-#[table_name = "marketplace_items"]
+#[diesel(table_name = marketplace_items)]
 pub struct NewItem<'a> {
     pub marketplace: String,
     pub item_id: &'a str,
