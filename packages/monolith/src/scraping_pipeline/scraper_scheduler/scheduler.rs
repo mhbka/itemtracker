@@ -53,7 +53,7 @@ impl SchedulerHandler {
         let gallery_id = new_gallery.gallery_id.clone();
         let mut galleries = self.galleries.write().await;
         if galleries.contains_key(&gallery_id) {
-            return Err(SchedulerError::GalleryAlreadyExists{ gallery_id });
+            return Err(SchedulerError::Internal{ gallery_id });
         }
         let handle = self.generate_gallery_task(new_gallery).await;
         galleries.insert(gallery_id, handle);
@@ -69,7 +69,7 @@ impl SchedulerHandler {
             Ok(())
         } 
         else {
-            Err(SchedulerError::GalleryNotFound{ gallery_id })
+            Err(SchedulerError::Internal { gallery_id })
         }
     }
 
@@ -83,7 +83,7 @@ impl SchedulerHandler {
             Ok(())
         } 
         else {
-            Err(SchedulerError::GalleryNotFound{ gallery_id: updated_gallery.gallery_id})
+            Err(SchedulerError::Internal { gallery_id: updated_gallery.gallery_id })
         }
     }
 
@@ -106,7 +106,7 @@ impl SchedulerHandler {
     /// - The scraping periodicity is once a day
     /// - The latest datetime is 48 hours ago
     /// - The task will immediately begin running
-    async fn generate_gallery_task(&self, mut gallery: GallerySchedulerState) 
+    async fn generate_gallery_task(&self, gallery: GallerySchedulerState) 
     -> (Arc<Mutex<ScheduledGalleryTask>>, JoinHandle<()>) 
     {   
         let task = ScheduledGalleryTask::new(
@@ -148,6 +148,8 @@ impl SchedulerHandler {
                 }
 
                 // ...then begin running indefinitely
+                tracing::debug!("Now running task for gallery {}", gallery.gallery_id);
+
                 let task_run_result = task
                     .run()
                     .await;

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use crate::{domain::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_types::{scraper_scheduler::SchedulerError, state_tracker::StateTrackerError}, SearchScraperSender, StateTrackerSender}};
+use crate::{domain::pipeline_states::{GalleryPipelineStates, GallerySchedulerState, GallerySearchScrapingState}, messages::{message_types::{scraper_scheduler::SchedulerError, search_scraper::SearchScraperMessage, state_tracker::StateTrackerError}, SearchScraperSender, StateTrackerSender}};
 
 /// A wrapper representing the actual running scheduler task for a gallery, which starts on `run()`.
 pub struct ScheduledGalleryTask {
@@ -37,17 +37,19 @@ impl ScheduledGalleryTask {
     /// - the Cron schedule is unable to return the next occurrence
     pub async fn run(&mut self) -> Result<(), ()>  {   
         loop {
-            match self.add_gallery_to_state().await {
-                Ok(res) => {
-                    if let Err(err) = res {
-                        tracing::warn!("Could not add gallery {} to state; it already exists", self.gallery.gallery_id);
-                    }
-                },
-                Err(err) => {
-                    tracing::error!("Error adding new gallery to state: {err}");
-                    return Err(());
-                } 
+            if let Err(err) = self.start_scrape().await {
+                match err {
+                    SchedulerError::MessageErr { gallery_id, err } => {
+                        tracing::error!(
+                            "Got a message failure trying to start a scrape for gallery {}; returning as this is critical: {}",
+                            gallery_id, err
+                        );
+                        return Err(());
+                    },
+                    err => tracing::warn!("Got an error trying to start a scrape for gallery {}; continuing...", err)
+                }
             }
+            tracing::debug!("Successfully started scrape for gallery {}", self.gallery.gallery_id);
             self.sleep_to_next_time().await?;
         }
     }
@@ -55,17 +57,24 @@ impl ScheduledGalleryTask {
     /// Update the gallery that will be sent to the scraper.
     pub fn update_gallery(&mut self, updated_gallery: GallerySchedulerState) -> Result<(), SchedulerError> {
         if updated_gallery.gallery_id != self.gallery.gallery_id {
-            return Err(SchedulerError::GalleryUpdateHasWrongId { gallery_id: self.gallery.gallery_id.clone() })
+            return Err(SchedulerError::Internal { gallery_id: self.gallery.gallery_id.clone() })
         }
         self.gallery = updated_gallery;
         Ok(())
     }
 
-    /// Adds a gallery to state.
+    /// Adds a gallery to state and starts the scrape.
     /// 
-    /// Returns an Err if unable to contact the state tracker.
-    /// Inside, returns an `Err` if the gallery already exists in state.
-    async fn add_gallery_to_state(&mut self) -> Result<Result<(), StateTrackerError>, SchedulerError> {
+    /// Returns an Err if the state tracker returned one,
+    /// or if the state tracker/search scraper had a message failure.
+    /// 
+    /// **NOTE**: 
+    /// One may continue from a state tracker error,
+    /// but should end the task if either had a message failure,
+    /// as this is a critical issue of the system.
+    async fn start_scrape(&mut self) -> Result<(), SchedulerError> {
+        let gallery_id = self.gallery.gallery_id.clone();
+
         let gallery = self.gallery.clone();
         let new_gallery_state = GallerySearchScrapingState {
             gallery_id: gallery.gallery_id,
@@ -73,15 +82,27 @@ impl ScheduledGalleryTask {
             marketplace_previous_scraped_datetimes: gallery.marketplace_previous_scraped_datetimes,
             evaluation_criteria: gallery.evaluation_criteria
         };
+
         self.state_tracker_sender
             .add_gallery(
-                new_gallery_state.gallery_id.clone(), 
+                gallery_id.clone(), 
                 GalleryPipelineStates::SearchScraping(new_gallery_state)
             )
             .await
-            .map_err(|err| SchedulerError::Other { 
-                gallery_id: self.gallery.gallery_id.clone(),
-                message: format!("Unable to send message to state tracker: {err}") 
+            .map_err(|err| SchedulerError::MessageErr { 
+                gallery_id: gallery_id.clone(),
+                err 
+            })?
+            .map_err(|err| SchedulerError::StateErr { 
+                gallery_id: gallery_id.clone(), 
+                err
+            })?;
+
+        self.search_scraper_sender
+            .send(SearchScraperMessage::ScrapeSearch { gallery_id: gallery_id.clone() })
+            .await
+            .map_err(|err| SchedulerError::MessageErr { 
+                gallery_id, err
             })
     }
 

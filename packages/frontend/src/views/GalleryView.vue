@@ -11,7 +11,7 @@
       </button>
     </div>
 
-    <template v-else>
+    <div v-else>
       <button @click="$router.push('/dashboard')" class="primary-button">
         <span class="back-arrow">←</span> Back to Dashboard
       </button>
@@ -53,11 +53,11 @@
             <h3 class="section-title">Search Criteria</h3>
             <div class="info-list">
               <div class="info-item">
-                <span class="info-label">Keyword:</span>
+                <span class="info-label">Keywords:</span>
                 <span>{{ gallery?.search_criteria.keyword }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Exclude:</span>
+                <span class="info-label">Excluded Keywords:</span>
                 <span>{{ gallery?.search_criteria.exclude_keyword || '-' }}</span>
               </div>
               <div class="info-item">
@@ -151,7 +151,7 @@
           </table>
         </div>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -247,7 +247,14 @@ function navigateToSession(sessionId: SessionId) {
 .gallery-view {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 0 1rem;
+}
+
+.galleries-container {
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 .loading-container {

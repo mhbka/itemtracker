@@ -155,7 +155,6 @@ const navigateToNewGallery = () => {
 
 .primary-button {
   padding: 0.5rem 1rem;
-  margin-top: 1rem;
 }
 
 .primary-button:hover {
@@ -164,8 +163,10 @@ const navigateToNewGallery = () => {
 
 .table-container {
   overflow-x: auto;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
 }
 
 .gallery-table {
