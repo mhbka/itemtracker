@@ -1,9 +1,14 @@
 # ItemTracker
 ## Info
-This is an end-to-end SaaS for facilitating the scraping, analysis and classification of item listings across different marketplaces.
+This is an SaaS for facilitating the scraping, analysis and classification of item listings across different marketplaces.
 
 ## Running locally
-Run the below services in separate terminals.
+### Supabase + Google OAuth
+This app uses Supabase + Google OAuth for authentication. [Follow the steps here](https://supabase.com/docs/guides/auth/social-login/auth-google?queryGroups=framework&framework=nextjs)
+to get these set up.
+
+### Environment variables
+WIP
 
 ### Backend
 You need Rust installed:
@@ -12,24 +17,18 @@ cd packages/monolith
 cargo run --release
 ```
 
-### Scraper
-You need Python + uv installed:
-```Powershell
-cd packages/scraper
-uv venv # This only needs to be ran once, to instantiate the virtual env
-.venv\Scripts\activate
-uv pip install requirements.txt # This only needs to be ran whenever there are changes to dependencies 
-scrapyd
-```
-
-### Image Classifier
+### Embedder
 You need Python + conda installed:
 ```Powershell
 cd packages/image_classifier
 conda env create environment.yml
-
 ```
 
 ### Frontend
-WIP
+You need npm + nodeJS installed:
+```Powershell
+cd packages/frontend
+npm install
+npm run dev
+```
 
