@@ -181,6 +181,7 @@ impl GallerySessionsStore {
 
         let session_models = gallery_sessions::table
             .filter(gallery_sessions::columns::gallery_id.eq(gallery_id))
+            .order(gallery_sessions::columns::created.desc())
             .get_results::<GallerySessionModel>(&mut conn)
             .await?;
         let session_ids: Vec<_> = session_models.iter().map(|s| s.id).collect();
@@ -195,9 +196,6 @@ impl GallerySessionsStore {
             ))
             .load::<(SessionId, i64)>(&mut conn)
             .await?;
-
-        tracing::debug!("Session IDs: {session_ids:?}");
-        tracing::debug!("Counts: {counts:?}");
 
         let stats = session_models
             .into_iter()

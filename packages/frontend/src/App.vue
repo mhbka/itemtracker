@@ -1,9 +1,5 @@
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-</script>
-
 <template>
-  <header class="header-container">
+  <header @click="goHome" class="header-container">
     <!--
     <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
     -->
@@ -14,6 +10,20 @@ import { RouterLink, RouterView } from 'vue-router'
 
   <RouterView />
 </template>
+
+<script setup lang="ts">
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { isLoggedIn } from './services/user';
+
+const router = useRouter();
+
+async function goHome() {
+  if (await isLoggedIn())
+    router.push('/dashboard');
+  else
+    router.push('/');
+}
+</script>
 
 <style>
 #app {
@@ -29,6 +39,7 @@ import { RouterLink, RouterView } from 'vue-router'
   align-items: center;
   text-align: center;
   padding: 1rem 0;
+  cursor: pointer;
 }
 
 .main-title {

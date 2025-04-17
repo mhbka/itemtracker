@@ -14,3 +14,11 @@ export async function fetchUserData(): Promise<User> {
     return user;
   }
 }
+
+export async function isLoggedIn(): Promise<bool> {
+  let session = await supabase.auth.getSession();
+  if (session.data)
+    return true;
+  else
+    return false;
+}

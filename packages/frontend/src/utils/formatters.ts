@@ -1,4 +1,5 @@
-import type { UnixUtcDateTime, CriterionAnswer } from '@/types/galleries';
+import { CriterionAnswer } from '@/types/evaluationCriteria';
+import type { UnixUtcDateTime } from '@/types/galleries';
 import { format } from 'date-fns/format';
 
 export function formatUnixTimestamp(timestamp?: UnixUtcDateTime): string {
@@ -20,20 +21,16 @@ export function formatPrice(price: number): string {
 }
 
 export function formatCriterionAnswer(answer: CriterionAnswer): string {
-  switch (answer.type) {
-    case 'YesNo':
-      return answer.value;
-    case 'YesNoUncertain':
-      return answer.value;
-    case 'Int':
-      return answer.value.toString();
-    case 'Float':
-      return answer.value.toFixed(2);
-    case 'OpenEnded':
-      return answer.value;
-    default:
-      return 'Unknown answer type';
-  }
+  if ('YesNo' in answer)
+    return answer.YesNo;
+  else if ('YesNoUncertain' in answer)
+    return answer.YesNoUncertain;
+  else if ('Int' in answer) 
+    return answer.Int.toString();
+  else if ('Float' in answer) 
+    return answer.Float.toString();
+  else if ('OpenEnded' in answer) 
+    return answer.OpenEnded;
 }
 
 export function truncateText(text: string, maxLength: number = 50): string {

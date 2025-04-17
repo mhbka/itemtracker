@@ -1,3 +1,6 @@
+import { CriterionAnswer, EvaluationCriteria } from "./evaluationCriteria";
+import { SearchCriteria } from "./searchCriteria";
+
 export type UUID = string;
 export type SessionId = number;
 export type GalleryId = UUID;
@@ -6,6 +9,7 @@ export type UnixUtcDateTime = number;
 export type ValidCronString = string;
 export type NaiveDateTime = string;
 
+// Summary stats for a gallery.
 export interface GalleryStats {
   name: string,
   total_sessions: number;
@@ -13,62 +17,13 @@ export interface GalleryStats {
   latest_scrape?: UnixUtcDateTime;
 }
 
+// Maps a gallery's ID to its stats.
 export interface GalleryListItem {
   id: UUID;
   stats: GalleryStats;
 }
 
-export interface SearchCriteria {
-  keyword: string;
-  exclude_keyword: string;
-  min_price?: number;
-  max_price?: number;
-}
-
-export enum CriterionType {
-  YesNo = "YesNo",
-  YesNoUncertain = "YesNoUncertain",
-  Int = "Int",
-  Float = "Float",
-  OpenEnded = "OpenEnded"
-}
-
-export enum YesNo {
-  Yes = "Yes",
-  No = "No"
-}
-
-export enum YesNoUncertain {
-  Yes = "Yes",
-  No = "No",
-  Uncertain = "Uncertain"
-}
-
-export interface IntHardCriterion {
-  min?: number;
-  max?: number;
-}
-
-export interface FloatHardCriterion {
-  min?: number;
-  max?: number;
-}
-
-export type HardCriterion = 
-  | { type: "YesNo"; value: YesNo }
-  | { type: "Int"; value: IntHardCriterion }
-  | { type: "Float"; value: FloatHardCriterion };
-
-export interface Criterion {
-  question: string;
-  criterion_type: CriterionType;
-  hard_criterion?: HardCriterion;
-}
-
-export interface EvaluationCriteria {
-  criteria: Criterion[];
-}
-
+// For submitting a new gallery to be registered.
 export interface NewGallery {
   name: string;
   is_active: boolean;
@@ -78,6 +33,7 @@ export interface NewGallery {
   mercari_last_scraped_time: NaiveDateTime;
 } 
 
+// Data for a gallery.
 export interface Gallery {
   id: UUID;
   user_id: UUID;
@@ -91,23 +47,19 @@ export interface Gallery {
   updated_at: NaiveDateTime;
 }
 
+// Summary statistics for a gallery session.
 export interface GallerySessionStats {
   created: UnixUtcDateTime;
   total_items: number;
 }
 
+// Maps a gallery session to its stats.
 export interface SessionListItem {
   id: SessionId;
   stats: GallerySessionStats;
 }
 
-export type CriterionAnswer = 
-  | { type: "YesNo"; value: YesNo }
-  | { type: "YesNoUncertain"; value: YesNoUncertain }
-  | { type: "Int"; value: number }
-  | { type: "Float"; value: number }
-  | { type: "OpenEnded"; value: string };
-
+// The raw data of the item listing.
 export interface MarketplaceItemData {
   item_id: ItemId;
   name: string;
@@ -122,16 +74,19 @@ export interface MarketplaceItemData {
   updated: UnixUtcDateTime;
 }
 
-export interface EmbeddedMarketplaceItem {
+/// A single scraped + processed item listing.
+export interface MarketplaceItem {
   item: MarketplaceItemData;
   evaluation_answers: CriterionAnswer[];
   item_description: string;
 }
 
+/// All data under a gallery session.
 export interface GallerySession {
   id: SessionId;
   gallery_id: GalleryId;
   created: UnixUtcDateTime;
   used_evaluation_criteria: EvaluationCriteria;
-  mercari_items: EmbeddedMarketplaceItem[];
+  mercari_items: MarketplaceItem[];
 }
+

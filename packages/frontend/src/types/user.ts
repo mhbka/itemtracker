@@ -1,3 +1,4 @@
+// Metadata for a user (from Supabase).
 export interface UserMetadata {
     avatar_url?: string;
     full_name?: string;
@@ -7,6 +8,7 @@ export interface UserMetadata {
     [key: string]: any;
 }
 
+// Information about a user (from Supabase).
 export interface User {
   id: string;
   email?: string;
