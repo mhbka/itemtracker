@@ -16,7 +16,7 @@ export function getZeroedNaiveDatetime(): string {
 export function formatPrice(price: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD'
+    currency: 'JPY'
   }).format(price);
 }
 
