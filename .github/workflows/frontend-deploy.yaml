@@ -1,14 +1,19 @@
-name: Deploy to GitHub Pages
+name: Frontend GH Pages deployment
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'packages/frontend/**'
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: github-pages
+    defaults:
+      run:
+        working-directory: packages/frontend
     
     steps:
       - uses: actions/checkout@v3
@@ -32,4 +37,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: dist
+          folder: packages/frontend/dist
