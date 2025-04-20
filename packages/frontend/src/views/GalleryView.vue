@@ -16,7 +16,6 @@
         <span class="back-arrow">←</span> Back to Dashboard
       </button>
 
-      <!-- Gallery Details -->
       <div class="details-card">
         <h1 class="details-title">{{ gallery?.name }}</h1>
 
@@ -54,6 +53,7 @@
               </div>
             </div>
           </div>
+        
           
           <div class="info-section">
             <h3 class="section-title">Search Criteria</h3>
@@ -100,17 +100,7 @@
                   <td>{{ criterion.question }}</td>
                   <td>{{ criterion.criterion_type }}</td>
                   <td>
-                    <template v-if="criterion.hard_criterion">
-                      <span v-if="criterion.hard_criterion.type === 'YesNo'">
-                        Must be: {{ criterion.hard_criterion.value }}
-                      </span>
-                      <span v-else-if="criterion.hard_criterion.type === 'Int'">
-                        {{ formatRangeCriterion(criterion.hard_criterion.value) }}
-                      </span>
-                      <span v-else-if="criterion.hard_criterion.type === 'Float'">
-                        {{ formatRangeCriterion(criterion.hard_criterion.value) }}
-                      </span>
-                    </template>
+                    <span v-if="criterion.hard_criterion">{{ formatHardCriterion(criterion.hard_criterion) }}</span>
                     <span v-else>No</span>
                   </td>
                 </tr>
@@ -165,7 +155,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { fetchGallery, fetchAllSessionStats, deleteGallery } from '@/services/api';
-import { formatUnixTimestamp, formatPrice, getZeroedNaiveDatetime } from '@/utils/formatters';
+import { formatUnixTimestamp, formatPrice, getZeroedNaiveDatetime, formatCriterionAnswer, formatHardCriterion } from '@/utils/formatters';
 import type { Gallery, SessionId, GallerySessionStats } from '@/types/galleries';
 
 interface SessionWithStats {

@@ -1,4 +1,4 @@
-import { CriterionAnswer } from '@/types/evaluationCriteria';
+import { CriterionAnswer, HardCriterion } from '@/types/evaluationCriteria';
 import type { UnixUtcDateTime } from '@/types/galleries';
 import { format } from 'date-fns/format';
 
@@ -31,6 +31,33 @@ export function formatCriterionAnswer(answer: CriterionAnswer): string {
     return answer.Float.toString();
   else if ('OpenEnded' in answer) 
     return answer.OpenEnded;
+}
+
+export function formatHardCriterion(crit: HardCriterion): string {
+  if ('YesNo' in crit)
+    return crit.YesNo;
+  else if ('Int' in crit) {
+    if ('LessThan' in crit.Int)
+        return `less than ${crit.Int.LessThan}`;
+    else if ('MoreThan' in crit.Int)
+      return `more than ${crit.Int.MoreThan}`;
+    else if ('Equal' in crit.Int)
+      return `equal ${crit.Int.Equal}`;
+    else if ('Between' in crit.Int)
+      return `between ${crit.Int.Between[0]} and ${crit.Int.Between[1]}`
+  }
+  else if ('Float' in crit) {
+    if ('LessThan' in crit.Float)
+      return `less than ${crit.Float.LessThan}`;
+    else if ('MoreThan' in crit.Float)
+      return `more than ${crit.Float.MoreThan}`;
+    else if ('Equal' in crit.Float)
+      return `equal ${crit.Float.Equal}`;
+    else if ('Between' in crit.Float)
+      return `between ${crit.Float.Between[0]} and ${crit.Float.Between[1]}`
+  }
+  else
+    return '-';
 }
 
 export function truncateText(text: string, maxLength: number = 50): string {
