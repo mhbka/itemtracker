@@ -1,17 +1,14 @@
 <template>
   <div class="session-view">
-    
     <h1>Session Details</h1>
     <div class="back-nav">
-      <button @click="navigateBack" class="back-button">
-        ← Back to Gallery
-      </button>
+      <button @click="navigateBack" class="back-button">← Back to Gallery</button>
     </div>
 
     <div v-if="loading" class="loading-spinner-container">
       <div class="loading-spinner"></div>
     </div>
-    
+
     <div v-else-if="error" class="error-message">
       <p>{{ error }}</p>
     </div>
@@ -38,11 +35,11 @@
       <!-- Items Table -->
       <div class="card">
         <h2>Marketplace Items</h2>
-        
+
         <div v-if="session?.mercari_items.length === 0" class="empty-message">
           <p>No items found in this session.</p>
         </div>
-        
+
         <div v-else class="items-table-container">
           <table class="items-table">
             <thead>
@@ -63,14 +60,18 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in session?.mercari_items" :key="item.item.item_id" class="item-row">
+              <tr
+                v-for="(item, index) in session?.mercari_items"
+                :key="item.item.item_id"
+                class="item-row"
+              >
                 <td class="item-image">
-                  <img 
-                    v-if="item.item.thumbnails?.length > 0" 
-                    :src="item.item.thumbnails[0]" 
+                  <img
+                    v-if="item.item.thumbnails?.length > 0"
+                    :src="item.item.thumbnails[0]"
                     :alt="item.item.name"
                     class="thumbnail"
-                  >
+                  />
                   <div v-else class="no-thumbnail">
                     <span>No image</span>
                   </div>
@@ -101,7 +102,6 @@
                   </div>
                 </div>
                 -->
-
               </tr>
             </tbody>
           </table>
@@ -112,53 +112,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { fetchSession } from '@/services/api';
-import { formatUnixTimestamp, formatPrice, formatCriterionAnswer } from '@/utils/formatters';
-import type { GallerySession } from '@/types/galleries';
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { fetchSession } from '@/services/api'
+import { formatUnixTimestamp, formatPrice, formatCriterionAnswer } from '@/utils/formatters'
+import type { GallerySession } from '@/types/galleries'
 
-const route = useRoute();
-const router = useRouter();
-const sessionId = ref(parseInt(route.params.id as string, 10));
-const expandedItems = ref<number[]>([]);
+const route = useRoute()
+const router = useRouter()
+const sessionId = ref(parseInt(route.params.id as string, 10))
+const expandedItems = ref<number[]>([])
 
-const session = ref<GallerySession | null>(null);
-const loading = ref(true);
-const error = ref<string | null>(null);
+const session = ref<GallerySession | null>(null)
+const loading = ref(true)
+const error = ref<string | null>(null)
 
 onMounted(async () => {
-  await fetchSessionData();
-});
+  await fetchSessionData()
+})
 
 async function fetchSessionData() {
-  loading.value = true;
-  error.value = null;
-  
+  loading.value = true
+  error.value = null
+
   try {
-    session.value = await fetchSession(sessionId.value);
+    session.value = await fetchSession(sessionId.value)
   } catch (err) {
-    error.value = 'Failed to load session data. Please try again later.';
-    console.error(err);
+    error.value = 'Failed to load session data. Please try again later.'
+    console.error(err)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 function navigateBack() {
   if (session.value?.gallery_id) {
-    router.push(`/gallery/${session.value.gallery_id}`);
+    router.push(`/gallery/${session.value.gallery_id}`)
   } else {
-    router.push('/dashboard');
+    router.push('/dashboard')
   }
 }
 
 function toggleItemDetails(index: number) {
-  const currentIndex = expandedItems.value.indexOf(index);
+  const currentIndex = expandedItems.value.indexOf(index)
   if (currentIndex === -1) {
-    expandedItems.value.push(index);
+    expandedItems.value.push(index)
   } else {
-    expandedItems.value.splice(currentIndex, 1);
+    expandedItems.value.splice(currentIndex, 1)
   }
 }
 </script>
@@ -189,10 +189,13 @@ function toggleItemDetails(index: number) {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.error-message, .empty-message {
+.error-message,
+.empty-message {
   border: 1px solid #ccc;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -232,7 +235,8 @@ function toggleItemDetails(index: number) {
   font-weight: bold;
 }
 
-.thumbnail, .no-thumbnail {
+.thumbnail,
+.no-thumbnail {
   width: 150px; /* Fixed width */
   height: 150px; /* Same as width to make it square */
   min-width: 150px; /* Prevent shrinking */

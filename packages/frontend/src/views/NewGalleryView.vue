@@ -7,7 +7,7 @@
     </div>
 
     <div v-if="evalCriteriaError" class="error-message">
-      <p>The following errors were found in your evaluation criteria: </p>
+      <p>The following errors were found in your evaluation criteria:</p>
       <p>{{ evalCriteriaError }}</p>
     </div>
 
@@ -43,7 +43,7 @@
         </div>
 
         <h3>Evaluation Criteria</h3>
-        <EvalCriteriaInput 
+        <EvalCriteriaInput
           v-model:criteria="newGallery.evaluation_criteria.criteria"
           v-model:error="evalCriteriaError"
         />
@@ -58,131 +58,131 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { addNewGallery } from '@/services/api';
-import { Gallery, NewGallery } from '@/types/galleries';
-import { getZeroedNaiveDatetime } from '@/utils/formatters';
-import { CriterionType } from '@/types/evaluationCriteria';
-import EvalCriteriaInput from '@/components/newGalleryForm/EvalCriteriaInput.vue';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { addNewGallery } from '@/services/api'
+import { Gallery, NewGallery } from '@/types/galleries'
+import { getZeroedNaiveDatetime } from '@/utils/formatters'
+import { CriterionType } from '@/types/evaluationCriteria'
+import EvalCriteriaInput from '@/components/newGalleryForm/EvalCriteriaInput.vue'
 
-const router = useRouter();
-const error = ref<string | null>(null);
-const evalCriteriaError = ref<string | null>(null);
+const router = useRouter()
+const error = ref<string | null>(null)
+const evalCriteriaError = ref<string | null>(null)
 const newGallery = ref<NewGallery>({
-name: '',
-is_active: true,
-scraping_periodicity: '0 0 * * *', // Default: daily at midnight
-search_criteria: {
-  keyword: '',
-  exclude_keyword: '',
-  min_price: 0,
-  max_price: 0
-},
-evaluation_criteria: {
-  criteria: [
-    {
-      question: '',
-      criterion_type: CriterionType.YesNo
-    }
-  ]
-},
-mercari_last_scraped_time: getZeroedNaiveDatetime()
-});
+  name: '',
+  is_active: true,
+  scraping_periodicity: '0 0 * * *', // Default: daily at midnight
+  search_criteria: {
+    keyword: '',
+    exclude_keyword: '',
+    min_price: 0,
+    max_price: 0,
+  },
+  evaluation_criteria: {
+    criteria: [
+      {
+        question: '',
+        criterion_type: CriterionType.YesNo,
+      },
+    ],
+  },
+  mercari_last_scraped_time: getZeroedNaiveDatetime(),
+})
 
 const submitNewGallery = async () => {
-try {
-  await addNewGallery(newGallery.value);
-  router.push('/dashboard'); 
-} catch (err) {
-  error.value = 'Failed to create gallery. Please try again.';
-  console.error(err);
+  try {
+    await addNewGallery(newGallery.value)
+    router.push('/dashboard')
+  } catch (err) {
+    error.value = 'Failed to create gallery. Please try again.'
+    console.error(err)
+  }
 }
-};
 
 const goBack = () => {
-router.push('/dashboard');
-};
+  router.push('/dashboard')
+}
 </script>
 
 <style scoped>
 .new-gallery-container {
-max-width: 800px;
-margin: 0 auto;
-padding: 2rem 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
 }
 
 .page-title {
-font-size: 1.5rem;
-font-weight: bold;
-margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
 }
 
 .error-message {
-background-color: #fef2f2;
-border: 1px solid #fca5a5;
-color: #b91c1c;
-padding: 1rem;
-border-radius: 0.5rem;
-margin-bottom: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .new-gallery-form {
-padding: 0.5rem 1.5rem 2rem 1.5rem;
-border: 1px solid #e5e7eb;
-border-radius: 0.5rem;
-box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 1.5rem 2rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 .new-gallery-form h3 {
-margin: 1.5rem 0 1rem;
-font-size: 1.1rem;
+  margin: 1.5rem 0 1rem;
+  font-size: 1.1rem;
 }
 
 .form-group {
-margin-bottom: 1rem;
-display: flex;
-flex-direction: column;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-group label {
-font-weight: 500;
-margin-bottom: 0.25rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
 }
 
 .form-group input {
-padding: 0.5rem;
-border: 1px solid #d1d5db;
-border-radius: 0.375rem;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
 }
 
 .form-actions {
-margin-top: 2rem;
-display: flex;
-gap: 1rem;
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
 }
 
 .primary-button {
-padding: 0.5rem 1rem;
-border: 1px solid #d1d5db;
-border-radius: 0.375rem;
-font-weight: 500;
-cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .primary-button:hover {
-background-color: #2563eb;
+  background-color: #2563eb;
 }
 
 .secondary-button {
-padding: 0.5rem 1rem;
-border: 1px solid #d1d5db;
-border-radius: 0.375rem;
-font-weight: 500;
-cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .secondary-button:hover {
-background-color: #e5e7eb;
+  background-color: #e5e7eb;
 }
 </style>

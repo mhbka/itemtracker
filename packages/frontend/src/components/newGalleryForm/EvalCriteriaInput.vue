@@ -15,23 +15,25 @@
 
       <div class="form-group">
         <label>Hard Criterion (optional)</label>
-        <YesNoCriterion 
-          v-if="criterion.criterion_type == CriterionType.YesNo" 
+        <YesNoCriterion
+          v-if="criterion.criterion_type == CriterionType.YesNo"
           v-model="criterion.hard_criterion"
         />
-        <FloatCriterion 
-          v-if="criterion.criterion_type == CriterionType.Float" 
+        <FloatCriterion
+          v-if="criterion.criterion_type == CriterionType.Float"
           v-model:criteria="criterion.hard_criterion"
           v-model:error="errors[index]"
         />
-        <IntCriterion   
-          v-if="criterion.criterion_type == CriterionType.Int" 
+        <IntCriterion
+          v-if="criterion.criterion_type == CriterionType.Int"
           v-model:criteria="criterion.hard_criterion"
           v-model:error="errors[index]"
         />
       </div>
 
-      <button v-if="criteria.length > 1" type="button" @click="() => deleteCriterion(index)">Delete Criterion</button>
+      <button v-if="criteria.length > 1" type="button" @click="() => deleteCriterion(index)">
+        Delete Criterion
+      </button>
     </div>
 
     <button type="button" @click="addCriterion">Add Criterion</button>
@@ -39,36 +41,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue';
-import YesNoCriterion from './hardCriterionTypes/YesNoCrit.vue';;
-import IntCriterion from './hardCriterionTypes/IntCrit.vue';
-import FloatCriterion from './hardCriterionTypes/FloatCrit.vue';
-import { Criterion, CriterionType, HardCriterion } from '@/types/evaluationCriteria';
+import { ref, reactive, computed, watch } from 'vue'
+import YesNoCriterion from './hardCriterionTypes/YesNoCrit.vue'
+import IntCriterion from './hardCriterionTypes/IntCrit.vue'
+import FloatCriterion from './hardCriterionTypes/FloatCrit.vue'
+import { Criterion, CriterionType, HardCriterion } from '@/types/evaluationCriteria'
 
-let criteria = defineModel<Criterion[]>('criteria');
-let error = defineModel<string>('error');
+let criteria = defineModel<Criterion[]>('criteria')
+let error = defineModel<string>('error')
 
-const errors = ref<string[]>([null]);
+const errors = ref<string[]>([null])
 
 // Returns a default criterion.
 function getDefaultCriterion(): Criterion {
   return {
     question: '',
     criterion_type: CriterionType.YesNo,
-  };
+  }
 }
 
 // Add a new criterion + a placeholder error for it
 const addCriterion = () => {
-  criteria.value.push(getDefaultCriterion());
-  errors.value.push(null);
+  criteria.value.push(getDefaultCriterion())
+  errors.value.push(null)
 }
 
 // Remove a specific criterion.
 const deleteCriterion = (index) => {
-  if (criteria.value.length > 1) {  
-    criteria.value.splice(index, 1);
-    errors.value.splice(index, 1);
+  if (criteria.value.length > 1) {
+    criteria.value.splice(index, 1)
+    errors.value.splice(index, 1)
   }
 }
 
@@ -76,17 +78,13 @@ const deleteCriterion = (index) => {
 watch(errors, () => {
   const singularError = errors.value
     .map((err, index) => {
-      if (err != null)
-        return `${index}. ${err}`;
-      else 
-        return err;
+      if (err != null) return `${index}. ${err}`
+      else return err
     })
     .filter((err) => err != null)
-    .join();
-  if (singularError != '') 
-    error.value = singularError;
-  else
-    error.value = null;
+    .join()
+  if (singularError != '') error.value = singularError
+  else error.value = null
 })
 </script>
 
@@ -105,8 +103,7 @@ watch(errors, () => {
 }
 
 .form-group label {
-font-weight: 500;
-margin-bottom: 0.25rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
 }
-
 </style>

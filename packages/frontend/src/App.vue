@@ -13,15 +13,13 @@
 
 <script setup lang="ts">
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { isLoggedIn } from './services/user';
+import { isLoggedIn } from './services/user'
 
-const router = useRouter();
+const router = useRouter()
 
 async function goHome() {
-  if (await isLoggedIn())
-    router.push('/dashboard');
-  else
-    router.push('/');
+  if (await isLoggedIn()) router.push('/dashboard')
+  else router.push('/')
 }
 </script>
 
@@ -55,9 +53,12 @@ async function goHome() {
   opacity: 0.8;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font-family: 'Courier New', Courier, monospace;
-  background-color: #414141; 
+  background-color: #414141;
   color: #dbdbdb;
   padding: 0.5rem 1rem;
   border: 1px solid #d1d5db;
@@ -66,7 +67,7 @@ button, input, select, textarea {
 }
 
 button {
-  cursor: pointer
+  cursor: pointer;
 }
 
 button:hover {
@@ -92,7 +93,8 @@ tr td {
   text-align: left;
 }
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   align-items: center;
