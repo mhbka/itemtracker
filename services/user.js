@@ -62,10 +62,10 @@ export function isLoggedIn() {
         var session;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, supabase.auth.getSession()];
+                case 0: return [4 /*yield*/, supabase.auth.getUser()];
                 case 1:
                     session = _a.sent();
-                    if (session.data)
+                    if (session.data.user)
                         return [2 /*return*/, true];
                     else
                         return [2 /*return*/, false];

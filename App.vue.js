@@ -56,7 +56,26 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 import { RouterView, useRouter } from 'vue-router';
 import { isLoggedIn } from './services/user';
+import { supabase } from './main';
+import { onMounted, ref } from 'vue';
 var router = useRouter();
+var loading = ref(true);
+var loggedIn = ref(false);
+var error = ref('');
+onMounted(function () { return __awaiter(void 0, void 0, void 0, function () {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                _a = loggedIn;
+                return [4 /*yield*/, isLoggedIn()];
+            case 1:
+                _a.value = _b.sent();
+                loading.value = false;
+                return [2 /*return*/];
+        }
+    });
+}); });
 function goHome() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
@@ -72,6 +91,48 @@ function goHome() {
         });
     });
 }
+function signInWithGoogle() {
+    return __awaiter(this, void 0, void 0, function () {
+        var signInError, err_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 2, , 3]);
+                    return [4 /*yield*/, supabase.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                                redirectTo: "".concat(window.location.origin, "/dashboard"),
+                            },
+                        })];
+                case 1:
+                    signInError = (_a.sent()).error;
+                    if (signInError) {
+                        error.value = signInError.message;
+                    }
+                    return [3 /*break*/, 3];
+                case 2:
+                    err_1 = _a.sent();
+                    error.value = 'An error occurred during sign in';
+                    console.error(err_1);
+                    return [3 /*break*/, 3];
+                case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+function signOut() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, supabase.auth.signOut()];
+                case 1:
+                    _a.sent();
+                    router.push('/');
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 var __VLS_ctx = {};
 var __VLS_components;
@@ -79,22 +140,40 @@ var __VLS_directives;
 // CSS variable injection 
 // CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.header, __VLS_intrinsicElements.header)(__assign({ onClick: (__VLS_ctx.goHome) }, { class: "header-container" }));
+__VLS_asFunctionalElement(__VLS_intrinsicElements.img)(__assign(__assign({ alt: "logo" }, { class: "logo" }), { src: "@/assets/logo.svg", width: "125", height: "125" }));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.h1, __VLS_intrinsicElements.h1)(__assign({ class: "main-title" }));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(__assign({ class: "subtitle" }));
+if (!__VLS_ctx.loading) {
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({});
+    if (!__VLS_ctx.loggedIn) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)(__assign({ onClick: (__VLS_ctx.signInWithGoogle) }, { class: "google-signin-btn" }));
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.img)(__assign({ src: "@/assets/google-icon.svg" }, { class: "button-icon" }));
+    }
+    else if (__VLS_ctx.loggedIn) {
+        __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)(__assign({ onClick: (__VLS_ctx.signOut) }));
+    }
+}
 var __VLS_0 = {}.RouterView;
 /** @type {[typeof __VLS_components.RouterView, ]} */ ;
 // @ts-ignore
 var __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({}));
 var __VLS_2 = __VLS_1.apply(void 0, __spreadArray([{}], __VLS_functionalComponentArgsRest(__VLS_1), false));
 /** @type {__VLS_StyleScopedClasses['header-container']} */ ;
+/** @type {__VLS_StyleScopedClasses['logo']} */ ;
 /** @type {__VLS_StyleScopedClasses['main-title']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtitle']} */ ;
+/** @type {__VLS_StyleScopedClasses['google-signin-btn']} */ ;
+/** @type {__VLS_StyleScopedClasses['button-icon']} */ ;
 var __VLS_dollars;
 var __VLS_self = (await import('vue')).defineComponent({
     setup: function () {
         return {
             RouterView: RouterView,
+            loading: loading,
+            loggedIn: loggedIn,
             goHome: goHome,
+            signInWithGoogle: signInWithGoogle,
+            signOut: signOut,
         };
     },
 });

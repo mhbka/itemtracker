@@ -36,7 +36,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-import LoginView from '../views/LoginView.vue';
 import DashboardView from '../views/DashboardView.vue';
 import GalleryView from '../views/GalleryView.vue';
 import GallerySessionView from '../views/GallerySessionView.vue';
@@ -50,14 +49,6 @@ var router = createRouter({
             path: '/',
             name: 'home',
             component: HomeView,
-            meta: {
-                requiresAuth: false,
-            },
-        },
-        {
-            path: '/login',
-            name: 'login',
-            component: LoginView,
             meta: {
                 requiresAuth: false,
             },
@@ -111,7 +102,7 @@ router.beforeEach(function (to, from, next) { return __awaiter(void 0, void 0, v
                 _a = _b.sent(), user = _a.data.user, error = _a.error;
                 if (to.matched.some(function (record) { return record.meta.requiresAuth; })) {
                     if (user == null || error != null) {
-                        next({ name: 'login' });
+                        next({ name: 'home' });
                     }
                     else {
                         next();
