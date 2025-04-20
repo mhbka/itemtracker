@@ -73,7 +73,7 @@ async function signOut(): Promise<void> {
 }
 
 .logo {
-  filter: invert(11%) sepia(77%) saturate(5212%) hue-rotate(244deg) brightness(90%) contrast(100%);
+  filter: invert(49%) sepia(10%) saturate(4061%) hue-rotate(204deg) brightness(106%) contrast(101%);
 }
 
 .button-icon {
@@ -121,7 +121,7 @@ button {
 }
 
 button:hover {
-  background-color: #1e40af;
+  background-color: #122e88;
 }
 
 tr {
