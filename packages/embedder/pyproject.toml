@@ -6,8 +6,19 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "flask>=3.1.0",
+    "gunicorn>=23.0.0",
     "pillow>=11.1.0",
     "tokenizers>=0.21.0",
     "torch>=2.6.0",
     "transformers>=4.48.2",
 ]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
