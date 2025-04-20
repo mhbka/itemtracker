@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import GalleryView from '../views/GalleryView.vue'
 import GallerySessionView from '../views/GallerySessionView.vue'
@@ -15,14 +14,6 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: {
-        requiresAuth: false,
-      },
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
       meta: {
         requiresAuth: false,
       },
@@ -76,7 +67,7 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.matched.some((record) => record.meta.requiresAuth)) {
     if (user == null || error != null) {
-      next({ name: 'login' })
+      next({ name: 'home' })
     } else {
       next()
     }

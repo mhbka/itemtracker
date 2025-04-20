@@ -1,11 +1,18 @@
 <template>
   <header @click="goHome" class="header-container">
-    <!--
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-    -->
-
+    <img alt="logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
     <h1 class="main-title">itemtracker</h1>
     <p class="subtitle">track what you're looking for</p>
+
+    <div v-if="!loading">
+      <button v-if="!loggedIn" @click="signInWithGoogle" class="google-signin-btn">
+        <img src="@/assets/google-icon.svg" class="button-icon" />
+        Sign in with Google
+      </button>
+      <button v-else-if="loggedIn" @click="signOut">
+        Sign out
+      </button>
+    </div>
   </header>
 
   <RouterView />
@@ -14,13 +21,47 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { isLoggedIn } from './services/user'
+import { supabase } from './main'
+import { onMounted, ref } from 'vue'
 
 const router = useRouter()
 
+const loading = ref(true);
+const loggedIn = ref(false);
+const error = ref('');
+
+onMounted(async () => {
+  loggedIn.value = await isLoggedIn();
+  loading.value = false;
+})
+
 async function goHome() {
-  if (await isLoggedIn()) router.push('/dashboard')
-  else router.push('/')
+  if (await isLoggedIn()) router.push('/dashboard');
+  else router.push('/');
 }
+
+async function signInWithGoogle(): Promise<void> {
+  try {
+    const { error: signInError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+      },
+    })
+
+    if (signInError) {
+      error.value = signInError.message
+    }
+  } catch (err) {
+    error.value = 'An error occurred during sign in'
+    console.error(err)
+  }
+}
+
+async function signOut(): Promise<void> {
+  await supabase.auth.signOut();
+  router.push('/');
+} 
 </script>
 
 <style>
@@ -29,6 +70,15 @@ async function goHome() {
   color: #dbdbdb;
   font-family: 'Courier New', Courier, monospace;
   min-height: 100vh; /* Ensure it covers the full viewport height */
+}
+
+.logo {
+  filter: invert(11%) sepia(77%) saturate(5212%) hue-rotate(244deg) brightness(90%) contrast(100%);
+}
+
+.button-icon {
+  height: 1.5em;
+  vertical-align: middle;
 }
 
 .header-container {
@@ -41,7 +91,7 @@ async function goHome() {
 }
 
 .main-title {
-  color: rgb(65, 65, 255);
+  color: #4141ff;
   font-size: 3rem;
   margin-bottom: 0.5rem;
   margin-top: 0.5rem;

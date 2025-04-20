@@ -17,7 +17,7 @@ export async function fetchUserData(): Promise<User> {
 }
 
 export async function isLoggedIn(): Promise<boolean> {
-  let session = await supabase.auth.getSession()
-  if (session.data) return true
+  let session = await supabase.auth.getUser()
+  if (session.data.user) return true
   else return false
 }
