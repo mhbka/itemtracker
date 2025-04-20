@@ -2,6 +2,9 @@
   "include": ["vite.config.ts"],
   "compilerOptions": {
     "composite": true,
-    "types": ["node"]
+    "types": ["node"],
+    "esModuleInterop": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
   }
 }

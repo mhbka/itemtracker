@@ -15,7 +15,7 @@ export async function fetchUserData(): Promise<User> {
   }
 }
 
-export async function isLoggedIn(): Promise<bool> {
+export async function isLoggedIn(): Promise<boolean> {
   let session = await supabase.auth.getSession();
   if (session.data)
     return true;
