@@ -14,5 +14,5 @@ RUN cargo build --release --bin monolith
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
-COPY --from=builder /app/target/release/app /usr/local/bin
-ENTRYPOINT ["/usr/local/bin/app"]
+COPY --from=builder /app/target/release/monolith monolith
+ENTRYPOINT ["./monolith"]
