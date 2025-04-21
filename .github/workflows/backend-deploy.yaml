@@ -2,16 +2,14 @@ name: Backend/monolith deployment
 
 on:
   push:
-    paths:
-      - 'packages/monolith/**'
-  pull_request:
+    branches: [ main ]
     paths:
       - 'packages/monolith/**'
   workflow_dispatch:
 
 jobs:
   check:
-    name: Cargo Check
+    name: Check and build
     runs-on: ubuntu-latest
     
     steps:
@@ -30,4 +28,4 @@ jobs:
       
       - name: Build image
         working-directory: ./packages/monolith
-        run: docker build -t monolith:test .
+        run: docker build -t monolith:latest .
