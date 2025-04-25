@@ -46,7 +46,7 @@ impl AppConfig {
 /// - `host_addr`: The address the app will run on
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AxumConfig {
-    pub host_addr: String
+    pub host_port: String
 }
 
 impl AxumConfig {
@@ -54,7 +54,7 @@ impl AxumConfig {
     pub(super) fn load() -> Result<Self, VarError> {
         Ok(
             AxumConfig {
-                host_addr: env::var("HOST_ADDR")?
+                host_port: env::var("PORT")?
             }
         )
     }

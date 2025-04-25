@@ -28,14 +28,14 @@ async fn main() {
 
     let app_state = AppState {
         stores: stores.clone(),
-        pipeline: pipeline
+        pipeline
     };
     
     let router = routes::build_router(app_state);
     
     tracing::info!("App fully initialized");
 
-    let listener = TcpListener::bind(axum_config.host_addr.clone())
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", axum_config.host_port))
         .await
         .unwrap();
     axum::serve(listener, router)

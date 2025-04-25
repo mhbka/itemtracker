@@ -1,3 +1,4 @@
+import os
 import torch
 from flask import Flask, jsonify, request
 from PIL import Image
@@ -38,8 +39,3 @@ def create_embeddings():
         response["image_embeddings"] = outputs.image_embeds.numpy().tolist()
 
     return jsonify(response)
-
-
-if __name__ == "__main__":
-    app.config.from_object("config.ProductionConfig")
-    app.run()
