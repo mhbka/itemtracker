@@ -3,8 +3,8 @@ project_id = "itemtracker-456913"
 region = "asia-southeast1"
 
 # Backend configs
-backend_service_name = "itemtracker-backend"
-backend_image = "mhish/itemtracker_backend"
+backend_service_name = "itemtracker-monolith"
+backend_image = "mhish/itemtracker_monolith"
 backend_image_tag    = "latest"
 backend_domain = "api.itemtracker.hish.dev"
 backend_cpu          = "1000m"
