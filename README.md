@@ -50,6 +50,8 @@ A fairly standard setup is used:
 
 The frontend is deployed differently. It is simply built and deployed to Github Pages, via Github Actions.
 
+Each of the deployment flows can be viewed via its workflow in `/.github/workflows`.
+
 ### Secrets
 WIP
 

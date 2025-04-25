@@ -1,6 +1,5 @@
 # Project-wide settings
-gcs_bucket = "itemtracker-storage"
-project_id = "your-gcp-project-id"
+project_id = "itemtracker-456913"
 region = "asia-southeast1-a"
 
 # Backend configs
