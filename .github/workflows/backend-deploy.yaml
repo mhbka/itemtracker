@@ -24,7 +24,7 @@ jobs:
       - name: Check if image already exists
         id: check_image
         run: |
-          if docker manifest inspect mhish/itemtracker_monolith:latest > /dev/null 2>&1; then
+          if docker manifest inspect mhish/itemtracker_monolith:${{ github.sha }} > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -60,8 +60,8 @@ jobs:
       - name: Build and push Docker image
         working-directory: ./packages/monolith
         run: |
-          docker build -t mhish/itemtracker_monolith:latest .
-          docker push mhish/itemtracker_monolith:latest
+          docker build -t mhish/itemtracker_monolith:${{ github.sha }} .
+          docker push mhish/itemtracker_monolith:${{ github.sha }}
 
   deploy:
     name: Deploy
