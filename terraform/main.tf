@@ -1,7 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = var.gcs_bucket
-    prefix = "terraform/state"
+    # Run using backend.conf
   }
 }
 
