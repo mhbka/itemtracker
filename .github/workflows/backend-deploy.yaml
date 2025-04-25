@@ -14,17 +14,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
-      
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      
-      - name: Check project
-        working-directory: ./packages/monolith
-        run: cargo check
 
       - name: Authenticate to Google Cloud
         uses: 'google-github-actions/auth@v2'
@@ -41,6 +30,20 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PAT }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      
+      - name: Check project
+        working-directory: ./packages/monolith
+        run: cargo check
       
       - name: Build and push image
         working-directory: ./packages/monolith

@@ -42,12 +42,13 @@ npm run dev
 ```
 
 ## CI/CD and infra
-### Docker
-The backend and embedder each comes with its own Dockerfile. These are built and pushed to Docker Hub when the corresponding Action is ran.
+### Setup
+A fairly standard setup is used:
+- Backend/embedder is validated, then built into a Docker image and pushed to Docker Hub
+- Terraform applies the updated image to a Cloud Run instances + ties them to the appropriate subdomain
+- All this is run by a Github Action when needed
 
-### Terraform
-Terraform is used to provision GCP Cloud Run instances for the backend and embedder, and tie the appropriate domains to the instances.
-
-### Github Actions
+### Secrets
+WIP
 
 
