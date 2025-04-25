@@ -42,6 +42,7 @@ jobs:
           docker image push mhish/itemtracker_embedder:${{ github.sha }}
 
       - name: Apply Terraform
+        working-directory: ./terraform
         run: |
           terraform init
           terraform validate

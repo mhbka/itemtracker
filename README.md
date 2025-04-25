@@ -44,9 +44,11 @@ npm run dev
 ## CI/CD and infra
 ### Setup
 A fairly standard setup is used:
+- The backend/embedder Github Action is triggered
 - Backend/embedder is validated, then built into a Docker image and pushed to Docker Hub
 - Terraform applies the updated image to a Cloud Run instances + ties them to the appropriate subdomain
-- All this is run by a Github Action when needed
+
+The frontend is deployed differently. It is simply built and deployed to Github Pages, via Github Actions.
 
 ### Secrets
 WIP

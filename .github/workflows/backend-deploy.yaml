@@ -53,6 +53,7 @@ jobs:
           docker image push mhish/itemtracker_monolith:${{ github.sha }}
       
       - name: Apply Terraform
+        working-directory: ./terraform
         run: |
           terraform init
           terraform validate
