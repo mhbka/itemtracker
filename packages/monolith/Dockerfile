@@ -14,6 +14,6 @@ RUN cargo build --release --bin monolith
 
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
-RUN apt update && apt upgrade -y
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
 COPY --from=builder /app/target/release/monolith monolith
 ENTRYPOINT ["./monolith"]
