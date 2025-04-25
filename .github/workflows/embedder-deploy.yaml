@@ -14,6 +14,16 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
       
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -23,10 +33,15 @@ jobs:
       
       - name: Build and push image
         working-directory: ./packages/embedder
-        run: 
+        run: |
           docker build -t mhish/itemtracker_embedder:${{ github.sha }} .
           docker images mhish/itemtracker_embedder:${{ github.sha }}
           docker image push mhish/itemtracker_embedder:${{ github.sha }}
 
       - name: Apply Terraform
-          
+        run: |
+          terraform init
+          terraform validate
+          terraform plan -var="backend_image_tag=${{ github.sha }}" -var="embedder_image_tag=${{ github.sha }}"
+          terraform apply -auto-approve -var="backend_image_tag=${{ github.sha }}" -var="embedder_image_tag=${{ github.sha }}"
+        

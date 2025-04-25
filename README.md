@@ -41,3 +41,13 @@ npm install
 npm run dev
 ```
 
+## CI/CD and infra
+### Docker
+The backend and embedder each comes with its own Dockerfile.
+
+### Terraform
+Terraform is used to provision GCP Cloud Run instances for the backend and embedder. 
+
+### Github Actions
+
+

@@ -25,16 +25,16 @@ jobs:
       - name: Check project
         working-directory: ./packages/monolith
         run: cargo check
+
+      - name: Authenticate to Google Cloud
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
       
       - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
-        
-      - name: Configure Docker for GCP
-        run: gcloud auth configure-docker
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -44,9 +44,14 @@ jobs:
       
       - name: Build and push image
         working-directory: ./packages/monolith
-        run: 
+        run: |
           docker build -t mhish/itemtracker_monolith:${{ github.sha }} .
           docker images mhish/itemtracker_monolith:${{ github.sha }}
-          docker image push mhish/itemtracker_embedder:${{ github.sha }}
+          docker image push mhish/itemtracker_monolith:${{ github.sha }}
       
-      - name: 
+      - name: Apply Terraform
+        run: |
+          terraform init
+          terraform validate
+          terraform plan -var="backend_image_tag=${{ github.sha }}" -var="embedder_image_tag=${{ github.sha }}"
+          terraform apply -auto-approve -var="backend_image_tag=${{ github.sha }}" -var="embedder_image_tag=${{ github.sha }}"
