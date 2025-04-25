@@ -9,7 +9,7 @@ on:
 
 jobs:
   check_image:
-    name: Check for Existing Image
+    name: Check for existing image
     runs-on: ubuntu-latest
     outputs:
       image_exists: ${{ steps.check_image.outputs.exists }}
@@ -31,7 +31,7 @@ jobs:
           fi
 
   build:
-    name: Build and Push Image
+    name: Build and push image
     needs: check_image
     runs-on: ubuntu-latest
     if: needs.check_image.outputs.image_exists == 'false'
@@ -53,7 +53,7 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PAT }}
       
-      - name: Check Rust project
+      - name: Check project
         working-directory: ./packages/monolith
         run: cargo check
       
@@ -64,7 +64,7 @@ jobs:
           docker push mhish/itemtracker_monolith:latest
 
   deploy:
-    name: Deploy Infrastructure
+    name: Deploy
     needs: [check_image, build]
     runs-on: ubuntu-latest
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')

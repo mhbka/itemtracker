@@ -1,6 +1,6 @@
 # Project-wide settings
 project_id = "itemtracker-456913"
-region = "asia-southeast1-a"
+region = "asia-southeast1"
 
 # Backend configs
 backend_service_name = "itemtracker-backend"
