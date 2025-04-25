@@ -43,10 +43,10 @@ npm run dev
 
 ## CI/CD and infra
 ### Docker
-The backend and embedder each comes with its own Dockerfile.
+The backend and embedder each comes with its own Dockerfile. These are built and pushed to Docker Hub when the corresponding Action is ran.
 
 ### Terraform
-Terraform is used to provision GCP Cloud Run instances for the backend and embedder. 
+Terraform is used to provision GCP Cloud Run instances for the backend and embedder, and tie the appropriate domains to the instances.
 
 ### Github Actions
 
