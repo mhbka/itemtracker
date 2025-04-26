@@ -46,7 +46,7 @@ jobs:
     if: needs.check_image.outputs.image_exists == 'false'
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/build-push-backend
+      - uses: ./.github/actions/backend/build-push
         with:
           commit_sha: ${{ github.sha }}
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
@@ -58,7 +58,7 @@ jobs:
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/deploy-backend
+      - uses: ./.github/actions/backend/deploy
         with:
           commit_sha: ${{ github.sha }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

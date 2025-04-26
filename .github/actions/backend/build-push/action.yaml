@@ -1,0 +1,31 @@
+name: Build and push backend image
+
+on:
+  workflow_call:
+    inputs:
+      commit_sha:
+        required: true
+        type: string
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Check project
+      working-directory: ./packages/monolith
+      run: cargo check
+
+    - name: Build and push Docker image
+      working-directory: ./packages/monolith
+      run: |
+        docker build -t mhish/itemtracker_monolith:${{ inputs.commit_sha }} .
+        docker push mhish/itemtracker_monolith:${{ inputs.commit_sha }}
