@@ -1,4 +1,4 @@
-name: Deploy Monolith
+name: Deploy backend/monolith
 
 on:
   workflow_call:

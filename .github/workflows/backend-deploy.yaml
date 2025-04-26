@@ -15,7 +15,7 @@ jobs:
         setup_done: true
       steps:
         - name: Setup
-          uses: ./.github/workflows/setup-monolith.yml
+          uses: ./.github/actions/setup.yaml
           secrets:
             DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
             DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
@@ -47,7 +47,7 @@ jobs:
     name: Build and push image
     needs: [check_image, setup]
     if: needs.check_image.outputs.image_exists == 'false'
-    uses: ./.github/workflows/build-monolith.yml
+    uses: ./.github/actions/build-backend.yaml
     with:
       commit_sha: ${{ github.sha }}
     secrets:
@@ -58,7 +58,7 @@ jobs:
     name: Deploy Service
     needs: [check_image, build, setup]
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
-    uses: ./.github/workflows/deploy-monolith.yml
+    uses: ./.github/actions/deploy-backend.yaml
     with:
       commit_sha: ${{ github.sha }}
     secrets:
