@@ -15,7 +15,7 @@ jobs:
         setup_done: true
       steps:
         - name: Setup
-          uses: ./.github/actions/setup.yaml
+          uses: ./.github/actions/setup
           secrets:
             DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
             DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
@@ -47,7 +47,7 @@ jobs:
     name: Build and push image
     needs: [check_image, setup]
     if: needs.check_image.outputs.image_exists == 'false'
-    uses: ./.github/actions/build-push-backend.yaml
+    uses: ./.github/actions/build-push-backend
     with:
       commit_sha: ${{ github.sha }}
     secrets:
@@ -58,7 +58,7 @@ jobs:
     name: Deploy Service
     needs: [check_image, build, setup]
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
-    uses: ./.github/actions/deploy-backend.yaml
+    uses: ./.github/actions/deploy-backend
     with:
       commit_sha: ${{ github.sha }}
     secrets:
