@@ -49,8 +49,6 @@ jobs:
       - uses: ./.github/actions/backend/build-push
         with:
           commit_sha: ${{ github.sha }}
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
   deploy:
     name: Deploy Service
     runs-on: ubuntu-latest

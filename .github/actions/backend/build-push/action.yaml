@@ -11,7 +11,7 @@ runs:
   using: composite
   steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
@@ -22,10 +22,12 @@ runs:
 
     - name: Check project
       working-directory: ./packages/monolith
+      shell: bash
       run: cargo check
 
     - name: Build and push Docker image
       working-directory: ./packages/monolith
+      shell: bash
       run: |
         docker build -t mhish/itemtracker_monolith:${{ inputs.commit_sha }} .
         docker push mhish/itemtracker_monolith:${{ inputs.commit_sha }}
