@@ -1,11 +1,9 @@
 name: Build and push backend image
 
-on:
-  workflow_call:
-    inputs:
-      commit_sha:
-        required: true
-        type: string
+inputs:
+  commit_sha:
+    required: true
+    type: string
 
 runs:
   using: composite

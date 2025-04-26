@@ -1,20 +1,18 @@
 name: Setup environment
 
-on:
-  workflow_call:
-    inputs:
-      DOCKER_HUB_USERNAME:
-        required: true
-        type: string
-      DOCKER_HUB_PAT:
-        required: true
-        type: string
-      GCP_SERVICE_ACCOUNT_CREDENTIALS:
-        required: true
-        type: string
-      GCP_PROJECT_ID:
-        required: true
-        type: string
+inputs:
+  DOCKER_HUB_USERNAME:
+    required: true
+    type: string
+  DOCKER_HUB_PAT:
+    required: true
+    type: string
+  GCP_SERVICE_ACCOUNT_CREDENTIALS:
+    required: true
+    type: string
+  GCP_PROJECT_ID:
+    required: true
+    type: string
 
 runs:
   using: composite

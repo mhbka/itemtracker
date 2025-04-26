@@ -1,23 +1,21 @@
 name: Deploy backend/monolith
 
-on:
-  workflow_call:
-    inputs:
-      commit_sha:
-        required: true
-        type: string
-      ANTHROPIC_API_KEY:
-        required: true
-        type: string
-      OPENAI_API_KEY:
-        required: true
-        type: string
-      DATABASE_URL:
-        required: true
-        type: string
-      JWT_SECRET:
-        required: true
-        type: string
+inputs:
+  commit_sha:
+    required: true
+    type: string
+  ANTHROPIC_API_KEY:
+    required: true
+    type: string
+  OPENAI_API_KEY:
+    required: true
+    type: string
+  DATABASE_URL:
+    required: true
+    type: string
+  JWT_SECRET:
+    required: true
+    type: string
 
 runs:
   using: composite
