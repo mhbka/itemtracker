@@ -47,7 +47,7 @@ jobs:
     name: Build and push image
     needs: [check_image, setup]
     if: needs.check_image.outputs.image_exists == 'false'
-    uses: ./.github/actions/build-backend.yaml
+    uses: ./.github/actions/build-push-backend.yaml
     with:
       commit_sha: ${{ github.sha }}
     secrets:
