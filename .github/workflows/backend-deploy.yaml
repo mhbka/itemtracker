@@ -16,7 +16,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_PAT: blablabla
+          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
           GCP_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIALS }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
             
