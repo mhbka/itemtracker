@@ -1,67 +1,64 @@
-name: Backend/monolith deployment
+name: Deploy backend/monolith
+
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'packages/monolith/**'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      commit_sha:
+        required: true
+        type: string
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+      OPENAI_API_KEY:
+        required: true
+      DATABASE_URL:
+        required: true
+      JWT_SECRET:
+        required: true
+
 jobs:
-  setup:
-    name: Setup environment
-    runs-on: ubuntu-latest
-    outputs:
-      setup_done: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-        with:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
-          GCP_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIALS }}
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-            
-  check_image:
-    name: Check for existing image
-    runs-on: ubuntu-latest
-    outputs:
-      image_exists: ${{ steps.check_image.outputs.exists }}
-    steps:
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PAT }}
-      - name: Check if image already exists
-        id: check_image
-        run: |
-          if docker manifest inspect mhish/itemtracker_monolith:${{ github.sha }} > /dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-  build:
-    name: Build and push image
-    runs-on: ubuntu-latest
-    needs: [check_image, setup]
-    if: needs.check_image.outputs.image_exists == 'false'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/build-push-backend
-        with:
-          commit_sha: ${{ github.sha }}
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
   deploy:
-    name: Deploy Service
+    name: Deploy
     runs-on: ubuntu-latest
-    needs: [check_image, build, setup]
-    if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/deploy-backend
-        with:
-          commit_sha: ${{ github.sha }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Initialize Terraform
+        working-directory: ./terraform
+        run: terraform init -backend-config=backend.conf
+
+      - name: Validate Terraform configuration
+        working-directory: ./terraform
+        run: terraform validate
+
+      - name: Create env vars JSON
+        working-directory: ./terraform
+        run: |
+          cat > backend_env.tfvars.json << EOF
+          {
+            "backend_env_vars": {
+              "PORT": "8080",
+              "ANTHROPIC_API_ENDPOINT": "https://api.anthropic.com/v1/messages",
+              "ANTHROPIC_API_KEY": "${{ secrets.ANTHROPIC_API_KEY }}",
+              "ANTHROPIC_MODEL": "claude-3-5-sonnet-20241022",
+              "ANTHROPIC_VERSION": "2023-06-01",
+              "OPENAI_API_ENDPOINT": "https://api.openai.com/v1/chat/completions",
+              "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
+              "OPENAI_MODEL": "gpt-4o-mini",
+              "EMBEDDER_ENDPOINT": "https://embedder.itemtracker.hish.dev",
+              "RUST_LOG": "DEBUG",
+              "DATABASE_URL": "${{ secrets.DATABASE_URL }}",
+              "JWT_SECRET": "${{ secrets.JWT_SECRET }}"
+            }
+          }
+          EOF
+
+      - name: Apply infrastructure changes
+        working-directory: ./terraform
+        run: terraform apply -auto-approve \
+          -target=google_cloud_run_service.backend \
+          -var="backend_image_tag=${{ inputs.commit_sha }}" \
+          -var="embedder_image_tag=${{ inputs.commit_sha }}" \
+          -var-file=backend_env.tfvars.json

@@ -1,12 +1,10 @@
 name: Backend/monolith deployment
-
 on:
   push:
     branches: [ main ]
     paths:
       - 'packages/monolith/**'
   workflow_dispatch:
-
 jobs:
   setup:
     name: Setup environment
@@ -33,7 +31,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PAT }}
-
       - name: Check if image already exists
         id: check_image
         run: |
@@ -42,7 +39,6 @@ jobs:
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
-
   build:
     name: Build and push image
     runs-on: ubuntu-latest
@@ -53,12 +49,10 @@ jobs:
       - uses: ./.github/actions/build-push-backend
         with:
           commit_sha: ${{ github.sha }}
-        secrets:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
-
   deploy:
-    name: Deploy service
+    name: Deploy Service
     runs-on: ubuntu-latest
     needs: [check_image, build, setup]
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
@@ -67,7 +61,6 @@ jobs:
       - uses: ./.github/actions/deploy-backend
         with:
           commit_sha: ${{ github.sha }}
-        secrets:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
