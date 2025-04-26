@@ -51,6 +51,9 @@ jobs:
     name: Build and push image
     needs: [check_image, setup]
     if: needs.check_image.outputs.image_exists == 'false'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
     uses: ./.github/actions/build-push-backend
     with:
       commit_sha: ${{ github.sha }}
