@@ -16,7 +16,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
+          DOCKER_HUB_PAT: blablabla
           GCP_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIALS }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
             
@@ -50,7 +50,7 @@ jobs:
         with:
           commit_sha: ${{ github.sha }}
   deploy:
-    name: Deploy Service
+    name: Deploy service
     runs-on: ubuntu-latest
     needs: [check_image, build, setup]
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
