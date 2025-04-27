@@ -4,10 +4,22 @@ inputs:
   commit_sha:
     required: true
     type: string
+  DOCKER_HUB_USERNAME:
+    required: true
+    type: string
+  DOCKER_HUB_PAT:
+    required: true
+    type: string
 
 runs:
   using: composite
   steps:
+    - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ inputs.DOCKER_HUB_USERNAME }}
+          password: ${{ inputs.DOCKER_HUB_PAT }}
+          
     - name: Checkout code
       uses: actions/checkout@v4
 
