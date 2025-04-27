@@ -9,7 +9,6 @@ jobs:
   check_image:
     name: Check for existing image
     runs-on: ubuntu-latest
-    needs: [setup]
     outputs:
       image_exists: ${{ steps.check_image.outputs.exists }}
     steps:
