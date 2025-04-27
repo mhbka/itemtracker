@@ -1,88 +1,57 @@
 name: Embedder deployment
-
 on:
   push:
     branches: [ main ]
     paths:
       - 'packages/embedder/**'
   workflow_dispatch:
-
 jobs:
   check_image:
     name: Check for existing image
     runs-on: ubuntu-latest
     outputs:
       image_exists: ${{ steps.check_image.outputs.exists }}
-    
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_PAT }}
-      
       - name: Check if image already exists
         id: check_image
         run: |
-          if docker manifest inspect mhish/itemtracker_embedder:latest > /dev/null 2>&1; then
+          if docker manifest inspect mhish/itemtracker_embedder:${{ github.sha }} > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
-
   build:
     name: Build and push image
-    needs: check_image
     runs-on: ubuntu-latest
+    needs: [check_image]
     if: needs.check_image.outputs.image_exists == 'false'
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-          
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/embedder/build-push
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_PAT }}
-      
-      - name: Build and push Docker image
-        working-directory: ./packages/embedder
-        run: |
-          docker build -t mhish/itemtracker_embedder:latest .
-          docker push mhish/itemtracker_embedder:latest
-
+          commit_sha: ${{ github.sha }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
   deploy:
-    name: Deploy
-    needs: [check_image, build]
+    name: Deploy service
     runs-on: ubuntu-latest
+    needs: [check_image, build]
     if: always() && (needs.check_image.outputs.image_exists == 'true' || needs.build.result == 'success')
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
-      - name: Authenticate to Google Cloud
-        uses: 'google-github-actions/auth@v2'
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/embedder/deploy
         with:
-          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIALS }}
-      
-      - name: Configure Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      - name: Configure Terraform
-        uses: hashicorp/setup-terraform@v3
-      
-      - name: Initialize Terraform
-        working-directory: ./terraform
-        run: terraform init -backend-config=backend.conf
-        
-      - name: Validate Terraform configuration
-        working-directory: ./terraform
-        run: terraform validate
-        
-      - name: Apply infrastructure changes
-        working-directory: ./terraform
-        run: terraform apply -auto-approve -var="backend_image_tag=${{ github.sha }}" -var="embedder_image_tag=${{ github.sha }}"
+          commit_sha: ${{ github.sha }}
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_PAT: ${{ secrets.DOCKER_HUB_PAT }}
+          GCP_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_CREDENTIALS }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}

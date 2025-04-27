@@ -1,4 +1,4 @@
-name: Deploy backend/monolith
+name: Deploy backend + embedder
 
 inputs:
   commit_sha:
@@ -89,4 +89,4 @@ runs:
     - name: Apply infrastructure changes
       working-directory: ./terraform
       shell: bash
-      run: terraform apply -auto-approve -target=google_cloud_run_service.backend -var="backend_image_tag=${{ inputs.commit_sha }}" -var-file=backend_env.tfvars.json
+      run: terraform apply -auto-approve -var="backend_image_tag=${{ inputs.commit_sha }}" -var="embedder_image_tag=${{ inputs.commit_sha }}" -var-file=backend_env.tfvars.json

@@ -1,4 +1,4 @@
-name: Backend/monolith deployment
+name: Backend deployment
 on:
   push:
     branches: [ main ]
