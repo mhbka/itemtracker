@@ -36,7 +36,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 import { supabase } from '../main';
 import axios from 'axios';
-var API_URL = import.meta.env.VITE_API_URL;
+var API_URL;
+if (import.meta.env.DEV)
+    API_URL = "http://".concat(import.meta.env.VITE_API_URL);
+else
+    API_URL = "https://".concat(import.meta.env.VITE_API_URL);
 var apiClient = axios.create({
     baseURL: API_URL,
     timeout: 10000,
