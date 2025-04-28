@@ -29,7 +29,7 @@ jobs:
   deploy:
     name: Deploy both services
     runs-on: ubuntu-latest
-    needs: [build_embedder]
+    needs: [build_embedder, build_backend]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/backend_and_embedder/deploy
