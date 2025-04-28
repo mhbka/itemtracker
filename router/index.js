@@ -34,7 +34,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import DashboardView from '../views/DashboardView.vue';
 import GalleryView from '../views/GalleryView.vue';
@@ -43,7 +43,7 @@ import NotFoundView from '../views/NotFoundView.vue';
 import { supabase } from '../main';
 import NewGalleryView from '@/views/NewGalleryView.vue';
 var router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    history: createWebHashHistory(import.meta.env.BASE_URL),
     routes: [
         {
             path: '/',
