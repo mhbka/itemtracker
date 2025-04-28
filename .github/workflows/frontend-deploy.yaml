@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Create .env.local file
+      - name: Create .env.production file
         run: |
           echo "NODE_ENV=production" > .env.production
           echo "VITE_API_URL=${{ secrets.BACKEND_DOMAIN_URL }}" > .env.production
