@@ -10,7 +10,7 @@ to get these set up.
 ### Environment variables
 The backend uses the `packages/monolith/.env` file for environment variables. 
 An example is given as `.env.example`, which can be renamed to `.env` to be used.
-Some variables in the examples are pre-filled but can be updated, whilst others must be filled out by you:
+Some variables in the examples are pre-filled (but can be updated), whilst others must be filled out by you:
 - `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`: API keys from both services (OpenAI's can be left as a dummy value as it isn't used at the moment)
 - `DATABASE_URL`: The Postgres DB connection string (must include `?gssencmode=disable` at the end)
 - `JWT_SECRET`: The JWT secret used for decoding Supabase JWTs (found in Supabase's Settings > API)
@@ -55,6 +55,7 @@ Each of the deployment flows can be viewed via its workflow in `/.github/workflo
 
 ### Secrets
 The following secrets are needed by Github Actions:
+- `BACKEND_DOMAIN_URL`/`EMBEDDER_DOMAIN_URL` - (sub)domains to be mapped to the backend/embedder services (for setting them up, see *Service domains* below)
 - `DOCKER_HUB_USERNAME`/`DOCKER_HUB_PAT` - Username and Personal Access Token for pushing/pulling service images to Docker Hub
 - `GCP_PROJECT_ID`/`GCP_SERVICE_ACCOUNT_CREDENTIALS` - GCP project ID to deploy services under + service account credentials to access it
 - `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` - API keys for Anthropic and OpenAI, for LLM analysis
