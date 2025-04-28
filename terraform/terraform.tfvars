@@ -10,7 +10,6 @@ backend_domain = "api.itemtracker.hish.dev"
 backend_cpu          = "1000m"
 backend_memory       = "512Mi"
 backend_env_vars     = {
-  # TODO: anything needed here?
 }
 
 # Embedder configs
@@ -21,5 +20,4 @@ embedder_domain = "embedder.itemtracker.hish.dev"
 embedder_cpu          = "1000m"
 embedder_memory       = "1Gi"
 embedder_env_vars     = {
-  # TODO: anything needed here?
 }

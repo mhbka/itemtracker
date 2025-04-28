@@ -24,6 +24,24 @@ resource "google_cloud_run_domain_mapping" "backend_domain" {
   ]
 }
 
+resource "google_cloud_run_domain_mapping" "embedder_domain" {
+  name     = var.embedder_domain
+  location = var.region
+  metadata {
+    namespace = var.project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_service.embedder.name
+  }
+
+  depends_on = [
+    google_cloud_run_service.embedder,
+    google_project_service.domains_api
+  ]
+}
+
+
 # Output the DNS verification details
 output "domain_verification" {
   value = try(google_cloud_run_domain_mapping.backend_domain.status[0].resource_records, [])
