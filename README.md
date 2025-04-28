@@ -49,6 +49,7 @@ A fairly standard setup is used:
 - Terraform applies the updated image to a Cloud Run instances + ties them to the appropriate subdomain
 
 The frontend is deployed differently. It is simply built and deployed to Github Pages, via Github Actions.
+Its build artifacts sit on the `gh-pages` branch.
 
 Each of the deployment flows can be viewed via its workflow in `/.github/workflows`.
 

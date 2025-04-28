@@ -28,6 +28,12 @@ inputs:
   JWT_SECRET:
     required: true
     type: string
+  BACKEND_DOMAIN_URL:
+    required: true
+    type: string
+  EMBEDDER_DOMAIN_URL:
+    required: true
+    type: string
 
 runs:
   using: composite
@@ -78,7 +84,7 @@ runs:
             "OPENAI_API_ENDPOINT": "https://api.openai.com/v1/chat/completions",
             "OPENAI_API_KEY": "${{ inputs.OPENAI_API_KEY }}",
             "OPENAI_MODEL": "gpt-4o-mini",
-            "EMBEDDER_ENDPOINT": "https://embedder.itemtracker.hish.dev",
+            "EMBEDDER_ENDPOINT": "${{ inputs.EMBEDDER_DOMAIN_URL }}",
             "RUST_LOG": "DEBUG",
             "DATABASE_URL": "${{ inputs.DATABASE_URL }}",
             "JWT_SECRET": "${{ inputs.JWT_SECRET }}"
@@ -89,4 +95,11 @@ runs:
     - name: Apply infrastructure changes
       working-directory: ./terraform
       shell: bash
-      run: terraform apply -auto-approve -var="backend_image_tag=${{ inputs.commit_sha }}" -var="embedder_image_tag=${{ inputs.commit_sha }}" -var-file=backend_env.tfvars.json
+      run: |
+        terraform apply -auto-approve \
+          -var="project_id=${{ inputs.GCP_PROJECT_ID }}" \
+          -var="backend_image_tag=${{ inputs.commit_sha }}" \
+          -var="embedder_image_tag=${{ inputs.commit_sha }}" \
+          -var="backend_domain=${{ inputs.BACKEND_DOMAIN_URL }}" \
+          -var="embedder_domain=${{ inputs.EMBEDDER_DOMAIN_URL }}" \
+          -var-file=backend_env.tfvars.json

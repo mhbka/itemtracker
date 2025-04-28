@@ -19,7 +19,6 @@ jobs:
   build_embedder:
     name: Build and push embedder image
     runs-on: ubuntu-latest
-    needs: [build_backend]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/embedder/build-push
@@ -44,3 +43,5 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          BACKEND_DOMAIN_URL: ${{ secrets.BACKEND_DOMAIN_URL }}
+          EMBEDDER_DOMAIN_URL: ${{ secrets.EMBEDDER_DOMAIN_URL }}
