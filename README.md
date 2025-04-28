@@ -20,9 +20,10 @@ Similarly, the frontend example is `.env.local.example`; remove the `.example` a
 - `VITE_SUPABASE_ANON_KEY`: The Supabase API key
 
 ### Backend
-You need Rust installed:
+You need Rust and [Diesel](https://diesel.rs/) installed:
 ```Powershell
 cd packages/monolith
+diesel migration run
 cargo run --release
 ```
 
@@ -63,7 +64,7 @@ The following secrets are needed by Github Actions:
 - `JWT_SECRET` - Secret used by Supabase for signing auth JWTs
 
 ### GCP service account
-Note that the GCP service account requires the *Owner* role to properly deploy services.
+Note that the GCP service account requires the *Owner* role to properly deploy.
 
 ### Service domains
 Before being able to map any (sub)domains to the services, you must verify the domain [under GCP](https://www.google.com/webmasters/verification/verification). 
