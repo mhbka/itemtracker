@@ -42,7 +42,7 @@ npm run dev
 ```
 
 ## CI/CD and infra
-### Setup
+### Info
 A fairly standard setup is used:
 - The backend/embedder Github Action is triggered
 - Backend/embedder is validated, then built into a Docker image and pushed to Docker Hub
@@ -53,6 +53,21 @@ The frontend is deployed differently. It is simply built and deployed to Github 
 Each of the deployment flows can be viewed via its workflow in `/.github/workflows`.
 
 ### Secrets
-WIP
+The following secrets are needed by Github Actions:
+- `DOCKER_HUB_USERNAME`/`DOCKER_HUB_PAT` - Username and Personal Access Token for pushing/pulling service images to Docker Hub
+- `GCP_PROJECT_ID`/`GCP_SERVICE_ACCOUNT_CREDENTIALS` - GCP project ID to deploy services under + service account credentials to access it
+- `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` - API keys for Anthropic and OpenAI, for LLM analysis
+- `DATABASE_URL` - URL to the database (must include the `gssencode=disable` option)
+- `JWT_SECRET` - Secret used by Supabase for signing auth JWTs
 
+### GCP service account
+Note that the GCP service account requires the *Owner* role to properly deploy services.
+
+### Service domains
+Before being able to map any (sub)domains to the services, you must verify the domain [under GCP](https://www.google.com/webmasters/verification/verification). 
+
+Afterwards, the first time Terraform successfully deploys the services, some additional DNS setup is required to properly map the domains.
+
+For each service in Cloud Run, click on *Networking* followed by its *custom URL*; then, for each URL, add the required DNS records.
+After some time, the domains will be successfully mapped to your services.
 
