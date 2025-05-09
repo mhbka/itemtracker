@@ -82,7 +82,7 @@ resource "google_compute_firewall" "backend" {
 # Cloud DNS for backend service
 resource "google_dns_managed_zone" "backend" {
   name = "backend-dns-zone"
-  dns_name = var.backend_domain
+  dns_name = "${var.backend_domain}." # DNS name must end with a dot
   description = "DNS zone for the itemtracker backend"
   force_destroy = "true"
 }
