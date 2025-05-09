@@ -56,9 +56,8 @@ resource "google_compute_instance" "backend" {
   }
 
   lifecycle {
-    # Ensures that new image tags are deployed
+    # Ensures that new image tags are deployed (?)
     create_before_destroy = true
-    replace_triggered_by = [ module.gce-container.metadata_value ]
   }
 
   metadata = {
@@ -69,6 +68,7 @@ resource "google_compute_instance" "backend" {
 
   labels = {
     container-vm = module.gce-container.vm_container_label
+    image-tag = var.backend_image_tag
   }
 }
 
