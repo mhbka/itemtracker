@@ -38,7 +38,7 @@ module "gce-container" {
 
 # Compute Engine for backend service
 resource "google_compute_instance" "backend" {
-  name = "itemtracker_backend"
+  name = "itemtracker-backend"
   zone = "asia-southeast1-a"
   machine_type = "e2-micro"
 
@@ -68,7 +68,7 @@ resource "google_compute_instance" "backend" {
 
 # Allow HTTP traffic for backend GCE
 resource "google_compute_firewall" "backend" {
-  name = "backend_allow_http_traffic"
+  name = "backend-allow-http-traffic"
   network = "default"
 
   allow {
@@ -81,7 +81,7 @@ resource "google_compute_firewall" "backend" {
 
 # Cloud DNS for backend service
 resource "google_dns_managed_zone" "backend" {
-  name = "backend_dns_zone"
+  name = "backend-dns-zone"
   dns_name = var.backend_domain
   description = "DNS zone for the itemtracker backend"
   force_destroy = "true"
@@ -101,7 +101,7 @@ resource "google_dns_record_set" "backend" {
 
 # Cloud Run service for embedder service
 resource "google_cloud_run_service" "embedder" {
-  name     = "itemtracker_embedder"
+  name     = "itemtracker-embedder"
   location = var.region
 
   template {
@@ -130,26 +130,9 @@ resource "google_cloud_run_service" "embedder" {
   depends_on = [google_project_service.run_api]
 }
 
-# IAM binding for making the services public
-resource "google_cloud_run_service_iam_member" "backend_public" {
-  location = google_cloud_run_service.backend.location
-  service  = google_cloud_run_service.backend.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
 resource "google_cloud_run_service_iam_member" "embedder_public" {
   location = google_cloud_run_service.embedder.location
   service  = google_cloud_run_service.embedder.name
   role     = "roles/run.invoker"
   member   = "allUsers"
-}
-
-# Outputs for service URLs
-output "backend_url" {
-  value = google_cloud_run_service.backend.status[0].url
-}
-
-output "embedder_url" {
-  value = google_cloud_run_service.embedder.status[0].url
 }
