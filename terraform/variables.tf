@@ -10,12 +10,6 @@ variable "region" {
 }
 
 # Backend service variables
-variable "backend_service_name" {
-  description = "Name for the backend Cloud Run service"
-  type        = string
-  default     = "itemtracker-backend"
-}
-
 variable "backend_image" {
     description = "Image for the backend"
     type = string

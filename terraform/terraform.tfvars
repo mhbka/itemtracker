@@ -4,7 +4,6 @@ project_id = ""
 region = "asia-southeast1"
 
 # Backend configs
-backend_service_name = "itemtracker-monolith"
 backend_image = "mhish/itemtracker_monolith"
 backend_image_tag    = "latest"
 backend_domain = ""
@@ -14,7 +13,6 @@ backend_env_vars     = {
 }
 
 # Embedder configs
-embedder_service_name = "itemtracker-embedder"
 embedder_image = "mhish/itemtracker_embedder"
 embedder_image_tag    = "latest"
 embedder_domain = ""

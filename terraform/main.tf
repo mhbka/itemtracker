@@ -20,40 +20,88 @@ resource "google_project_service" "iam_api" {
   disable_on_destroy = false
 }
 
-# Cloud Run service for main backend
-resource "google_cloud_run_service" "backend" {
-  name     = var.backend_service_name
-  location = var.region
+# For deploying container to GCE
+module "gce-container" {
+  source = "terraform-google-modules/container-vm/google"
+  version = "~> 3.2"
 
-  template {
-    spec {
-      containers {
-        image = "${var.backend_image}:${var.backend_image_tag}"
-        
-        resources {
-          limits = {
-            cpu    = var.backend_cpu
-            memory = var.backend_memory
-          }
-        }
-        
-        dynamic "env" {
-          for_each = var.backend_env_vars
-          content {
-            name  = env.key
-            value = env.value
-          }
-        }
+  container = {
+    image = "${var.backend_image}:${var.backend_image_tag}"
+    env = [
+      {
+        name = "TEST_VAR"
+        value = "Hello World!"
       }
+    ],
+  }
+}
+
+# Compute Engine for backend service
+resource "google_compute_instance" "backend" {
+  name = "itemtracker_backend"
+  zone = "asia-southeast1-a"
+  machine_type = "e2-micro"
+
+  boot_disk {
+    initialize_params {
+      image = module.gce-container.source_image
     }
   }
 
-  depends_on = [google_project_service.run_api]
+  network_interface {
+    network = "default"
+    access_config {
+      // ephemeral public IP
+    }
+  }
+
+  metadata = {
+    gce-container-declaration = module.gce-container.metadata_value
+    google-logging-enabled = "true"
+    google-monitoring-enabled = "true"
+  }
+
+  labels = {
+    container-vm = module.gce-container.vm_container_label
+  }
+}
+
+# Allow HTTP traffic for backend GCE
+resource "google_compute_firewall" "backend" {
+  name = "backend_allow_http_traffic"
+  network = "default"
+
+  allow {
+    ports = ["80"]
+    protocol = "tcp"
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
+
+# Cloud DNS for backend service
+resource "google_dns_managed_zone" "backend" {
+  name = "backend_dns_zone"
+  dns_name = var.backend_domain
+  description = "DNS zone for the itemtracker backend"
+  force_destroy = "true"
+}
+
+# Register backend service's IP in DNS
+resource "google_dns_record_set" "backend" {
+  name = google_dns_managed_zone.backend.dns_name
+  managed_zone = google_dns_managed_zone.backend.name
+  type = "A"
+  ttl = 300
+
+  rrdatas = [ 
+    google_compute_instance.backend.network_interface[0].access_config[0].nat_ip
+  ]
 }
 
 # Cloud Run service for embedder service
 resource "google_cloud_run_service" "embedder" {
-  name     = var.embedder_service_name
+  name     = "itemtracker_embedder"
   location = var.region
 
   template {
