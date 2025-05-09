@@ -7,23 +7,6 @@ resource "google_project_service" "domains_api" {
 }
 
 # Verify domain ownership
-resource "google_cloud_run_domain_mapping" "backend_domain" {
-  name     = var.backend_domain
-  location = var.region
-  metadata {
-    namespace = var.project_id
-  }
-
-  spec {
-    route_name = google_cloud_run_service.backend.name
-  }
-
-  depends_on = [
-    google_cloud_run_service.backend,
-    google_project_service.domains_api
-  ]
-}
-
 resource "google_cloud_run_domain_mapping" "embedder_domain" {
   name     = var.embedder_domain
   location = var.region
