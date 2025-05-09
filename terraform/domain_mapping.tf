@@ -23,10 +23,3 @@ resource "google_cloud_run_domain_mapping" "embedder_domain" {
     google_project_service.domains_api
   ]
 }
-
-
-# Output the DNS verification details
-output "domain_verification" {
-  value = try(google_cloud_run_domain_mapping.backend_domain.status[0].resource_records, [])
-  description = "DNS records to add to your domain's DNS configuration"
-}
