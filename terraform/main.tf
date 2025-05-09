@@ -51,8 +51,14 @@ resource "google_compute_instance" "backend" {
   network_interface {
     network = "default"
     access_config {
-      // ephemeral public IP
+      # ephemeral public IP
     }
+  }
+
+  lifecycle {
+    # Ensures that new image tags are deployed
+    create_before_destroy = true
+    replace_triggered_by = [ module.gce-container.metadata_value ]
   }
 
   metadata = {
