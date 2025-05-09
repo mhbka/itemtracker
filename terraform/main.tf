@@ -28,11 +28,11 @@ module "gce-container" {
   container = {
     image = "${var.backend_image}:${var.backend_image_tag}"
     env = [
-      {
-        name = "TEST_VAR"
-        value = "Hello World!"
+      for key, value in var.backend_env_vars : {
+        name  = key
+        value = value
       }
-    ],
+    ]
   }
 }
 
