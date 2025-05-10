@@ -40,7 +40,8 @@ var API_URL;
 if (import.meta.env.DEV)
     API_URL = "http://".concat(import.meta.env.VITE_API_URL);
 else
-    API_URL = "https://".concat(import.meta.env.VITE_API_URL);
+    // TODO: change this to https when DNS is properly configured for it
+    API_URL = "http://".concat(import.meta.env.VITE_API_URL);
 var apiClient = axios.create({
     baseURL: API_URL,
     timeout: 10000,
