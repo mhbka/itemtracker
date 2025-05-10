@@ -5,8 +5,7 @@ let API_URL: string;
 if (import.meta.env.DEV) 
   API_URL = `http://${import.meta.env.VITE_API_URL}`;
 else 
-  // TODO: change this to https when DNS is properly configured for it
-  API_URL = `http://${import.meta.env.VITE_API_URL}`;
+  API_URL = `https://${import.meta.env.VITE_API_URL}`;
 
 const apiClient = axios.create({
   baseURL: API_URL,

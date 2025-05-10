@@ -79,7 +79,7 @@ resource "google_compute_firewall" "backend" {
   network = "default"
 
   allow {
-    ports = ["80"]
+    ports = ["80", "443"]
     protocol = "tcp"
   }
 
