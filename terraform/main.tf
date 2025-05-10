@@ -65,6 +65,15 @@ resource "google_compute_instance" "backend" {
     gce-container-declaration = module.gce-container.metadata_value
     google-logging-enabled = "true"
     google-monitoring-enabled = "true"
+
+    # Installs nginx + SSL cert for serving HTTPS requests
+    startup-script = <<-EOT
+      #!/bin/bash
+      apt update
+      apt upgrade -y
+      apt install certbot python3-certbot-nginx
+      certbot --nginx -d ${var.backend_domain}
+      EOT
   }
 
   labels = {
