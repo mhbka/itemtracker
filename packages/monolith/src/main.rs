@@ -35,7 +35,7 @@ async fn main() {
     
     tracing::info!("App fully initialized");
 
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", axum_config.host_port))
+    let listener = TcpListener::bind("0.0.0.0:443")
         .await
         .unwrap();
     axum::serve(listener, router)
