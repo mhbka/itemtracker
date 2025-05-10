@@ -9,6 +9,8 @@ mod models;
 mod auth;
 mod app_state;
 
+use std::error::Error;
+
 use app_state::AppState;
 use config::AppConfig;
 use pipeline::Pipeline;

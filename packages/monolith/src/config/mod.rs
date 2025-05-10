@@ -26,17 +26,17 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    /// Load all configs from a .env file. Returns a `VarError` if any are missing.
+    /// Load all configs from a .env file. Panics if any are missing.
     pub fn load() -> Result<Self, VarError> {
         Ok(
             AppConfig {
-                axum: AxumConfig::load()?,
-                scraper_scheduler: SchedulerConfig::load()?,
-                search_scraper: SearchScraperConfig::load()?,
-                item_scraper: ItemScraperConfig::load()?,
-                item_analysis: ItemAnalysisConfig::load()?,
-                item_embedder: ItemEmbedderConfig::load()?,
-                store: StoreConfig::load()?
+                axum: AxumConfig::load().unwrap(),
+                scraper_scheduler: SchedulerConfig::load().unwrap(),
+                search_scraper: SearchScraperConfig::load().unwrap(),
+                item_scraper: ItemScraperConfig::load().unwrap(),
+                item_analysis: ItemAnalysisConfig::load().unwrap(),
+                item_embedder: ItemEmbedderConfig::load().unwrap(),
+                store: StoreConfig::load().unwrap()
             }
         )
     }
