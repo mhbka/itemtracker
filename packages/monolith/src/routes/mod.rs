@@ -5,6 +5,7 @@ mod users;
 mod error;
 
 use axum::Router;
+use axum::routing::get;
 use tower_http::cors::{Any, CorsLayer};
 use crate::app_state::AppState;
 
@@ -20,7 +21,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .allow_headers(Any);
 
     Router::new()
-        .route("/health", || Ok(()))
+        .route("/health", get(|| async {}))
         .nest("/g", galleries_router)
         .nest("/s", gallery_sessions_router)
         .nest("/i", items_router)
