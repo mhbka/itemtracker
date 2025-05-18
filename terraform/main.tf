@@ -20,9 +20,14 @@ resource "google_project_service" "iam_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "compute_api" {
+  service            = "compute.googleapis.com"
+  disable_on_destroy = false
+}
+
 # For deploying container to GCE
 module "gce-container" {
-  source = "terraform-google-modules/container-vm/google"
+  source  = "terraform-google-modules/container-vm/google"
   version = "~> 3.2"
 
   container = {
@@ -38,9 +43,9 @@ module "gce-container" {
 
 # Compute Engine for backend service
 resource "google_compute_instance" "backend" {
-  name = "itemtracker-backend"
-  zone = "asia-southeast1-a"
-  machine_type = "e2-micro"
+  name                      = "itemtracker-backend"
+  zone                      = "asia-southeast1-a"
+  machine_type              = "e2-micro"
   allow_stopping_for_update = true
 
   boot_disk {
@@ -57,38 +62,115 @@ resource "google_compute_instance" "backend" {
   }
 
   lifecycle {
-    # Ensures that new image tags are deployed (?)
+    # Ensures that new image tags are deployed
     create_before_destroy = true
   }
 
   metadata = {
     gce-container-declaration = module.gce-container.metadata_value
-    google-logging-enabled = "true"
+    google-logging-enabled    = "true"
     google-monitoring-enabled = "true"
-
-    # Installs nginx + SSL cert for serving HTTPS requests
-    startup-script = <<-EOT
-      #!/bin/bash
-      apt update
-      apt upgrade -y
-      apt install certbot python3-certbot-nginx
-      certbot --nginx -d ${var.backend_domain}
-      EOT
   }
 
   labels = {
     container-vm = module.gce-container.vm_container_label
-    image-tag = var.backend_image_tag
+    image-tag    = var.backend_image_tag
+  }
+
+  depends_on = [google_project_service.compute_api]
+}
+
+# Create an instance group for the backend service
+resource "google_compute_instance_group" "backend" {
+  name      = "itemtracker-backend-group"
+  zone      = "asia-southeast1-a"
+  instances = [google_compute_instance.backend.id]
+
+  named_port {
+    name = "http"
+    port = "80"
   }
 }
 
-# Allow HTTP traffic for backend GCE
+# Reserve a static IP address for the load balancer
+resource "google_compute_global_address" "backend_lb_ip" {
+  name = "itemtracker-backend-lb-ip"
+}
+
+# Create the managed SSL certificate
+resource "google_compute_managed_ssl_certificate" "backend" {
+  name = "itemtracker-backend-ssl-cert"
+
+  managed {
+    domains = [var.backend_domain]
+  }
+}
+
+# Create backend service
+resource "google_compute_backend_service" "backend" {
+  name        = "itemtracker-backend-service"
+  port_name   = "http"
+  protocol    = "HTTP"
+  timeout_sec = 10
+
+  backend {
+    group = google_compute_instance_group.backend.id
+  }
+}
+
+# Create URL map
+resource "google_compute_url_map" "backend" {
+  name            = "itemtracker-backend-url-map"
+  default_service = google_compute_backend_service.backend.id
+}
+
+# Create HTTPS target proxy
+resource "google_compute_target_https_proxy" "backend" {
+  name             = "itemtracker-backend-https-proxy"
+  url_map          = google_compute_url_map.backend.id
+  ssl_certificates = [google_compute_managed_ssl_certificate.backend.id]
+}
+
+# Create forwarding rule for HTTPS
+resource "google_compute_global_forwarding_rule" "backend_https" {
+  name       = "itemtracker-backend-https-rule"
+  target     = google_compute_target_https_proxy.backend.id
+  port_range = "443"
+  ip_address = google_compute_global_address.backend_lb_ip.address
+}
+
+# Create HTTP target proxy (for redirect to HTTPS)
+resource "google_compute_target_http_proxy" "backend" {
+  name    = "itemtracker-backend-http-proxy"
+  url_map = google_compute_url_map.backend_redirect.id
+}
+
+# Create URL map for HTTP to HTTPS redirect
+resource "google_compute_url_map" "backend_redirect" {
+  name = "itemtracker-backend-redirect"
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
+# Create forwarding rule for HTTP to HTTPS redirect
+resource "google_compute_global_forwarding_rule" "backend_http" {
+  name       = "itemtracker-backend-http-rule"
+  target     = google_compute_target_http_proxy.backend.id
+  port_range = "80"
+  ip_address = google_compute_global_address.backend_lb_ip.address
+}
+
+# Allow HTTP/HTTPS traffic for backend GCE
 resource "google_compute_firewall" "backend" {
-  name = "backend-allow-http-traffic"
+  name    = "backend-allow-http-traffic"
   network = "default"
 
   allow {
-    ports = ["80", "443"]
+    ports    = ["80", "443"]
     protocol = "tcp"
   }
 
@@ -97,22 +179,20 @@ resource "google_compute_firewall" "backend" {
 
 # Cloud DNS for backend service
 resource "google_dns_managed_zone" "backend" {
-  name = "backend-dns-zone"
-  dns_name = "${var.backend_domain}." # DNS name must end with a dot
-  description = "DNS zone for the itemtracker backend"
+  name          = "backend-dns-zone"
+  dns_name      = "${var.backend_domain}." # DNS name must end with a dot
+  description   = "DNS zone for the itemtracker backend"
   force_destroy = "true"
 }
 
 # Register backend service's IP in DNS
 resource "google_dns_record_set" "backend" {
-  name = google_dns_managed_zone.backend.dns_name
+  name         = google_dns_managed_zone.backend.dns_name
   managed_zone = google_dns_managed_zone.backend.name
-  type = "A"
-  ttl = 300
+  type         = "A"
+  ttl          = 300
 
-  rrdatas = [ 
-    google_compute_instance.backend.network_interface[0].access_config[0].nat_ip
-  ]
+  rrdatas = [google_compute_global_address.backend_lb_ip.address]
 }
 
 # Cloud Run service for embedder service

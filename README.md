@@ -20,7 +20,7 @@ Similarly, the frontend example is `.env.local.example`; remove the `.example` a
 - `VITE_SUPABASE_ANON_KEY`: The Supabase API key
 
 ### Backend
-You need Rust and [Diesel](https://diesel.rs/) installed:
+You need Rust + [Diesel](https://diesel.rs/) installed:
 ```Powershell
 cd packages/monolith
 diesel migration run
@@ -43,16 +43,28 @@ npm run dev
 ```
 
 ## CI/CD and infra
-### Info
+### CI/CD
 A fairly standard setup is used:
 - The backend/embedder Github Action is triggered
-- Backend/embedder is validated, then built into a Docker image and pushed to Docker Hub
-- Terraform applies the updated image to a Cloud Run instances + ties them to the appropriate subdomain
+- Backend/embedder is validated, then built into Docker images and pushed to Docker Hub
+- Terraform applies its config
 
 The frontend is deployed differently. It is simply built and deployed to Github Pages, via Github Actions.
 Its build artifacts sit on the `gh-pages` branch.
 
 Each of the deployment flows can be viewed via its workflow in `/.github/workflows`.
+
+### Backend
+The backend is deployed to Compute Engine, and uses Cloud DNS for mapping the domain to the instance.
+
+The first time this is deployed, some additional DNS setup is required.
+Go to the Cloud DNS console -> the backend zone -> *Registrar setup*; add these NS records for the backend (sub)domain.
+
+### Embedder
+The embedder is deployed to Cloud Run + Cloud Run Domain Mapping for mapping its domain.
+
+The first time Terraform successfully deploys this, some additional DNS setup is required to properly map the domains.
+Go to the Cloud Run console -> the service instance -> *Networking* -> *its custom URL*; add these DNS records for the embedder (sub)domain.
 
 ### Secrets
 The following secrets are needed by Github Actions:
@@ -69,8 +81,5 @@ Note that the GCP service account requires the *Owner* role to properly deploy.
 ### Service domains
 Before being able to map any (sub)domains to the services, you must verify the domain [under GCP](https://www.google.com/webmasters/verification/verification). 
 
-Afterwards, the first time Terraform successfully deploys the services, some additional DNS setup is required to properly map the domains.
-
-For each service in Cloud Run, click on *Networking* followed by its *custom URL*; then, for each URL, add the required DNS records.
-After some time, the domains will be successfully mapped to your services.
+Afterwards, 
 
