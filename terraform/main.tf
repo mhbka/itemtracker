@@ -106,12 +106,23 @@ resource "google_compute_managed_ssl_certificate" "backend" {
   }
 }
 
+# Create health check for the backend service
+resource "google_compute_health_check" "backend" {
+  name = "itemtracker-backend-health-check"
+
+  http_health_check {
+    port = 80
+    request_path = "/health"  # Adjust based on your health check endpoint
+  }
+}
+
 # Create backend service
 resource "google_compute_backend_service" "backend" {
   name        = "itemtracker-backend-service"
   port_name   = "http"
   protocol    = "HTTP"
   timeout_sec = 10
+  health_checks = [google_compute_health_check.backend.id]
 
   backend {
     group = google_compute_instance_group.backend.id
@@ -175,6 +186,20 @@ resource "google_compute_firewall" "backend" {
   }
 
   source_ranges = ["0.0.0.0/0"]
+}
+
+# Allow health check traffic for the backend
+resource "google_compute_firewall" "health_check" {
+  name    = "allow-health-check"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80"]
+  }
+
+  # Allow traffic from GCP health check systems
+  source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
 }
 
 # Cloud DNS for backend service

@@ -20,6 +20,7 @@ pub fn build_router(app_state: AppState) -> Router {
         .allow_headers(Any);
 
     Router::new()
+        .route("/health", || Ok(()))
         .nest("/g", galleries_router)
         .nest("/s", gallery_sessions_router)
         .nest("/i", items_router)
