@@ -6,7 +6,7 @@ mod error;
 
 use axum::Router;
 use axum::routing::get;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{cors::{Any, CorsLayer}, trace::TraceLayer};
 use crate::app_state::AppState;
 
 pub fn build_router(app_state: AppState) -> Router {
@@ -15,10 +15,11 @@ pub fn build_router(app_state: AppState) -> Router {
     let items_router = items::build_routes();
     let users_router = users::build_routes();
 
-    let cors = CorsLayer::new()
+    let cors_layer = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
+    let trace_layer = TraceLayer::new_for_http();
 
     Router::new()
         .route("/health", get(|| async {}))
@@ -27,5 +28,6 @@ pub fn build_router(app_state: AppState) -> Router {
         .nest("/i", items_router)
         .nest("/u", users_router)
         .with_state(app_state)
-        .layer(cors)
+        .layer(cors_layer)
+        .layer(trace_layer)
 }   
