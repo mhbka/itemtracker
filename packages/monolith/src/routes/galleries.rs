@@ -96,11 +96,20 @@ async fn update_gallery(
     let mut gallery_store = app_state.stores.gallery_store;
 
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
-        let updated_gallery = gallery_store.update_gallery(gallery_id, gallery_changes).await?;
-
-        app_state.pipeline
-            .update_gallery(updated_gallery.to_scheduler_state())
+        let updated_gallery = gallery_store
+            .update_gallery(gallery_id, gallery_changes)
             .await?;
+
+        // HACK: if gallery's pipeline is currently running, this needs to wait till it finishes (to acquire the lock).
+        // thus we just let it run on another task and return immediately
+        tokio::spawn(async move {
+            if let Err(err) = app_state.pipeline
+                .update_gallery(updated_gallery.to_scheduler_state())
+                .await
+            {
+                tracing::warn!("Error updating gallery {gallery_id} in the scheduler: {err}");
+            }
+        });
 
         Ok(())
     }
@@ -117,12 +126,20 @@ async fn delete_gallery(
     let mut gallery_store = app_state.stores.gallery_store;
 
     if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
-        app_state.pipeline
-            .delete_gallery(gallery_id.into())
-            .await?;
         gallery_store
             .delete_gallery(gallery_id)
             .await?;
+
+        // HACK: if gallery's pipeline is currently running, this needs to wait till it finishes (to acquire the lock).
+        // thus we just let it run on another task and return immediately
+        tokio::spawn(async move {
+            if let Err(err) = app_state.pipeline
+                .delete_gallery(gallery_id.into())
+                .await
+            {
+                tracing::warn!("Error removing gallery {gallery_id} from the scheduler: {err}");
+            }
+        });
 
         return Ok(());
     }

@@ -39,6 +39,11 @@ export async function deleteGallery(galleryId: UUID): Promise<void> {
   await apiClient.delete(`/g/${galleryId}`)
 }
 
+export async function pauseUnpauseGallery(galleryId: UUID, active: boolean): Promise<void> {
+  const updatedData = { is_active: active }
+  await apiClient.patch(`/g/${galleryId}`, updatedData)
+}
+
 export async function formatDate(timestamp: number): Promise<string> {
   return new Date(timestamp * 1000).toLocaleString()
 }

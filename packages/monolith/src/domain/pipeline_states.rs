@@ -70,6 +70,7 @@ impl GalleryPipelineStateTypes {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GallerySchedulerState {
     pub gallery_id: GalleryId,
+    pub is_active: bool,
     pub scraping_periodicity: ValidCronString,
     pub search_criteria: SearchCriteria,
     pub marketplace_previous_scraped_datetimes: HashMap<Marketplace, UnixUtcDateTime>,

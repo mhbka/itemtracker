@@ -170,7 +170,6 @@ impl GalleryStore {
         let mut conn = self.pool.get().await?;
 
         let all_galleries = galleries
-            .filter(is_active.eq(true))
             .get_results::<GalleryModel>(&mut conn)
             .await?;
         let states = all_galleries

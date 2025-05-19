@@ -20,6 +20,7 @@
         <h1 class="details-title">{{ gallery?.name }}</h1>
 
         <button @click="submitDeleteGallery" class="primary-button">Delete Gallery</button>
+        <button @click="pauseOrUnpauseGallery" class="primary-button">{{ gallery?.is_active ? "Pause Gallery" : "Unpause Gallery" }}</button>
 
         <div class="info-grid">
           <div class="info-section">
@@ -168,7 +169,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchGallery, fetchAllSessionStats, deleteGallery } from '@/services/api'
+import { fetchGallery, fetchAllSessionStats, deleteGallery, pauseUnpauseGallery } from '@/services/api'
 import {
   formatUnixTimestamp,
   formatPrice,
@@ -231,11 +232,19 @@ async function fetchSessionData() {
 
 async function submitDeleteGallery() {
   try {
-    await deleteGallery(galleryId.value)
+    await deleteGallery(galleryId.value);
     router.push('/dashboard')
   } catch (err) {
-    sessionError.value = 'Failed to delete gallery. Please try again later.'
-    console.error(err)
+    sessionError.value = 'Failed to delete gallery. Please try again later.';
+  }
+}
+
+async function pauseOrUnpauseGallery() {
+  try {
+    await pauseUnpauseGallery(galleryId.value, !gallery?.value.is_active);
+    await fetchGalleryData();
+  } catch (err) {
+    sessionError.value = 'Failed to pause/unpause the gallery. Please try again later.';
   }
 }
 

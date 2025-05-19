@@ -1,7 +1,6 @@
 use handler::Handler;
 use messages::SchedulerMessage;
 use tokio::sync::mpsc::Receiver;
-use tracing::info;
 use crate::{config::SchedulerConfig, domain::pipeline_states::GallerySchedulerState};
 
 use super::instance::PipelineInstance;
@@ -38,7 +37,7 @@ impl Scheduler {
     
     /// Start accepting and acting on messages.
     pub async fn run(&mut self) {
-        info!("Scheduler is running...");
+        tracing::info!("Scheduler is running...");
         while let Some(msg) = self.receiver.recv().await {
             self.process_msg(msg).await;
         }
@@ -58,6 +57,7 @@ impl Scheduler {
                 if let Err(err) = send_result {
                     tracing::warn!("Was unable to respond to deleted gallery request for gallery {gallery_id} (maybe the caller hung up?)");
                 }
+                tracing::debug!("Successfully added gallery {gallery_id} in scheduler");
             },
             SchedulerMessage::DeleteGallery((gallery_id, responder)) => {
                 tracing::info!("Received message to delete gallery {gallery_id} from scheduler");
@@ -68,18 +68,21 @@ impl Scheduler {
                 if let Err(err) = send_result {
                     tracing::warn!("Was unable to respond to deleted gallery request for gallery {gallery_id} (maybe the caller hung up?)");
                 }
+                tracing::debug!("Successfully deleted gallery {gallery_id} in scheduler");
             },
             SchedulerMessage::UpdateGallery((state, responder)) => {
                 let gallery_id = state.gallery_id;
 
-                tracing::info!("Received message to update gallery {} in scheduler", state.gallery_id);
+                tracing::info!("Received message to update gallery {gallery_id} in scheduler");
                 
                 let result = self.scheduler.update_gallery(state).await;
+                tracing::info!("test");
                 let send_result = responder.send(result);
 
                 if let Err(err) = send_result {
                     tracing::warn!("Was unable to respond to deleted gallery request for gallery {gallery_id} (maybe the caller hung up?)");
                 }
+                tracing::debug!("Successfully updated gallery {gallery_id} in scheduler");
             },
         }
     }

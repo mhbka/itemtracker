@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use chrono::Utc;
 use crate::{domain::pipeline_states::{GallerySchedulerState, GallerySearchScrapingState}, pipeline::instance::PipelineInstance};
 
@@ -27,15 +29,13 @@ impl ScheduledGalleryTask {
         &self.gallery
     }
 
-    /// Schedules the gallery at the appointed periodicity, and registers the gallery in the state tracker.
-    /// 
-    /// If the gallery is already registered with the state tracker, it won't be scheduled.
+    /// Runs the pipeline for this task once.
     /// 
     /// Returns with an `Err` if:
     /// - we cannot send a message to or receive a response from the state tracker
     /// - the Cron schedule is unable to return the next occurrence
-    pub async fn run(&mut self) -> Result<(), ()>  {   
-        loop {
+    pub async fn run_once(&mut self) -> Result<(), ()>  {   
+        if self.gallery.is_active {
             if let Err(err) = self.start_pipeline().await {
                 match err {
                     SchedulerError::MessageFailure => {
@@ -52,8 +52,11 @@ impl ScheduledGalleryTask {
                 }
             }
             tracing::debug!("Successfully ran pipeline for gallery {}", self.gallery.gallery_id);
-            self.sleep_to_next_time().await?;
         }
+        else {
+            tracing::debug!("Skipping pipeline run for gallery {} (not currently active)", self.gallery.gallery_id)
+        }
+        Ok(())
     }
 
     /// Update the gallery that will be sent to the scraper.
@@ -95,10 +98,10 @@ impl ScheduledGalleryTask {
         Ok(())
     }
 
-    /// Sleeps till the next scheduled time.
+    /// Gets the time till the next schedule for this task.
     ///
     /// Returns an `Err` if the Cron cannot get the next scheduled time (should never happen).
-    async fn sleep_to_next_time(&mut self) -> Result<(), ()> {
+    pub async fn time_to_next_schedule(&mut self) -> Result<Duration, ()> {
         let cur_time = Utc::now();
         let next_time = self.gallery.scraping_periodicity
             .get_cron()
@@ -108,14 +111,7 @@ impl ScheduledGalleryTask {
                 let time_to_next_schedule = (next_time - cur_time)
                     .to_std()
                     .expect("Should never fail, as this time should logically always be greater than 0");
-
-                tracing::debug!(
-                    "Gallery {} scheduler task sleeping for {:?} to next schedule",
-                    self.gallery().gallery_id, time_to_next_schedule
-                );
-
-                tokio::time::sleep(time_to_next_schedule).await;
-                Ok(())
+                Ok(time_to_next_schedule)
             },
             Err(err) => {
                 // TODO: pretty critical error, should have some way to persist this info

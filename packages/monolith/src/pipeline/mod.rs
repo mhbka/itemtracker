@@ -53,11 +53,9 @@ impl Pipeline {
         let (msg, receiver) = SchedulerMessage::add_gallery(gallery);
         self.scheduler_sender
             .send(msg)
-            .await
-            .map_err(|err| SchedulerError::MessageFailure)?;
+            .await?;
         receiver
-            .await
-            .map_err(|err| SchedulerError::MessageFailure)?
+            .await?
     }
 
     /// Update a gallery within the scheduler.
@@ -65,11 +63,9 @@ impl Pipeline {
         let (msg, receiver) = SchedulerMessage::update_gallery(updated_gallery);
         self.scheduler_sender
             .send(msg)
-            .await
-            .map_err(|err| SchedulerError::MessageFailure)?;
+            .await?;
         receiver
-            .await
-            .map_err(|err| SchedulerError::MessageFailure)?
+            .await?
     }
 
     /// Delete a gallery from the scheduler.
@@ -77,10 +73,8 @@ impl Pipeline {
         let (msg, receiver) = SchedulerMessage::delete_gallery(gallery_id);
         self.scheduler_sender
             .send(msg)
-            .await
-            .map_err(|err| SchedulerError::MessageFailure)?;
+            .await?;
         receiver
-            .await
-            .map_err(|err| SchedulerError::MessageFailure)?
+            .await?
     }
 }

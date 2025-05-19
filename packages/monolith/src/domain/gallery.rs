@@ -27,6 +27,7 @@ impl Gallery {
 
         GallerySchedulerState {
             gallery_id: self.id.into(),
+            is_active: self.is_active,
             scraping_periodicity: self.scraping_periodicity,
             search_criteria: self.search_criteria,
             marketplace_previous_scraped_datetimes,
