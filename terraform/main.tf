@@ -43,9 +43,9 @@ module "gce-container" {
 
 # Compute Engine for backend service
 resource "google_compute_instance" "backend" {
-  name                      = "itemtracker-backend"
-  zone                      = "asia-southeast1-a"
-  machine_type              = "e2-micro"
+  name = "itemtracker-backend-${replace(var.backend_image_tag, ".", "-")}"
+  zone = "asia-southeast1-a"
+  machine_type = "e2-micro"
   allow_stopping_for_update = true
 
   boot_disk {
