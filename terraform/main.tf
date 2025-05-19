@@ -84,7 +84,7 @@ resource "google_compute_instance" "backend" {
 resource "google_compute_instance_group" "backend" {
   name      = "itemtracker-backend-group"
   zone      = "asia-southeast1-a"
-  instances = [google_compute_instance.backend.id]
+  instances = [google_compute_instance.backend.self_link]
 
   named_port {
     name = "http"
