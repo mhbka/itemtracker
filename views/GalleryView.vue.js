@@ -45,10 +45,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { fetchGallery, fetchAllSessionStats, deleteGallery } from '@/services/api';
+import { fetchGallery, fetchAllSessionStats, deleteGallery, pauseUnpauseGallery } from '@/services/api';
 import { formatUnixTimestamp, formatPrice, getZeroedNaiveDatetime, formatHardCriterion, } from '@/utils/formatters';
 var route = useRoute();
 var router = useRouter();
@@ -148,9 +148,31 @@ function submitDeleteGallery() {
                 case 2:
                     err_3 = _a.sent();
                     sessionError.value = 'Failed to delete gallery. Please try again later.';
-                    console.error(err_3);
                     return [3 /*break*/, 3];
                 case 3: return [2 /*return*/];
+            }
+        });
+    });
+}
+function pauseOrUnpauseGallery() {
+    return __awaiter(this, void 0, void 0, function () {
+        var err_4;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, pauseUnpauseGallery(galleryId.value, !(gallery === null || gallery === void 0 ? void 0 : gallery.value.is_active))];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, fetchGalleryData()];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    err_4 = _a.sent();
+                    sessionError.value = 'Failed to pause/unpause the gallery. Please try again later.';
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
             }
         });
     });
@@ -224,6 +246,8 @@ else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.h1, __VLS_intrinsicElements.h1)(__assign({ class: "details-title" }));
     ((_a = __VLS_ctx.gallery) === null || _a === void 0 ? void 0 : _a.name);
     __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)(__assign({ onClick: (__VLS_ctx.submitDeleteGallery) }, { class: "primary-button" }));
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.button, __VLS_intrinsicElements.button)(__assign({ onClick: (__VLS_ctx.pauseOrUnpauseGallery) }, { class: "primary-button" }));
+    (((_b = __VLS_ctx.gallery) === null || _b === void 0 ? void 0 : _b.is_active) ? "Pause Gallery" : "Unpause Gallery");
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-grid" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-section" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)(__assign({ class: "section-title" }));
@@ -231,20 +255,20 @@ else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    ((_b = __VLS_ctx.gallery) === null || _b === void 0 ? void 0 : _b.id);
+    ((_c = __VLS_ctx.gallery) === null || _c === void 0 ? void 0 : _c.id);
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: (((_c = __VLS_ctx.gallery) === null || _c === void 0 ? void 0 : _c.is_active) ? 'status-active' : 'status-inactive') }));
-    (((_d = __VLS_ctx.gallery) === null || _d === void 0 ? void 0 : _d.is_active) ? 'Active' : 'Inactive');
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
-    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    ((_e = __VLS_ctx.gallery) === null || _e === void 0 ? void 0 : _e.scraping_periodicity);
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: (((_d = __VLS_ctx.gallery) === null || _d === void 0 ? void 0 : _d.is_active) ? 'status-active' : 'status-inactive') }));
+    (((_e = __VLS_ctx.gallery) === null || _e === void 0 ? void 0 : _e.is_active) ? 'Active' : 'Inactive');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    (((_f = __VLS_ctx.gallery) === null || _f === void 0 ? void 0 : _f.mercari_last_scraped_time) &&
-        ((_g = __VLS_ctx.gallery) === null || _g === void 0 ? void 0 : _g.mercari_last_scraped_time) != __VLS_ctx.getZeroedNaiveDatetime()
+    ((_f = __VLS_ctx.gallery) === null || _f === void 0 ? void 0 : _f.scraping_periodicity);
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
+    __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+    (((_g = __VLS_ctx.gallery) === null || _g === void 0 ? void 0 : _g.mercari_last_scraped_time) &&
+        ((_h = __VLS_ctx.gallery) === null || _h === void 0 ? void 0 : _h.mercari_last_scraped_time) != __VLS_ctx.getZeroedNaiveDatetime()
         ? __VLS_ctx.formatDateTime(__VLS_ctx.gallery.mercari_last_scraped_time)
         : 'Never');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-section" }));
@@ -253,23 +277,23 @@ else {
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    ((_h = __VLS_ctx.gallery) === null || _h === void 0 ? void 0 : _h.search_criteria.keyword);
+    ((_j = __VLS_ctx.gallery) === null || _j === void 0 ? void 0 : _j.search_criteria.keyword);
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    (((_j = __VLS_ctx.gallery) === null || _j === void 0 ? void 0 : _j.search_criteria.exclude_keyword) || '-');
+    (((_k = __VLS_ctx.gallery) === null || _k === void 0 ? void 0 : _k.search_criteria.exclude_keyword) || '-');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "info-item" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)(__assign({ class: "info-label" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
-    (((_k = __VLS_ctx.gallery) === null || _k === void 0 ? void 0 : _k.search_criteria.min_price)
+    (((_l = __VLS_ctx.gallery) === null || _l === void 0 ? void 0 : _l.search_criteria.min_price)
         ? __VLS_ctx.formatPrice(__VLS_ctx.gallery.search_criteria.min_price)
         : '-');
-    (((_l = __VLS_ctx.gallery) === null || _l === void 0 ? void 0 : _l.search_criteria.max_price)
+    (((_m = __VLS_ctx.gallery) === null || _m === void 0 ? void 0 : _m.search_criteria.max_price)
         ? __VLS_ctx.formatPrice(__VLS_ctx.gallery.search_criteria.max_price)
         : '-');
     __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "criteria-section" }));
     __VLS_asFunctionalElement(__VLS_intrinsicElements.h3, __VLS_intrinsicElements.h3)(__assign({ class: "section-title" }));
-    if (((_m = __VLS_ctx.gallery) === null || _m === void 0 ? void 0 : _m.evaluation_criteria.criteria.length) === 0) {
+    if (((_o = __VLS_ctx.gallery) === null || _o === void 0 ? void 0 : _o.evaluation_criteria.criteria.length) === 0) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)(__assign({ class: "no-criteria-message" }));
     }
     else {
@@ -281,8 +305,8 @@ else {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.th, __VLS_intrinsicElements.th)({});
         __VLS_asFunctionalElement(__VLS_intrinsicElements.th, __VLS_intrinsicElements.th)({});
         __VLS_asFunctionalElement(__VLS_intrinsicElements.tbody, __VLS_intrinsicElements.tbody)({});
-        for (var _i = 0, _p = __VLS_getVForSourceType(((_o = __VLS_ctx.gallery) === null || _o === void 0 ? void 0 : _o.evaluation_criteria.criteria)); _i < _p.length; _i++) {
-            var _q = _p[_i], criterion = _q[0], index = _q[1];
+        for (var _i = 0, _q = __VLS_getVForSourceType(((_p = __VLS_ctx.gallery) === null || _p === void 0 ? void 0 : _p.evaluation_criteria.criteria)); _i < _q.length; _i++) {
+            var _r = _q[_i], criterion = _r[0], index = _r[1];
             __VLS_asFunctionalElement(__VLS_intrinsicElements.tr, __VLS_intrinsicElements.tr)({
                 key: (index),
             });
@@ -350,8 +374,8 @@ else {
             __VLS_asFunctionalElement(__VLS_intrinsicElements.td, __VLS_intrinsicElements.td)({});
             (session.stats.total_items);
         };
-        for (var _r = 0, _s = __VLS_getVForSourceType((__VLS_ctx.sessions)); _r < _s.length; _r++) {
-            var session = _s[_r][0];
+        for (var _s = 0, _t = __VLS_getVForSourceType((__VLS_ctx.sessions)); _s < _t.length; _s++) {
+            var session = _t[_s][0];
             _loop_1(session);
         }
     }
@@ -366,6 +390,7 @@ else {
 /** @type {__VLS_StyleScopedClasses['back-arrow']} */ ;
 /** @type {__VLS_StyleScopedClasses['details-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['details-title']} */ ;
+/** @type {__VLS_StyleScopedClasses['primary-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['primary-button']} */ ;
 /** @type {__VLS_StyleScopedClasses['info-grid']} */ ;
 /** @type {__VLS_StyleScopedClasses['info-section']} */ ;
@@ -418,6 +443,7 @@ var __VLS_self = (await import('vue')).defineComponent({
             loadingSessions: loadingSessions,
             sessionError: sessionError,
             submitDeleteGallery: submitDeleteGallery,
+            pauseOrUnpauseGallery: pauseOrUnpauseGallery,
             formatDateTime: formatDateTime,
             navigateToSession: navigateToSession,
         };

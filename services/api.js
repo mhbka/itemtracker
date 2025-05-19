@@ -111,6 +111,21 @@ export function deleteGallery(galleryId) {
         });
     });
 }
+export function pauseUnpauseGallery(galleryId, active) {
+    return __awaiter(this, void 0, void 0, function () {
+        var updatedData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    updatedData = { is_active: active };
+                    return [4 /*yield*/, apiClient.patch("/g/".concat(galleryId), updatedData)];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 export function formatDate(timestamp) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {

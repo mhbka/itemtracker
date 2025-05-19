@@ -101,7 +101,7 @@ function signInWithGoogle() {
                     return [4 /*yield*/, supabase.auth.signInWithOAuth({
                             provider: 'google',
                             options: {
-                                redirectTo: "".concat(window.location.origin, "/dashboard"),
+                                redirectTo: "".concat(window.location.origin),
                             },
                         })];
                 case 1:
