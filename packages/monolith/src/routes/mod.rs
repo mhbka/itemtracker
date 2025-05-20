@@ -4,9 +4,12 @@ mod items;
 mod users;
 mod error;
 
-use axum::Router;
+use axum::body::Body;
+use axum::{extract::Request, Router};
 use axum::routing::get;
 use tower_http::{cors::{Any, CorsLayer}, trace::TraceLayer};
+use tracing::Level;
+use uuid::Uuid;
 use crate::app_state::AppState;
 
 pub fn build_router(app_state: AppState) -> Router {
@@ -19,7 +22,18 @@ pub fn build_router(app_state: AppState) -> Router {
         .allow_origin(Any)
         .allow_methods(Any)
         .allow_headers(Any);
-    let trace_layer = TraceLayer::new_for_http();
+    let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(|request: &Request<Body>| {
+            let request_id = Uuid::new_v4();
+            tracing::span!(
+                Level::DEBUG,
+                "request",
+                method = tracing::field::display(request.method()),
+                uri = tracing::field::display(request.uri()),
+                version = tracing::field::debug(request.version()),
+                request_id = tracing::field::display(request_id)
+            )
+        });
 
     Router::new()
         .route("/health", get(|| async {}))

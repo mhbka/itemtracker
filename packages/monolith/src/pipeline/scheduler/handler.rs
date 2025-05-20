@@ -115,7 +115,7 @@ impl Handler {
             async move {
                 // first, see if we still have time till the next schedule; if so, sleep...
                 {
-                    let mut task = cloned_task
+                    let task = cloned_task
                         .lock()
                         .await;
                     let gallery = task.gallery();
