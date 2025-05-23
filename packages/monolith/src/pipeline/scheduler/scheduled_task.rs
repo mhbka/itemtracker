@@ -29,34 +29,16 @@ impl ScheduledGalleryTask {
         &self.gallery
     }
 
-    /// Runs the pipeline for this task once.
-    /// 
-    /// Returns with an `Err` if:
-    /// - we cannot send a message to or receive a response from the state tracker
-    /// - the Cron schedule is unable to return the next occurrence
-    pub async fn run_once(&mut self) -> Result<(), ()>  {   
+    /// If the gallery is active, runs the pipeline for this gallery once on a separate task,
+    /// returning immediately.
+    pub async fn run_once(&mut self) {   
         if self.gallery.is_active {
-            if let Err(err) = self.start_pipeline().await {
-                match err {
-                    SchedulerError::MessageFailure => {
-                        tracing::error!(
-                            "Got a message failure trying to start a scrape for gallery {}; returning as this is critical",
-                            self.gallery.gallery_id
-                        );
-                        return Err(());
-                    },
-                    err => tracing::warn!(
-                        "Got an error trying to start a scrape for gallery {}; continuing: {}", 
-                        self.gallery.gallery_id, err
-                    )
-                }
-            }
-            tracing::debug!("Successfully ran pipeline for gallery {}", self.gallery.gallery_id);
+            tracing::debug!("Starting pipeline run for gallery {}", self.gallery.gallery_id);
+            self.start_pipeline().await;
         }
         else {
             tracing::debug!("Skipping pipeline run for gallery {} (not currently active)", self.gallery.gallery_id)
         }
-        Ok(())
     }
 
     /// Update the gallery that will be sent to the scraper.
@@ -68,18 +50,9 @@ impl ScheduledGalleryTask {
         Ok(())
     }
 
-    /// Adds a gallery to state and starts the scrape.
-    /// 
-    /// Returns an Err if the state tracker returned one,
-    /// or if the state tracker/search scraper had a message failure.
-    /// 
-    /// **NOTE**: 
-    /// One may continue from a state tracker error,
-    /// but should end the task if either had a message failure,
-    /// as this is a critical issue of the system.
-    async fn start_pipeline(&mut self) -> Result<(), SchedulerError> {
-        let gallery_id = self.gallery.gallery_id.clone();
-
+    /// Runs the pipeline *on a separate task*, returning immediately.
+    async fn start_pipeline(&mut self) {
+        let gallery_id = self.gallery.gallery_id;
         let gallery = self.gallery.clone();
         let gallery_state = GallerySearchScrapingState {
             gallery_id: gallery.gallery_id,
@@ -87,15 +60,14 @@ impl ScheduledGalleryTask {
             marketplace_previous_scraped_datetimes: gallery.marketplace_previous_scraped_datetimes,
             evaluation_criteria: gallery.evaluation_criteria
         };
-
         let mut pipeline = self.pipeline_instance.clone();
-        let pipeline_result = pipeline.run_pipeline(gallery_state).await;
-        if let Err(err) = pipeline_result {
-            // TODO: persist this error to a store or something?
-            tracing::warn!("A pipeline run for gallery {gallery_id} failed (scheduler task will continue): {err}");
-        }
 
-        Ok(())
+        tokio::spawn(async move {
+            let pipeline_result = pipeline.run_pipeline(gallery_state).await;
+            if let Err(err) = pipeline_result {
+                tracing::warn!("A pipeline run for gallery {gallery_id} failed (scheduler task will continue): {err}");
+            }
+        });
     }
 
     /// Gets the time till the next schedule for this task.

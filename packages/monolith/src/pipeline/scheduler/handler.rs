@@ -69,11 +69,8 @@ impl Handler {
     {   
         let mut galleries = self.galleries.write().await;
         if let Some(task) = galleries.get_mut(&updated_gallery.gallery_id) {
-            tracing::debug!("tetetete1");
             let mut scheduled_gallery = task.0.lock().await;
-            tracing::debug!("tetetete");
             scheduled_gallery.update_gallery(updated_gallery)?;
-            tracing::debug!("testtest2");
             Ok(())
         } 
         else {
@@ -111,71 +108,64 @@ impl Handler {
         let task = Arc::new(Mutex::new(task));
         let cloned_task = task.clone();
 
-        let task_handle = tokio::spawn(
-            async move {
-                // first, see if we still have time till the next schedule; if so, sleep...
+        let task_handle = tokio::spawn(async move {
+            // first, see if we still have time till the next schedule; if so, sleep...
+            {
+                let task = cloned_task
+                    .lock()
+                    .await;
+                let gallery = task.gallery();
+                let cur_time = Utc::now();
+                let next_time = match gallery.scraping_periodicity
+                    .get_cron()
+                    .find_next_occurrence(&cur_time, false)
                 {
-                    let task = cloned_task
-                        .lock()
-                        .await;
-                    let gallery = task.gallery();
-                    let cur_time = Utc::now();
-                    let next_time = match gallery.scraping_periodicity
-                        .get_cron()
-                        .find_next_occurrence(&cur_time, false)
-                    {
-                        Ok(next_time) => next_time,
-                        Err(err) => cur_time
-                    };
-                    let wait_time = next_time - cur_time;
-                    if wait_time > TimeDelta::zero() {
-                        let wait_time = wait_time
-                            .to_std()
-                            .expect("Should not fail as time is greater than zero");
+                    Ok(next_time) => next_time,
+                    Err(err) => cur_time
+                };
+                let wait_time = next_time - cur_time;
+                if wait_time > TimeDelta::zero() {
+                    let wait_time = wait_time
+                        .to_std()
+                        .expect("Should not fail as time is greater than zero");
 
-                        tracing::debug!(
-                            "Gallery {} task initialization: will sleep for {:?} till next schedule ({})",
-                            gallery.gallery_id, wait_time, next_time
-                        );
-
-                        sleep(wait_time).await;
-                    }
+                    tracing::debug!(
+                        "Gallery {} task initialization: will sleep for {:?} till next schedule ({})",
+                        gallery.gallery_id, wait_time, next_time
+                    );
+                    drop(task); // drop the task lock, so it can be accessed again (?)
+                    sleep(wait_time).await;
                 }
-                
-                // ...then, begin running indefinitely
-                tracing::debug!("Starting running of task for gallery {gallery_id}");
-                loop {
-                    let mut task = cloned_task
-                        .lock()
-                        .await;
-                    let task_run_result = task
-                        .run_once()
-                        .await;
-                    if let Err(err) = task_run_result {
-                        tracing::warn!(
-                            "Got an unexpected error starting a pipeline for this gallery: {:#?}; will continue scheduling...", 
+            }
+            
+            // ...then, begin running indefinitely
+            tracing::debug!("Starting running of task for gallery {gallery_id}");
+            loop {
+                let mut task = cloned_task
+                    .lock()
+                    .await;
+                task
+                    .run_once()
+                    .await;
+                match task.time_to_next_schedule().await {
+                    Ok(time) => {
+                        tracing::debug!(
+                            "Gallery {} scheduler task sleeping for {:?} till next schedule",
+                            task.gallery().gallery_id, time
+                        );
+                        drop(task); // drop the task lock, so it can be accessed again (?)
+                        sleep(time).await;
+                    },
+                    Err(err) => {
+                        tracing::error!(
+                            "Unable to get the next scheduled time for this gallery; stopping its schedule task: {:#?}", 
                             task.gallery()
                         );
-                    }
-                    match task.time_to_next_schedule().await {
-                        Ok(time) => {
-                            tracing::debug!(
-                                "Gallery {} scheduler task sleeping for {:?} till next schedule",
-                                task.gallery().gallery_id, time
-                            );
-                            sleep(time).await;
-                        },
-                        Err(err) => {
-                            tracing::error!(
-                                "Unable to get the next scheduled time for this gallery; stopping its schedule task: {:#?}", 
-                                task.gallery()
-                            );
-                            break;
-                        }
+                        break;
                     }
                 }
             }
-        );
+        });
 
         (task, task_handle)
     }
