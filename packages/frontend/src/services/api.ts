@@ -39,6 +39,10 @@ export async function deleteGallery(galleryId: UUID): Promise<void> {
   await apiClient.delete(`/g/${galleryId}`)
 }
 
+export async function resetGallery(galleryId: UUID): Promise<void> {
+  await apiClient.delete(`/g/reset/${galleryId}`)
+}
+
 export async function pauseUnpauseGallery(galleryId: UUID, active: boolean): Promise<void> {
   const updatedData = { is_active: active }
   await apiClient.patch(`/g/${galleryId}`, updatedData)

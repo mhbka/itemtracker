@@ -43,6 +43,7 @@ pub fn build_routes() -> Router<AppState> {
         .route("/:gallery_id", delete(delete_gallery))
         .route("/stats/:gallery_id", get(get_gallery_stats))
         .route("/stats/all", get(get_all_gallery_stats))
+        .route("/reset/:gallery_id", delete(reset_gallery))
 }
 
 async fn add_new_gallery(
@@ -60,8 +61,9 @@ async fn add_new_gallery(
     let pipeline_result = app_state.pipeline
         .add_gallery(new_gallery.to_scheduler_state())
         .await;
+
+    // if it failed to register in the pipeline, remove from the store too
     if let Err(err) = pipeline_result {
-        // if it failed to register in the pipeline, remove from the store too
         gallery_store
             .delete_gallery(new_gallery_id)
             .await?;
@@ -141,6 +143,22 @@ async fn delete_gallery(
             }
         });
 
+        return Ok(());
+    }
+    else {
+        return Err(RouteError::Unauthorized);
+    }
+}
+
+async fn reset_gallery(
+    State(app_state): State<AppState>,
+    user: AuthUser,
+    Path(gallery_id): Path<Uuid>
+) -> RouteResult<()> {
+    let mut gallery_store = app_state.stores.gallery_store;
+
+    if gallery_store.gallery_belongs_to_user(gallery_id, user.id).await? {
+        gallery_store.reset_gallery(gallery_id).await?;
         return Ok(());
     }
     else {

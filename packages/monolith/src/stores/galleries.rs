@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime};
 use uuid::Uuid;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
@@ -98,6 +98,24 @@ impl GalleryStore {
             return Err(StoreError::NotFound { gallery_id });
         }
         
+        Ok(())
+    }
+
+    /// Reset a gallery, deleting all of its sessions but keeping its metadata.
+    pub async fn reset_gallery(&mut self, gallery_id: Uuid) -> StoreResult<()> {
+        let mut conn = self.pool.get().await?;
+
+        // delete all sessions for the gallery
+        diesel::delete(gallery_sessions::table.filter(gallery_sessions::columns::gallery_id.eq(gallery_id)))
+            .execute(&mut conn)
+            .await?;
+
+        // reset the marketplace datetimes
+        let reset_update = UpdatedGallery::update_marketplace_datetimes(Some(NaiveDateTime::from_timestamp(0, 0)));
+        self
+            .update_gallery(gallery_id, reset_update)
+            .await?;
+
         Ok(())
     }
 
