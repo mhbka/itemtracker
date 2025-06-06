@@ -70,7 +70,7 @@ impl GallerySessionsStore {
                     .collect();
                 let embedded_items_data_ids: Vec<i32> = insert_into(marketplace_items::table)
                     .values(&embedded_items_data)
-                        // below are for conflicts
+                        // below are for conflicts; ie, a marketplace item being scraped and inserted again
                         .on_conflict((marketplace_items::marketplace, marketplace_items::item_id))
                         .do_update()
                         .set(( 

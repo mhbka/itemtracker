@@ -126,7 +126,7 @@ impl OpenAIRequester {
                 Err(err) => err_str = Some(format!("Error while querying the Anthropic API: {err}"))
             }
             if let Some(error) = err_str {
-                tracing::trace!("Item {} had an error during item analysis: {}", item.item_id, error);
+                tracing::info!("Item {} had an error during item analysis: {}", item.item_id, error);
                 let err_item = ErrorAnalyzedMarketplaceItem { item, error };
                 error_items.push(err_item);
             }

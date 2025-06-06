@@ -1,7 +1,6 @@
 use axum::{extract::{Path, State}, routing::{delete, get, patch, post}, Json, Router};
 use chrono::{NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
 use uuid::Uuid;
 use crate::{app_state::AppState, auth::types::AuthUser, domain::{domain_types::ValidCronString, eval_criteria::EvaluationCriteria, gallery::{Gallery, GalleryStats}, search_criteria::SearchCriteria}, models::gallery::{NewGallery, UpdatedGallery}};
 use super::error::{RouteError, RouteResult};

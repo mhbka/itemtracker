@@ -76,7 +76,6 @@ impl Scheduler {
                 tracing::info!("Received message to update gallery {gallery_id} in scheduler");
                 
                 let result = self.scheduler.update_gallery(state).await;
-                tracing::info!("test");
                 let send_result = responder.send(result);
 
                 if let Err(err) = send_result {

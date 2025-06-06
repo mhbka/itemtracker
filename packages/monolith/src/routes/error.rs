@@ -1,5 +1,4 @@
 use std::error::Error;
-
 use axum::response::{Response, IntoResponse};
 use reqwest::StatusCode;
 use serde_json::json;

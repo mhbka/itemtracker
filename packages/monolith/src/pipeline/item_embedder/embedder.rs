@@ -3,7 +3,7 @@ use image::DynamicImage;
 use reqwest::{multipart::{self, Part}, Client, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::{config::ItemEmbedderConfig, domain::{domain_types::Marketplace, pipeline_items::{AnalyzedMarketplaceItem, EmbeddedMarketplaceItem, ErrorEmbeddedMarketplaceItem, MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}};
+use crate::{config::ItemEmbedderConfig, domain::{domain_types::{GalleryId, Marketplace}, pipeline_items::{AnalyzedMarketplaceItem, EmbeddedMarketplaceItem, ErrorEmbeddedMarketplaceItem, MarketplaceAnalyzedItems, MarketplaceEmbeddedAndAnalyzedItems}}};
 
 /// The response from the embedder.
 /// 
@@ -33,13 +33,17 @@ impl Embedder {
     }
 
     /// Embed a gallery's items' description and chosen images.
-    pub async fn embed_gallery(&mut self, items: HashMap<Marketplace, MarketplaceAnalyzedItems>) -> HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems> {
+    pub async fn embed_gallery(
+        &mut self, 
+        gallery_id: GalleryId, 
+        items: HashMap<Marketplace, MarketplaceAnalyzedItems>
+    ) -> HashMap<Marketplace, MarketplaceEmbeddedAndAnalyzedItems> {
         let mut embedded_items = HashMap::new();
         for (marketplace, items) in items {
             let (
                 request,
                 valid_items,
-                failed_items
+                failed_to_fetch_image_items
             ) = self.build_marketplace_request(items.relevant_items).await;
             let marketplace_items = match self.execute_and_handle_request(request, valid_items).await {
                 Ok(marketplace_embedded_items) => {
@@ -51,6 +55,7 @@ impl Embedder {
                     }
                 },
                 Err((error_valid_items, err)) => {
+                    tracing::info!("Marketplace {marketplace} for gallery {gallery_id} got an error during embedding: {err}");
                     let error_items = error_valid_items
                         .into_iter()
                         .map(|item| ErrorEmbeddedMarketplaceItem { item, error: err.clone() })
@@ -79,6 +84,8 @@ impl Embedder {
         let mut form = multipart::Form::new();
         let mut failed_items = Vec::new();
         let mut valid_items_and_images = Vec::new();
+
+        // fetch item images; for failed items, push them into `failed_items`
         for item in items {
             match self
                 .get_item_image(&item.item.thumbnails, item.best_fit_image)
@@ -90,18 +97,27 @@ impl Embedder {
                     }
                 }
         }
-        // We add parts to the form in order of the valid items; the embedder will return embeddings in the same order
+
+        // NOTE: we add parts to the form in same order of the valid items; the embedder will return embeddings in the same order
+        // NOTE 2: items with images that failed to write, will also be pushed into `failed_items`
         let mut valid_items = Vec::new();
-        for (index, (valid_item, item_image)) in valid_items_and_images.into_iter().enumerate() {
+        for (index, (item, item_image)) in valid_items_and_images.into_iter().enumerate() {
             let mut image_bytes = Cursor::new(Vec::new());
-            item_image.write_to(&mut image_bytes, image::ImageFormat::Png);
-            let image_part = Part::bytes(image_bytes.into_inner())
-                .file_name(format!("image{index}"));
-            let text_part = Part::text(valid_item.item_description.clone());
-            form = form
-                .part("image", image_part)
-                .part("text", text_part);
-            valid_items.push(valid_item);
+            match item_image.write_to(&mut image_bytes, image::ImageFormat::Png) {
+                Ok(_) => {
+                    let image_part = Part::bytes(image_bytes.into_inner())
+                        .file_name(format!("image{index}"));
+                    let text_part = Part::text(item.item_description.clone());
+                    form = form
+                        .part("image", image_part)
+                        .part("text", text_part);
+                    valid_items.push(item);
+                },
+                Err(err) => {
+                    let err_item = ErrorEmbeddedMarketplaceItem { item, error: err.to_string() };
+                    failed_items.push(err_item);
+                }
+            }
         }
         let request = self.request_client
             .post(&self.config.embedder_endpoint)
@@ -111,8 +127,8 @@ impl Embedder {
 
     /// Executes and handles the request for a marketplace.
     /// 
-    /// Returns an `Err` with the original valid items and an error string,
-    /// if an error occurs while requesting/parsing the response.
+    /// Returns an `Err` with the original valid items and an error string, 
+    /// if an unrecoverable error occurs while requesting or response parsing.
     async fn execute_and_handle_request(
         &mut self, 
         request: RequestBuilder,
@@ -124,9 +140,9 @@ impl Embedder {
                     Ok(res) => {
                         match res.json::<EmbedderResponse>().await {
                             Ok(res) => {
-                                if res.text_embeddings.len() != valid_items.len()
-                                || res.image_embeddings.len() != valid_items.len() {
-                                    let err_str = format!("Number of text/image embeddings ({}, {}) doesn't match number of valid items ({})",
+                                if res.text_embeddings.len() != valid_items.len() || res.image_embeddings.len() != valid_items.len() {
+                                    let err_str = format!(
+                                        "Number of text/image embeddings ({}/{}) doesn't match number of valid items ({})",
                                         res.text_embeddings.len(), res.image_embeddings.len(), valid_items.len()
                                     );
                                     return Err((valid_items, err_str));
